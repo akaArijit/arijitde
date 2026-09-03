@@ -203,6 +203,61 @@ router.post('/otp/verify', authLimiter, async (req, res, next) => {
   }
 });
 
+// 2b. POST /api/auth/admin/login  – Administrator password sign-in
+const adminLoginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+router.post('/admin/login', authLimiter, async (req, res, next) => {
+  try {
+    const { email, password } = adminLoginSchema.parse(req.body);
+    const formattedEmail = email.toLowerCase();
+
+    // Generic message so we never reveal which administrator accounts exist
+    const invalidCredentials = {
+      success: false,
+      error: 'Invalid administrator email or password.',
+    };
+
+    const user = await prisma.user.findFirst({
+      where: { email: formattedEmail, role: 'ADMIN' },
+    });
+
+    if (!user || !user.password) {
+      res.status(401).json(invalidCredentials);
+      return;
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.password);
+    if (!passwordMatches) {
+      res.status(401).json(invalidCredentials);
+      return;
+    }
+
+    const token = signToken({
+      userId: user.id,
+      email: user.email || '',
+      role: user.role,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // 3. POST /api/auth/google
 const googleAuthSchema = z.object({
   token: z.string().min(1, 'Google token is required'),
