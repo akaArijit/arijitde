@@ -26,6 +26,8 @@ export default function Onboarding() {
   const [otpSentMsg, setOtpSentMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isAdminLogin, setIsAdminLogin] = useState(false);
+  // Admins sign in with a password by default and can fall back to an email OTP
+  const [adminMode, setAdminMode] = useState<"PASSWORD" | "OTP">("PASSWORD");
   const [isUserLogin, setIsUserLogin] = useState(false);
   // Client passwordless login state
   const [clientStep, setClientStep] = useState<"EMAIL" | "OTP_VERIFY" | "ACCOUNT_SELECT" | "PAN_VERIFY">("EMAIL");
@@ -204,7 +206,43 @@ export default function Onboarding() {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Admin login only requires email, normal signup requires name/email/password
+    // Admin password sign-in is handled by its own endpoint
+    if (isAdminLogin && adminMode === "PASSWORD") {
+      if (!email || !password) {
+        setError("Please enter your administrator email and password.");
+        return;
+      }
+
+      setError(null);
+      setLoading(true);
+
+      try {
+        const res = await fetch(`${backendUrl}/api/auth/admin/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          setAuthSession(data.data.token, {
+            ...data.data.user,
+            name: data.data.user.name || "Administrator",
+          }, rememberMe);
+          window.location.href = "/dashboard/admin";
+          return;
+        }
+
+        setError(data.error || "Invalid administrator email or password.");
+      } catch (err) {
+        setError("Unable to connect to authentication server. Is the backend running?");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Admin OTP fallback only requires email, normal signup requires name/email/password
     if (isAdminLogin) {
       if (!email) {
         setError("Please enter your administrator email address.");
@@ -425,6 +463,8 @@ export default function Onboarding() {
               setError(null);
               setOtp("");
               setIsAdminLogin(false);
+              setAdminMode("PASSWORD");
+              setPassword("");
             }}
             className="self-start flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-primary mb-8 transition-colors duration-200 bg-white/30 border border-white/30 backdrop-blur-xl rounded-xl px-4 py-2 hover:bg-white/50 cursor-pointer"
           >
@@ -498,6 +538,8 @@ export default function Onboarding() {
               <button
                 onClick={() => {
                   setIsAdminLogin(true);
+                  setAdminMode("PASSWORD");
+                  setPassword("");
                   setFlow("NEW_USER");
                   setError(null);
                 }}
@@ -517,7 +559,9 @@ export default function Onboarding() {
             </h2>
             <p className="text-muted-foreground text-xs font-sans mb-6">
               {isAdminLogin
-                ? "Enter your administrator email to receive a 6-digit OTP code."
+                ? (adminMode === "PASSWORD"
+                    ? "Enter your administrator email and password to sign in."
+                    : "Enter your administrator email to receive a 6-digit OTP code.")
                 : (isUserLogin ? "Enter your email to receive a 6-digit OTP code." : "Complete details to receive an OTP and register your workspace.")}
             </p>
 
@@ -562,7 +606,7 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              {!isAdminLogin && !isUserLogin && (
+              {((isAdminLogin && adminMode === "PASSWORD") || (!isAdminLogin && !isUserLogin)) && (
                 <div>
                   <label className="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">Password</label>
                   <div className="relative">
@@ -570,7 +614,7 @@ export default function Onboarding() {
                     <input
                       type={showPassword ? "text" : "password"}
                       required
-                      placeholder="Create account password"
+                      placeholder={isAdminLogin ? "Enter your password" : "Create account password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full pl-10 pr-10 py-3 text-sm bg-white/40 border border-white/20 rounded-xl text-foreground placeholder-slate-500 focus:outline-none focus:border-primary focus:bg-white/60 font-sans transition-all"
@@ -583,7 +627,28 @@ export default function Onboarding() {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1.5 font-sans">Must be at least 8 characters with 1 uppercase letter and 1 number.</p>
+                  {!isAdminLogin && (
+                    <p className="text-[10px] text-muted-foreground mt-1.5 font-sans">Must be at least 8 characters with 1 uppercase letter and 1 number.</p>
+                  )}
+                </div>
+              )}
+
+              {/* Admin: switch between password sign-in and email OTP fallback */}
+              {isAdminLogin && (
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminMode(adminMode === "PASSWORD" ? "OTP" : "PASSWORD");
+                      setPassword("");
+                      setError(null);
+                    }}
+                    className="text-[11px] text-primary font-semibold hover:underline cursor-pointer font-sans"
+                  >
+                    {adminMode === "PASSWORD"
+                      ? "Forgot password? Login with email OTP"
+                      : "Back to password sign in"}
+                  </button>
                 </div>
               )}
 
@@ -606,7 +671,9 @@ export default function Onboarding() {
                 disabled={loading}
                 className="w-full mt-4 py-3.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs flex items-center justify-center gap-2 transition duration-200 cursor-pointer disabled:opacity-50"
               >
-                {loading ? "Sending OTP..." : (isAdminLogin || isUserLogin ? "Send OTP Code" : "Verify & Register")}
+                {isAdminLogin && adminMode === "PASSWORD"
+                  ? (loading ? "Signing In..." : "Sign In")
+                  : (loading ? "Sending OTP..." : (isAdminLogin || isUserLogin ? "Send OTP Code" : "Verify & Register"))}
               </button>
             </form>
 
