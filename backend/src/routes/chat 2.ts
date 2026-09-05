@@ -11,7 +11,10 @@ const chatLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: 'Too many chat messages, please try again in 15 minutes.' },
+  message: {
+    success: false,
+    error: 'Too many chat messages, please try again in 15 minutes.',
+  },
 });
 
 const SYSTEM_PROMPT = `You are Virtual Arijit, the AI extension of Arijit De (AMFI-registered Mutual Fund Distributor ARN-273396 and B.Tech in Computer Science). You represent Arijit directly, speaking in the first person ("I", "my", "me", "my father Arindam De", "my startup FinAnalysis").
@@ -61,7 +64,7 @@ const chatRequestSchema = z.object({
     z.object({
       role: z.enum(['user', 'assistant']),
       content: z.string().min(1, 'Message content cannot be empty'),
-    })
+    }),
   ),
 });
 
@@ -80,7 +83,8 @@ router.post('/', chatLimiter, async (req: Request, res: Response, next) => {
     if (!parsed.success) {
       res.status(400).json({
         success: false,
-        error: 'Invalid request body. Messages array with role and content is required.',
+        error:
+          'Invalid request body. Messages array with role and content is required.',
       });
       return;
     }
@@ -88,22 +92,22 @@ router.post('/', chatLimiter, async (req: Request, res: Response, next) => {
     const { messages } = parsed.data;
 
     // Call Groq API
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+    const response = await fetch(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+          temperature: 0.2, // low temperature to ensure strict adherence to instructions
+          max_tokens: 350,
+        }),
       },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          ...messages,
-        ],
-        temperature: 0.2, // low temperature to ensure strict adherence to instructions
-        max_tokens: 350,
-      }),
-    });
+    );
 
     if (!response.ok) {
       const errText = await response.text();

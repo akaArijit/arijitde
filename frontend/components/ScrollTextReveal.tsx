@@ -13,7 +13,8 @@ export default function ScrollTextReveal() {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLHeadingElement>(null);
 
-  const aboutText = "we offer something no app can replicate — 35 years of relationship-driven expertise combined with modern portfolio intelligence, goal-based planning, and technology-backed analysis.";
+  const aboutText =
+    'we offer something no app can replicate — 35 years of relationship-driven expertise combined with modern portfolio intelligence, goal-based planning, and technology-backed analysis.';
 
   useEffect(() => {
     const trigger = triggerRef.current;
@@ -55,16 +56,16 @@ export default function ScrollTextReveal() {
   return (
     <div ref={triggerRef} className="h-[200vh] w-full relative z-10">
       {/* Pinned View Container */}
-      <div 
-        ref={containerRef} 
+      <div
+        ref={containerRef}
         className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center bg-transparent"
       >
         <div className="max-w-5xl w-full px-6 text-left">
-          <h2 
+          <h2
             ref={textRef}
             className="text-3xl md:text-5xl lg:text-[54px] font-normal leading-[1.2] tracking-tight text-[#0B3C5D] font-clash indent-[15%] md:indent-[35%]"
           >
-            {aboutText.split("").map((char, index) => (
+            {aboutText.split('').map((char, index) => (
               <span key={index} className="char transition-colors duration-75">
                 {char}
               </span>

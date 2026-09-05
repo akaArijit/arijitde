@@ -1,7 +1,17 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { X, Mail, User, Phone, Calendar, Clock, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { useState, useEffect } from 'react';
+import {
+  X,
+  Mail,
+  User,
+  Phone,
+  Calendar,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
 
 interface BookCallModalProps {
   isOpen: boolean;
@@ -10,12 +20,12 @@ interface BookCallModalProps {
 
 export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
   // Form fields
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [slot1, setSlot1] = useState("");
-  const [slot2, setSlot2] = useState("");
-  const [slot3, setSlot3] = useState("");
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [slot1, setSlot1] = useState('');
+  const [slot2, setSlot2] = useState('');
+  const [slot3, setSlot3] = useState('');
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -23,7 +33,7 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
   const [error, setError] = useState<string | null>(null);
 
   // Set min datetime dynamically to 1 hour from now
-  const [minDateTime, setMinDateTime] = useState("");
+  const [minDateTime, setMinDateTime] = useState('');
 
   useEffect(() => {
     // Generate ISO string format for datetime-local input: YYYY-MM-DDTHH:MM
@@ -34,7 +44,7 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
     setMinDateTime(localISO);
 
     // Try prefilling form if user is logged in
-    const userStr = localStorage.getItem("user");
+    const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
@@ -42,7 +52,7 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
         if (user.email) setEmail(user.email);
         if (user.phone) setPhone(user.phone);
       } catch (e) {
-        console.error("Failed to parse user details from local storage:", e);
+        console.error('Failed to parse user details from local storage:', e);
       }
     }
   }, [isOpen]);
@@ -51,7 +61,7 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
     e.preventDefault();
 
     if (!name || !email || !phone || !slot1 || !slot2 || !slot3) {
-      setError("Please fill out all required fields.");
+      setError('Please fill out all required fields.');
       return;
     }
 
@@ -62,12 +72,12 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
     const now = Date.now();
 
     if (s1 <= now || s2 <= now || s3 <= now) {
-      setError("Preferred slots must be in the future.");
+      setError('Preferred slots must be in the future.');
       return;
     }
 
     if (s1 === s2 || s1 === s3 || s2 === s3) {
-      setError("Please choose 3 distinct preferred slots.");
+      setError('Please choose 3 distinct preferred slots.');
       return;
     }
 
@@ -75,34 +85,42 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
     setLoading(true);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${backendUrl}/api/leads/book-session-public`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(
+        `${backendUrl}/api/leads/book-session-public`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: name.trim(),
+            phone: phone.trim(),
+            email: email.trim().toLowerCase(),
+            slot1: new Date(slot1).toISOString(),
+            slot2: new Date(slot2).toISOString(),
+            slot3: new Date(slot3).toISOString(),
+          }),
         },
-        body: JSON.stringify({
-          name: name.trim(),
-          phone: phone.trim(),
-          email: email.trim().toLowerCase(),
-          slot1: new Date(slot1).toISOString(),
-          slot2: new Date(slot2).toISOString(),
-          slot3: new Date(slot3).toISOString(),
-        }),
-      });
+      );
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to submit slots. Please try again.");
+        throw new Error(
+          data.error || 'Failed to submit slots. Please try again.',
+        );
       }
 
       setSuccess(true);
       // Reset form slot inputs
-      setSlot1("");
-      setSlot2("");
-      setSlot3("");
+      setSlot1('');
+      setSlot2('');
+      setSlot3('');
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred while booking your call.");
+      setError(
+        err.message || 'An unexpected error occurred while booking your call.',
+      );
     } finally {
       setLoading(false);
     }
@@ -113,14 +131,13 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
+      <div
         onClick={onClose}
         className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300"
       />
 
       {/* Modal Dialog Card */}
       <div className="relative w-full max-w-xl bg-white/45 backdrop-blur-2xl border border-white/25 rounded-[2.5rem] p-6 md:p-10 shadow-[0_20px_50px_rgba(147,197,253,0.18)] overflow-hidden flex flex-col text-left text-foreground animate-in fade-in zoom-in-95 duration-300">
-        
         {/* Glow Effects */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
@@ -140,10 +157,14 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
               <CheckCircle className="w-8 h-8 stroke-[1.5]" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-3xl font-semibold text-neutral-900 tracking-wide font-clash">Booking Submitted!</h2>
+              <h2 className="text-3xl font-semibold text-neutral-900 tracking-wide font-clash">
+                Booking Submitted!
+              </h2>
               <p className="text-neutral-600 text-xs font-sans leading-relaxed max-w-sm">
-                Thank you, <strong>{name}</strong>! Your 3 preferred dates & time slots have been registered. 
-                Arijit will confirm the final slot shortly. You will receive an email confirmation with the Google Meet link at <strong>{email}</strong> once confirmed.
+                Thank you, <strong>{name}</strong>! Your 3 preferred dates &
+                time slots have been registered. Arijit will confirm the final
+                slot shortly. You will receive an email confirmation with the
+                Google Meet link at <strong>{email}</strong> once confirmed.
               </p>
             </div>
             <button
@@ -165,7 +186,9 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
                 Book a consultation
               </h2>
               <p className="text-neutral-600 text-xs font-sans leading-relaxed">
-                Provide your details and select 3 distinct preferred date & time slots. Once Arijit confirms one of them, the meeting link will be sent to your email.
+                Provide your details and select 3 distinct preferred date & time
+                slots. Once Arijit confirms one of them, the meeting link will
+                be sent to your email.
               </p>
             </div>
 
@@ -181,7 +204,9 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Full Name */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">Full Name *</label>
+                  <label className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">
+                    Full Name *
+                  </label>
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <input
@@ -197,7 +222,9 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
 
                 {/* Email Address */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">Email Address *</label>
+                  <label className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">
+                    Email Address *
+                  </label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <input
@@ -213,7 +240,9 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
 
                 {/* Phone Number */}
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">Phone Number *</label>
+                  <label className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">
+                    Phone Number *
+                  </label>
                   <div className="relative">
                     <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <input
@@ -230,12 +259,16 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
 
               {/* Time Slots Selection */}
               <div className="space-y-4">
-                <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider block font-mono border-b border-neutral-200/50 pb-1">Preferred Time Options (IST)</span>
-                
+                <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider block font-mono border-b border-neutral-200/50 pb-1">
+                  Preferred Time Options (IST)
+                </span>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Slot 1 */}
                   <div className="space-y-1.5">
-                    <label className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">Option 1 *</label>
+                    <label className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">
+                      Option 1 *
+                    </label>
                     <input
                       type="datetime-local"
                       required
@@ -248,7 +281,9 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
 
                   {/* Slot 2 */}
                   <div className="space-y-1.5">
-                    <label className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">Option 2 *</label>
+                    <label className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">
+                      Option 2 *
+                    </label>
                     <input
                       type="datetime-local"
                       required
@@ -261,7 +296,9 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
 
                   {/* Slot 3 */}
                   <div className="space-y-1.5">
-                    <label className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">Option 3 *</label>
+                    <label className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider block font-mono">
+                      Option 3 *
+                    </label>
                     <input
                       type="datetime-local"
                       required
@@ -277,7 +314,15 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading || !name || !email || !phone || !slot1 || !slot2 || !slot3}
+                disabled={
+                  loading ||
+                  !name ||
+                  !email ||
+                  !phone ||
+                  !slot1 ||
+                  !slot2 ||
+                  !slot3
+                }
                 className="w-full py-4 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-lg disabled:opacity-40"
               >
                 {loading ? (

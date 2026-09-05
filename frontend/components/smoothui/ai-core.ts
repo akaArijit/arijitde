@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
 import {
   type MotionValue,
   useAnimationFrame,
   useMotionValue,
-} from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+} from 'motion/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * The single state contract shared by every SmoothUI AI component.
@@ -14,12 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * whole surface move as one organism instead of a set of independent widgets.
  */
 export type AIState =
-  | "idle"
-  | "listening"
-  | "thinking"
-  | "streaming"
-  | "done"
-  | "error";
+  'idle' | 'listening' | 'thinking' | 'streaming' | 'done' | 'error';
 
 /**
  * A behavioural hint each component expresses **in its own material**.
@@ -31,15 +26,10 @@ export type AIState =
  * a character changes expression. Same vocabulary, different flesh.
  */
 export type AIStateMotif =
-  | "breathe"
-  | "receive"
-  | "scan"
-  | "pulse"
-  | "ping"
-  | "fault";
+  'breathe' | 'receive' | 'scan' | 'pulse' | 'ping' | 'fault';
 
 /** Semantic accent applied on top of the component's own palette. */
-export type AIStateAccent = "success" | "danger" | null;
+export type AIStateAccent = 'success' | 'danger' | null;
 
 /** Motion parameters a component reads to render a given {@link AIState}. */
 export type AIStateMotion = {
@@ -86,11 +76,11 @@ export type AIStateMotion = {
  */
 export const AI_STATE_MOTION: Record<AIState, AIStateMotion> = {
   done: {
-    accent: "success",
+    accent: 'success',
     glow: 0.7,
     hueRotate: 0,
     intensity: 0.4,
-    motif: "ping",
+    motif: 'ping',
     pulseSeconds: 0.65,
     reactivity: 0,
     saturation: 1,
@@ -101,11 +91,11 @@ export const AI_STATE_MOTION: Record<AIState, AIStateMotion> = {
     turbulence: 0.08,
   },
   error: {
-    accent: "danger",
+    accent: 'danger',
     glow: 0.25,
     hueRotate: 0,
     intensity: 0.5,
-    motif: "fault",
+    motif: 'fault',
     pulseSeconds: 0.9,
     reactivity: 0,
     saturation: 0.3,
@@ -121,7 +111,7 @@ export const AI_STATE_MOTION: Record<AIState, AIStateMotion> = {
     glow: 0.15,
     hueRotate: 0,
     intensity: 0.3,
-    motif: "breathe",
+    motif: 'breathe',
     pulseSeconds: 4.5,
     reactivity: 0,
     saturation: 0.75,
@@ -135,7 +125,7 @@ export const AI_STATE_MOTION: Record<AIState, AIStateMotion> = {
     glow: 0.6,
     hueRotate: 0,
     intensity: 0.75,
-    motif: "receive",
+    motif: 'receive',
     pulseSeconds: 1.6,
     reactivity: 1,
     saturation: 1.05,
@@ -149,7 +139,7 @@ export const AI_STATE_MOTION: Record<AIState, AIStateMotion> = {
     glow: 0.45,
     hueRotate: -10,
     intensity: 0.6,
-    motif: "pulse",
+    motif: 'pulse',
     pulseSeconds: 1.25,
     reactivity: 0.6,
     saturation: 1,
@@ -163,7 +153,7 @@ export const AI_STATE_MOTION: Record<AIState, AIStateMotion> = {
     glow: 0.35,
     hueRotate: 18,
     intensity: 1,
-    motif: "scan",
+    motif: 'scan',
     pulseSeconds: 1.1,
     reactivity: 0.15,
     saturation: 1,
@@ -177,9 +167,9 @@ export const AI_STATE_MOTION: Record<AIState, AIStateMotion> = {
 };
 
 /** Semantic accents. Deliberately not tokens — orbs render outside a theme. */
-export const AI_ACCENT_COLORS: Record<"success" | "danger", string> = {
-  danger: "oklch(63% 0.21 25)",
-  success: "oklch(72% 0.17 150)",
+export const AI_ACCENT_COLORS: Record<'success' | 'danger', string> = {
+  danger: 'oklch(63% 0.21 25)',
+  success: 'oklch(72% 0.17 150)',
 };
 
 /**
@@ -188,15 +178,15 @@ export const AI_ACCENT_COLORS: Record<"success" | "danger", string> = {
  */
 export const getAIStateAccentColor = (
   state: AIState | undefined,
-  fallback: string
+  fallback: string,
 ): string => {
-  const accent = AI_STATE_MOTION[state ?? "idle"]?.accent;
+  const accent = AI_STATE_MOTION[state ?? 'idle']?.accent;
   return accent ? AI_ACCENT_COLORS[accent] : fallback;
 };
 
 /** Motion preset for a state, falling back to `idle` for unknown values. */
 export const getAIStateMotion = (state: AIState | undefined): AIStateMotion =>
-  AI_STATE_MOTION[state ?? "idle"] ?? AI_STATE_MOTION.idle;
+  AI_STATE_MOTION[state ?? 'idle'] ?? AI_STATE_MOTION.idle;
 
 /**
  * Amplitude accepted by every reactive AI component.
@@ -207,17 +197,17 @@ export const getAIStateMotion = (state: AIState | undefined): AIStateMotion =>
 export type AIAmplitude = number | MotionValue<number> | undefined;
 
 const isMotionValue = (value: AIAmplitude): value is MotionValue<number> =>
-  typeof value === "object" && value !== null && "get" in value;
+  typeof value === 'object' && value !== null && 'get' in value;
 
 /**
  * Normalises the `amplitude` prop into a stable `MotionValue<number>` so
  * component internals only deal with one shape.
  */
 export const useAmplitudeValue = (
-  amplitude: AIAmplitude
+  amplitude: AIAmplitude,
 ): MotionValue<number> => {
   const fallback = useMotionValue(0);
-  const numeric = typeof amplitude === "number" ? amplitude : null;
+  const numeric = typeof amplitude === 'number' ? amplitude : null;
 
   useEffect(() => {
     if (numeric !== null) {
@@ -229,11 +219,7 @@ export const useAmplitudeValue = (
 };
 
 export type AudioAmplitudeStatus =
-  | "idle"
-  | "requesting"
-  | "active"
-  | "denied"
-  | "unsupported";
+  'idle' | 'requesting' | 'active' | 'denied' | 'unsupported';
 
 export type UseAudioAmplitudeOptions = {
   /** Request microphone access as soon as the hook mounts. */
@@ -270,7 +256,7 @@ const ATTACK_FACTOR = 0.35;
  * ambient animation.
  */
 export const useAudioAmplitude = (
-  options: UseAudioAmplitudeOptions = {}
+  options: UseAudioAmplitudeOptions = {},
 ): UseAudioAmplitudeResult => {
   const {
     autoStart = false,
@@ -279,7 +265,7 @@ export const useAudioAmplitude = (
   } = options;
 
   const amplitude = useMotionValue(0);
-  const [status, setStatus] = useState<AudioAmplitudeStatus>("idle");
+  const [status, setStatus] = useState<AudioAmplitudeStatus>('idle');
 
   const contextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -296,7 +282,7 @@ export const useAudioAmplitude = (
     contextRef.current?.close();
     contextRef.current = null;
     amplitude.set(0);
-    setStatus("idle");
+    setStatus('idle');
   }, [amplitude]);
 
   const start = useCallback(async () => {
@@ -305,18 +291,18 @@ export const useAudioAmplitude = (
     }
 
     const AudioContextCtor =
-      typeof window === "undefined"
+      typeof window === 'undefined'
         ? undefined
         : (window.AudioContext ??
           (window as unknown as { webkitAudioContext?: typeof AudioContext })
             .webkitAudioContext);
 
     if (!(AudioContextCtor && navigator.mediaDevices?.getUserMedia)) {
-      setStatus("unsupported");
+      setStatus('unsupported');
       return;
     }
 
-    setStatus("requesting");
+    setStatus('requesting');
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -329,9 +315,9 @@ export const useAudioAmplitude = (
       contextRef.current = context;
       analyserRef.current = analyser;
       bufferRef.current = new Float32Array(analyser.fftSize);
-      setStatus("active");
+      setStatus('active');
     } catch {
-      setStatus("denied");
+      setStatus('denied');
     }
   }, [fftSize]);
 
@@ -374,7 +360,7 @@ export const useAudioAmplitude = (
  * asking the visitor for permissions.
  */
 export const useSimulatedAmplitude = (
-  state: AIState = "idle"
+  state: AIState = 'idle',
 ): MotionValue<number> => {
   const amplitude = useMotionValue(0);
   const motion = getAIStateMotion(state);

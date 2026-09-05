@@ -27,7 +27,7 @@ export interface AuthenticatedRequest extends Request {
 export async function authMiddleware(
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -49,7 +49,7 @@ export async function authMiddleware(
 
   try {
     const decoded = verifyToken(token);
-    
+
     // Fetch the user from the database to check if they still exist
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -70,8 +70,8 @@ export async function authMiddleware(
             activePlan: true,
             advisorNotes: true,
             activatedAt: true,
-          }
-        }
+          },
+        },
       },
     });
 
@@ -97,7 +97,7 @@ export async function authMiddleware(
 export async function optionalAuthMiddleware(
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -130,8 +130,8 @@ export async function optionalAuthMiddleware(
             activePlan: true,
             advisorNotes: true,
             activatedAt: true,
-          }
-        }
+          },
+        },
       },
     });
 

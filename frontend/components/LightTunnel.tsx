@@ -312,7 +312,10 @@ const LightTunnel: React.FC<LightTunnelProps> = ({
         return;
       }
       const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const ny = Math.max(0, Math.min(1, 1.0 - (e.clientY - rect.top) / rect.height));
+      const ny = Math.max(
+        0,
+        Math.min(1, 1.0 - (e.clientY - rect.top) / rect.height),
+      );
       targetMouse = [nx, ny];
     };
 

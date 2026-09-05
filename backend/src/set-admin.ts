@@ -18,7 +18,7 @@ async function main() {
     console.error('Error: Invalid email format');
     process.exit(1);
   }
-  
+
   let user = await prisma.user.findFirst({
     where: { email },
   });

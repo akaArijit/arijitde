@@ -12,16 +12,26 @@ const contactLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { 
-    success: false, 
-    error: 'Too many contact form submissions from this IP, please try again later.' 
+  message: {
+    success: false,
+    error:
+      'Too many contact form submissions from this IP, please try again later.',
   },
 });
 
 const contactSubmitSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
-  email: z.string().email('Invalid email address').max(255, 'Email is too long'),
-  message: z.string().min(1, 'Message is required').max(2000, 'Message must be 2000 characters or less'),
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
+  email: z
+    .string()
+    .email('Invalid email address')
+    .max(255, 'Email is too long'),
+  message: z
+    .string()
+    .min(1, 'Message is required')
+    .max(2000, 'Message must be 2000 characters or less'),
 });
 
 // POST /api/contact

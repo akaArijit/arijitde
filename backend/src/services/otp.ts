@@ -2,7 +2,10 @@ import { randomInt } from 'crypto';
 import { transporter } from './email';
 
 // Memory store for OTPs: email (lowercase) -> { otp: string, expiresAt: Date, attempts: number }
-const otpStore = new Map<string, { otp: string; expiresAt: Date; attempts: number }>();
+const otpStore = new Map<
+  string,
+  { otp: string; expiresAt: Date; attempts: number }
+>();
 
 /**
  * Generates a cryptographically secure random 6-digit OTP string.
@@ -41,7 +44,9 @@ export async function sendOTP(email: string, otp: string): Promise<void> {
     if (process.env.NODE_ENV !== 'production') {
       console.warn(`[OTP] DEV FALLBACK. Code for ${email}: ${otp}`);
     } else {
-      console.error(`[OTP] SMTP delivery failed for ${email}. User will need to retry.`);
+      console.error(
+        `[OTP] SMTP delivery failed for ${email}. User will need to retry.`,
+      );
     }
   }
 }
@@ -62,7 +67,10 @@ const MAX_OTP_ATTEMPTS = 5;
 
 export function verifyOTP(email: string, otp: string): boolean {
   // Development/Testing bypass — NEVER allow in production
-  if (process.env.NODE_ENV !== 'production' && (otp === '123456' || otp === '999999')) {
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    (otp === '123456' || otp === '999999')
+  ) {
     return true;
   }
 

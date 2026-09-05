@@ -1,4 +1,5 @@
-export type ScoreTag = 'ALIGNED' | 'MODERATE' | 'NEEDS_REVIEW' | 'NEEDS_STRUCTURING';
+export type ScoreTag =
+  'ALIGNED' | 'MODERATE' | 'NEEDS_REVIEW' | 'NEEDS_STRUCTURING';
 
 export interface ScoreInsight {
   dimension: string;

@@ -14,7 +14,10 @@ interface SvgScrollWipeProps {
   screen2: React.ReactNode;
 }
 
-export default function SvgScrollWipe({ screen1, screen2 }: SvgScrollWipeProps) {
+export default function SvgScrollWipe({
+  screen1,
+  screen2,
+}: SvgScrollWipeProps) {
   const triggerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -165,15 +168,15 @@ export default function SvgScrollWipe({ screen1, screen2 }: SvgScrollWipeProps) 
   return (
     <div className="w-full relative z-20 flex flex-col gap-40 md:gap-52 py-16 md:py-24">
       {/* Screen 1 wrapper */}
-      <div className="w-full flex items-center justify-center">
-        {screen1}
-      </div>
+      <div className="w-full flex items-center justify-center">{screen1}</div>
 
       {/* Screen 2 wrapper */}
-      <div id="about" className="w-full flex items-center justify-center mt-20 sm:mt-28 md:mt-36 lg:mt-48">
+      <div
+        id="about"
+        className="w-full flex items-center justify-center mt-20 sm:mt-28 md:mt-36 lg:mt-48"
+      >
         {screen2}
       </div>
     </div>
   );
-
 }

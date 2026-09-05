@@ -1,17 +1,26 @@
 'use client';
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import SoftBoxBlurBg from "@/components/SoftBoxBlurBg";
-import { Coins, Calendar, TrendingUp, ArrowLeft, Download, ShieldCheck } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import GradualBlur from "@/components/GradualBlur";
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
+import {
+  Coins,
+  Calendar,
+  TrendingUp,
+  ArrowLeft,
+  Download,
+  ShieldCheck,
+} from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import GradualBlur from '@/components/GradualBlur';
 
 export default function SWPCalculator() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [calculationMode, setCalculationMode] = useState<"tenure" | "corpus">("tenure");
+  const [calculationMode, setCalculationMode] = useState<'tenure' | 'corpus'>(
+    'tenure',
+  );
 
   // State for Tenure Mode (How long corpus lasts)
   const [corpusAmount, setCorpusAmount] = useState(5000000); // 50 Lakhs
@@ -38,7 +47,7 @@ export default function SWPCalculator() {
   useEffect(() => {
     window.scrollTo(0, 0);
     setMounted(true);
-    document.title = "SWP Calculator | FinAnalysis";
+    document.title = 'SWP Calculator | FinAnalysis';
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 100);
@@ -47,7 +56,7 @@ export default function SWPCalculator() {
 
   // Run calculation for "Tenure Mode"
   useEffect(() => {
-    if (calculationMode !== "tenure") return;
+    if (calculationMode !== 'tenure') return;
 
     const C = corpusAmount;
     const W = monthlyWithdrawal;
@@ -67,7 +76,7 @@ export default function SWPCalculator() {
       totalWithdrawn = W * totalMonths;
       // In this case, the balance actually grows. Let's run a projection:
       for (let m = 0; m < totalMonths; m++) {
-        balance = balance + (balance * r) - W;
+        balance = balance + balance * r - W;
       }
       const interest = balance + totalWithdrawn - C;
       setTenureLastsForever(true);
@@ -85,7 +94,7 @@ export default function SWPCalculator() {
       const interestEarned = balance * r;
       if (balance + interestEarned < W) {
         // Last month: withdraw whatever is left
-        totalWithdrawn += (balance + interestEarned);
+        totalWithdrawn += balance + interestEarned;
         finalInterest += interestEarned;
         balance = 0;
         break;
@@ -100,11 +109,17 @@ export default function SWPCalculator() {
     setTenureTotalWithdrawn(Math.round(totalWithdrawn));
     setTenureInterestEarned(Math.round(finalInterest));
     setTenureRemainingBalance(Math.round(balance));
-  }, [corpusAmount, monthlyWithdrawal, expectedReturn, tenureYears, calculationMode]);
+  }, [
+    corpusAmount,
+    monthlyWithdrawal,
+    expectedReturn,
+    tenureYears,
+    calculationMode,
+  ]);
 
   // Run calculation for "Corpus Mode"
   useEffect(() => {
-    if (calculationMode !== "corpus") return;
+    if (calculationMode !== 'corpus') return;
 
     const W = desiredMonthlyIncome;
     const R = corpusExpectedReturn;
@@ -126,14 +141,19 @@ export default function SWPCalculator() {
     setCalculatedRequiredCorpus(Math.round(required));
     setCorpusTotalWithdrawn(Math.round(totalWithdrawn));
     setCorpusInterestComponent(Math.round(interestComponent));
-  }, [desiredMonthlyIncome, corpusExpectedReturn, desiredTenureYears, calculationMode]);
+  }, [
+    desiredMonthlyIncome,
+    corpusExpectedReturn,
+    desiredTenureYears,
+    calculationMode,
+  ]);
 
   // Currency Formatter
   const formatCurrency = (val: number) => {
-    if (!mounted) return "₹0";
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
+    if (!mounted) return '₹0';
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
       maximumFractionDigits: 0,
     }).format(val);
   };
@@ -144,18 +164,32 @@ export default function SWPCalculator() {
 
   // Donut values (Tenure Mode)
   const tenureTotalPotential = tenureTotalWithdrawn + tenureRemainingBalance;
-  const tenureWithdrawnPercent = tenureTotalPotential > 0 ? (tenureTotalWithdrawn / tenureTotalPotential) * 100 : 0;
-  const tenureBalancePercent = tenureTotalPotential > 0 ? (tenureRemainingBalance / tenureTotalPotential) * 100 : 100;
+  const tenureWithdrawnPercent =
+    tenureTotalPotential > 0
+      ? (tenureTotalWithdrawn / tenureTotalPotential) * 100
+      : 0;
+  const tenureBalancePercent =
+    tenureTotalPotential > 0
+      ? (tenureRemainingBalance / tenureTotalPotential) * 100
+      : 100;
 
   // Donut values (Corpus Mode)
-  const corpusInterestPercent = corpusTotalWithdrawn > 0 ? (corpusInterestComponent / corpusTotalWithdrawn) * 100 : 0;
-  const corpusPrincipalPercent = corpusTotalWithdrawn > 0 ? (calculatedRequiredCorpus / corpusTotalWithdrawn) * 100 : 100;
+  const corpusInterestPercent =
+    corpusTotalWithdrawn > 0
+      ? (corpusInterestComponent / corpusTotalWithdrawn) * 100
+      : 0;
+  const corpusPrincipalPercent =
+    corpusTotalWithdrawn > 0
+      ? (calculatedRequiredCorpus / corpusTotalWithdrawn) * 100
+      : 100;
 
   // Donut SVG parameters
   const radius = 50;
   const circumference = 2 * Math.PI * radius; // ~314.16
-  const strokeDashoffsetTenure = circumference - (circumference * tenureWithdrawnPercent) / 100;
-  const strokeDashoffsetCorpus = circumference - (circumference * corpusInterestPercent) / 100;
+  const strokeDashoffsetTenure =
+    circumference - (circumference * tenureWithdrawnPercent) / 100;
+  const strokeDashoffsetCorpus =
+    circumference - (circumference * corpusInterestPercent) / 100;
 
   return (
     <main className="relative min-h-screen w-full bg-transparent text-foreground flex flex-col font-clash">
@@ -171,14 +205,14 @@ export default function SWPCalculator() {
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== "undefined") {
-              if (!sessionStorage.getItem("savedHomeScrollY")) {
-                sessionStorage.setItem("savedHomeScrollY", "6299");
+            if (typeof window !== 'undefined') {
+              if (!sessionStorage.getItem('savedHomeScrollY')) {
+                sessionStorage.setItem('savedHomeScrollY', '6299');
               }
               if (window.history.length > 1) {
                 window.history.back();
               } else {
-                window.location.href = "/";
+                window.location.href = '/';
               }
             }
           }}
@@ -189,37 +223,43 @@ export default function SWPCalculator() {
         </button>
         <h1
           className={`text-4xl md:text-7xl font-normal tracking-tight mt-12 mb-4 leading-none text-primary font-clash transition-all duration-[1200ms] ease-out ${
-            isLoaded ? "opacity-100 blur-none scale-100" : "opacity-0 blur-lg scale-95"
+            isLoaded
+              ? 'opacity-100 blur-none scale-100'
+              : 'opacity-0 blur-lg scale-95'
           } delay-[200ms]`}
         >
           SWP Calculator
         </h1>
         <p
           className={`text-sm md:text-base text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed font-sans transition-all duration-[1200ms] ease-out ${
-            isLoaded ? "opacity-100 blur-none scale-100" : "opacity-0 blur-md scale-95"
+            isLoaded
+              ? 'opacity-100 blur-none scale-100'
+              : 'opacity-0 blur-md scale-95'
           } delay-[400ms]`}
         >
-          A Systematic Withdrawal Plan (SWP) lets you withdraw a fixed amount monthly from your mutual funds or investments. Project how long your retirement corpus will last or find out how much you need.
+          A Systematic Withdrawal Plan (SWP) lets you withdraw a fixed amount
+          monthly from your mutual funds or investments. Project how long your
+          retirement corpus will last or find out how much you need.
         </p>
 
         {/* Calculation Mode Toggle Tabs */}
         <div className="flex bg-white/30 border border-border/80 p-1.5 rounded-2xl w-full max-w-md mx-auto shadow-sm select-none">
           <button
-            onClick={() => setCalculationMode("tenure")}
+            onClick={() => setCalculationMode('tenure')}
             className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all duration-350 ${
-              calculationMode === "tenure"
-                ? "bg-primary text-primary-foreground shadow-sm font-bold"
-                : "text-muted-foreground hover:text-primary"
+              calculationMode === 'tenure'
+                ? 'bg-primary text-primary-foreground shadow-sm font-bold'
+                : 'text-muted-foreground hover:text-primary'
             }`}
           >
             How long will corpus last
           </button>
           <button
-            onClick={() => setCalculationMode("corpus")}
+            onClick={() => setCalculationMode('corpus')}
             className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all duration-350 ${
-              calculationMode === "corpus"
-                ? "bg-primary text-primary-foreground shadow-sm font-bold"
-                : "text-muted-foreground hover:text-primary"
+              calculationMode === 'corpus'
+                ? 'bg-primary text-primary-foreground shadow-sm font-bold'
+                : 'text-muted-foreground hover:text-primary'
             }`}
           >
             What corpus is needed
@@ -230,13 +270,12 @@ export default function SWPCalculator() {
       {/* Main content grid */}
       <div
         className={`relative z-10 w-full max-w-5xl mx-auto px-6 pb-36 grid grid-cols-1 lg:grid-cols-12 gap-10 transition-all duration-[1200ms] ease-out ${
-          isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+          isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
         } delay-[500ms]`}
       >
         {/* Left Column: Sliders and Inputs */}
         <div className="lg:col-span-7 bg-white/35 border border-border rounded-3xl p-8 shadow-md backdrop-blur-2xl space-y-8 flex flex-col justify-center text-left">
-          
-          {calculationMode === "tenure" ? (
+          {calculationMode === 'tenure' ? (
             <>
               {/* Total Corpus Amount */}
               <div className="space-y-3">
@@ -250,9 +289,13 @@ export default function SWPCalculator() {
                     <input
                       type="number"
                       value={corpusAmount}
-                      onChange={(e) => setCorpusAmount(Math.max(0, Number(e.target.value)))}
+                      onChange={(e) =>
+                        setCorpusAmount(Math.max(0, Number(e.target.value)))
+                      }
                       className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{ width: `${Math.max(3, String(corpusAmount).length) * 9 + 5}px` }}
+                      style={{
+                        width: `${Math.max(3, String(corpusAmount).length) * 9 + 5}px`,
+                      }}
                     />
                   </div>
                 </div>
@@ -284,9 +327,15 @@ export default function SWPCalculator() {
                     <input
                       type="number"
                       value={monthlyWithdrawal}
-                      onChange={(e) => setMonthlyWithdrawal(Math.max(0, Number(e.target.value)))}
+                      onChange={(e) =>
+                        setMonthlyWithdrawal(
+                          Math.max(0, Number(e.target.value)),
+                        )
+                      }
                       className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{ width: `${Math.max(3, String(monthlyWithdrawal).length) * 9 + 5}px` }}
+                      style={{
+                        width: `${Math.max(3, String(monthlyWithdrawal).length) * 9 + 5}px`,
+                      }}
                     />
                   </div>
                 </div>
@@ -318,9 +367,13 @@ export default function SWPCalculator() {
                       type="number"
                       step="0.1"
                       value={expectedReturn}
-                      onChange={(e) => setExpectedReturn(Math.max(0, Number(e.target.value)))}
+                      onChange={(e) =>
+                        setExpectedReturn(Math.max(0, Number(e.target.value)))
+                      }
                       className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{ width: `${Math.max(3, String(expectedReturn).length) * 9 + 5}px` }}
+                      style={{
+                        width: `${Math.max(3, String(expectedReturn).length) * 9 + 5}px`,
+                      }}
                     />
                     <span>%</span>
                   </div>
@@ -352,9 +405,13 @@ export default function SWPCalculator() {
                     <input
                       type="number"
                       value={tenureYears}
-                      onChange={(e) => setTenureYears(Math.max(0, Number(e.target.value)))}
+                      onChange={(e) =>
+                        setTenureYears(Math.max(0, Number(e.target.value)))
+                      }
                       className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{ width: `${Math.max(2, String(tenureYears).length) * 9 + 5}px` }}
+                      style={{
+                        width: `${Math.max(2, String(tenureYears).length) * 9 + 5}px`,
+                      }}
                     />
                     <span>{tenureYears === 1 ? 'Year' : 'Years'}</span>
                   </div>
@@ -389,9 +446,15 @@ export default function SWPCalculator() {
                     <input
                       type="number"
                       value={desiredMonthlyIncome}
-                      onChange={(e) => setDesiredMonthlyIncome(Math.max(0, Number(e.target.value)))}
+                      onChange={(e) =>
+                        setDesiredMonthlyIncome(
+                          Math.max(0, Number(e.target.value)),
+                        )
+                      }
                       className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{ width: `${Math.max(3, String(desiredMonthlyIncome).length) * 9 + 5}px` }}
+                      style={{
+                        width: `${Math.max(3, String(desiredMonthlyIncome).length) * 9 + 5}px`,
+                      }}
                     />
                   </div>
                 </div>
@@ -401,7 +464,9 @@ export default function SWPCalculator() {
                   max={500000}
                   step={5000}
                   value={Math.min(500000, Math.max(5000, desiredMonthlyIncome))}
-                  onChange={(e) => setDesiredMonthlyIncome(Number(e.target.value))}
+                  onChange={(e) =>
+                    setDesiredMonthlyIncome(Number(e.target.value))
+                  }
                   className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
@@ -423,9 +488,15 @@ export default function SWPCalculator() {
                       type="number"
                       step="0.1"
                       value={corpusExpectedReturn}
-                      onChange={(e) => setCorpusExpectedReturn(Math.max(0, Number(e.target.value)))}
+                      onChange={(e) =>
+                        setCorpusExpectedReturn(
+                          Math.max(0, Number(e.target.value)),
+                        )
+                      }
                       className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{ width: `${Math.max(3, String(corpusExpectedReturn).length) * 9 + 5}px` }}
+                      style={{
+                        width: `${Math.max(3, String(corpusExpectedReturn).length) * 9 + 5}px`,
+                      }}
                     />
                     <span>%</span>
                   </div>
@@ -436,7 +507,9 @@ export default function SWPCalculator() {
                   max={25}
                   step={0.5}
                   value={Math.min(25, Math.max(1, corpusExpectedReturn))}
-                  onChange={(e) => setCorpusExpectedReturn(Number(e.target.value))}
+                  onChange={(e) =>
+                    setCorpusExpectedReturn(Number(e.target.value))
+                  }
                   className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
@@ -457,9 +530,15 @@ export default function SWPCalculator() {
                     <input
                       type="number"
                       value={desiredTenureYears}
-                      onChange={(e) => setDesiredTenureYears(Math.max(0, Number(e.target.value)))}
+                      onChange={(e) =>
+                        setDesiredTenureYears(
+                          Math.max(0, Number(e.target.value)),
+                        )
+                      }
                       className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{ width: `${Math.max(2, String(desiredTenureYears).length) * 9 + 5}px` }}
+                      style={{
+                        width: `${Math.max(2, String(desiredTenureYears).length) * 9 + 5}px`,
+                      }}
                     />
                     <span>{desiredTenureYears === 1 ? 'Year' : 'Years'}</span>
                   </div>
@@ -470,7 +549,9 @@ export default function SWPCalculator() {
                   max={45}
                   step={1}
                   value={Math.min(45, Math.max(1, desiredTenureYears))}
-                  onChange={(e) => setDesiredTenureYears(Number(e.target.value))}
+                  onChange={(e) =>
+                    setDesiredTenureYears(Number(e.target.value))
+                  }
                   className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
@@ -486,40 +567,59 @@ export default function SWPCalculator() {
           <div className="border-t border-dashed border-border w-full" />
 
           {/* Split output info cards */}
-          {calculationMode === "tenure" ? (
+          {calculationMode === 'tenure' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
               <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Total Payouts</span>
-                <span className="text-xl font-bold text-foreground mt-1">{formatCurrency(tenureTotalWithdrawn)}</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                  Total Payouts
+                </span>
+                <span className="text-xl font-bold text-foreground mt-1">
+                  {formatCurrency(tenureTotalWithdrawn)}
+                </span>
               </div>
               <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-primary/75">Est. Interest Earned</span>
-                <span className="text-xl font-bold text-primary mt-1">{formatCurrency(tenureInterestEarned)}</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-primary/75">
+                  Est. Interest Earned
+                </span>
+                <span className="text-xl font-bold text-primary mt-1">
+                  {formatCurrency(tenureInterestEarned)}
+                </span>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
               <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Total Payout Received</span>
-                <span className="text-xl font-bold text-foreground mt-1">{formatCurrency(corpusTotalWithdrawn)}</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                  Total Payout Received
+                </span>
+                <span className="text-xl font-bold text-foreground mt-1">
+                  {formatCurrency(corpusTotalWithdrawn)}
+                </span>
               </div>
               <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-primary/75">Growth Interest Component</span>
-                <span className="text-xl font-bold text-primary mt-1">{formatCurrency(corpusInterestComponent)}</span>
+                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-primary/75">
+                  Growth Interest Component
+                </span>
+                <span className="text-xl font-bold text-primary mt-1">
+                  {formatCurrency(corpusInterestComponent)}
+                </span>
               </div>
             </div>
           )}
-
         </div>
 
         {/* Right Column: Dynamic circular SVG indicator and Results */}
         <div className="lg:col-span-5 bg-white/35 border border-border rounded-3xl p-8 shadow-md backdrop-blur-2xl flex flex-col justify-center items-center">
-          
-          {calculationMode === "tenure" ? (
+          {calculationMode === 'tenure' ? (
             <>
               {/* Dynamic Center Panel */}
               <div className="relative w-64 h-64 flex justify-center items-center">
-                <svg width="100%" height="100%" viewBox="0 0 120 120" className="transform -rotate-90">
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 120 120"
+                  className="transform -rotate-90"
+                >
                   <circle
                     cx="60"
                     cy="60"
@@ -534,7 +634,7 @@ export default function SWPCalculator() {
                     cy="60"
                     r={radius}
                     fill="transparent"
-                    stroke={tenureLastsForever ? "#10B981" : "#d4d4d8"}
+                    stroke={tenureLastsForever ? '#10B981' : '#d4d4d8'}
                     strokeWidth="10"
                     strokeDasharray={circumference}
                     strokeDashoffset="0"
@@ -558,17 +658,27 @@ export default function SWPCalculator() {
                 </svg>
 
                 <div className="absolute flex flex-col items-center justify-center text-center px-4">
-                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Corpus Lifespan</span>
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                    Corpus Lifespan
+                  </span>
                   {tenureLastsForever ? (
                     <div className="flex flex-col items-center gap-1 mt-1">
-                      <span className="text-xl md:text-2xl font-bold text-emerald-600 select-text">Infinite</span>
-                      <span className="text-[9px] font-mono bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 px-2.5 py-0.5 rounded-full uppercase tracking-wider font-bold">Forever lasts</span>
+                      <span className="text-xl md:text-2xl font-bold text-emerald-600 select-text">
+                        Infinite
+                      </span>
+                      <span className="text-[9px] font-mono bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 px-2.5 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                        Forever lasts
+                      </span>
                     </div>
                   ) : (
                     <span className="text-xl md:text-2xl font-bold text-foreground mt-1 select-text">
-                      {tenureYearsFraction > 0 && `${tenureYearsFraction} Yr${tenureYearsFraction > 1 ? 's' : ''}`}
-                      {tenureMonthsFraction > 0 && ` ${tenureMonthsFraction} Mo${tenureMonthsFraction > 1 ? 's' : ''}`}
-                      {tenureYearsFraction === 0 && tenureMonthsFraction === 0 && "Runs Out Immediately"}
+                      {tenureYearsFraction > 0 &&
+                        `${tenureYearsFraction} Yr${tenureYearsFraction > 1 ? 's' : ''}`}
+                      {tenureMonthsFraction > 0 &&
+                        ` ${tenureMonthsFraction} Mo${tenureMonthsFraction > 1 ? 's' : ''}`}
+                      {tenureYearsFraction === 0 &&
+                        tenureMonthsFraction === 0 &&
+                        'Runs Out Immediately'}
                     </span>
                   )}
                 </div>
@@ -577,24 +687,32 @@ export default function SWPCalculator() {
               {/* Detailed metrics output */}
               <div className="w-full mt-6 space-y-3 font-sans text-left">
                 <div className="flex justify-between items-center text-xs border-b border-border/40 pb-2">
-                  <span className="text-muted-foreground font-clash font-medium">Final Remaining Balance</span>
-                  <span className="text-foreground font-mono font-bold">{formatCurrency(tenureRemainingBalance)}</span>
+                  <span className="text-muted-foreground font-clash font-medium">
+                    Final Remaining Balance
+                  </span>
+                  <span className="text-foreground font-mono font-bold">
+                    {formatCurrency(tenureRemainingBalance)}
+                  </span>
                 </div>
-                
+
                 <div className="flex justify-between items-center text-xs">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-[#3A8293] shrink-0" />
-                    <span className="text-muted-foreground">Total Withdrawn Payouts</span>
+                    <span className="text-muted-foreground">
+                      Total Withdrawn Payouts
+                    </span>
                   </div>
                   <span className="text-foreground font-mono font-medium">
                     {tenureWithdrawnPercent.toFixed(1)}%
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between items-center text-xs">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-zinc-400 shrink-0" />
-                    <span className="text-muted-foreground">Corpus Value Remaining</span>
+                    <span className="text-muted-foreground">
+                      Corpus Value Remaining
+                    </span>
                   </div>
                   <span className="text-foreground font-mono font-medium">
                     {tenureBalancePercent.toFixed(1)}%
@@ -606,7 +724,12 @@ export default function SWPCalculator() {
             <>
               {/* Dynamic Center Panel (Corpus Mode) */}
               <div className="relative w-64 h-64 flex justify-center items-center">
-                <svg width="100%" height="100%" viewBox="0 0 120 120" className="transform -rotate-90">
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 120 120"
+                  className="transform -rotate-90"
+                >
                   <circle
                     cx="60"
                     cy="60"
@@ -643,7 +766,9 @@ export default function SWPCalculator() {
                 </svg>
 
                 <div className="absolute flex flex-col items-center justify-center text-center px-4">
-                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Required Corpus</span>
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                    Required Corpus
+                  </span>
                   <span className="text-xl md:text-2xl font-bold text-primary mt-1 select-text">
                     {formatCurrency(calculatedRequiredCorpus)}
                   </span>
@@ -653,14 +778,20 @@ export default function SWPCalculator() {
               {/* Detailed metrics output */}
               <div className="w-full mt-6 space-y-3 font-sans text-left">
                 <div className="flex justify-between items-center text-xs border-b border-border/40 pb-2">
-                  <span className="text-muted-foreground font-clash font-medium">Target SWP Corpus Needed</span>
-                  <span className="text-foreground font-mono font-bold">{formatCurrency(calculatedRequiredCorpus)}</span>
+                  <span className="text-muted-foreground font-clash font-medium">
+                    Target SWP Corpus Needed
+                  </span>
+                  <span className="text-foreground font-mono font-bold">
+                    {formatCurrency(calculatedRequiredCorpus)}
+                  </span>
                 </div>
-                
+
                 <div className="flex justify-between items-center text-xs">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-zinc-400 shrink-0" />
-                    <span className="text-muted-foreground">Self-funded Capital (Principal)</span>
+                    <span className="text-muted-foreground">
+                      Self-funded Capital (Principal)
+                    </span>
                   </div>
                   <span className="text-foreground font-mono font-medium">
                     {corpusPrincipalPercent.toFixed(1)}%
@@ -670,7 +801,9 @@ export default function SWPCalculator() {
                 <div className="flex justify-between items-center text-xs">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded bg-[#3A8293] shrink-0" />
-                    <span className="text-muted-foreground">Compound Growth Component</span>
+                    <span className="text-muted-foreground">
+                      Compound Growth Component
+                    </span>
                   </div>
                   <span className="text-foreground font-mono font-medium">
                     {corpusInterestPercent.toFixed(1)}%
@@ -679,7 +812,6 @@ export default function SWPCalculator() {
               </div>
             </>
           )}
-
         </div>
       </div>
 
@@ -691,30 +823,60 @@ export default function SWPCalculator() {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-primary font-clash">How to structure a retirement SWP</h3>
-              <p className="text-xs text-muted-foreground font-sans">Playbook strategies for systematic passive withdrawals.</p>
+              <h3 className="text-lg font-bold text-primary font-clash">
+                How to structure a retirement SWP
+              </h3>
+              <p className="text-xs text-muted-foreground font-sans">
+                Playbook strategies for systematic passive withdrawals.
+              </p>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-[#64748B] font-sans leading-relaxed">
             <div className="space-y-2">
-              <h4 className="font-bold text-primary font-clash">The 4% Safety Rule</h4>
-              <p>For sustainable lifetime payouts, experts suggest a starting monthly withdrawal of 0.33% to 0.4% of your total initial corpus. This helps ensure that expected market growth continuously replenishes your capital base, making your fund sustain indefinitely.</p>
+              <h4 className="font-bold text-primary font-clash">
+                The 4% Safety Rule
+              </h4>
+              <p>
+                For sustainable lifetime payouts, experts suggest a starting
+                monthly withdrawal of 0.33% to 0.4% of your total initial
+                corpus. This helps ensure that expected market growth
+                continuously replenishes your capital base, making your fund
+                sustain indefinitely.
+              </p>
             </div>
             <div className="space-y-2">
-              <h4 className="font-bold text-primary font-clash">Growth Over Payout</h4>
-              <p>When expected returns (p.a.) exceed the withdrawal rate percentage, the corpus grows over time. This creates a legacy asset that you can pass down to subsequent generations while enjoying consistent monthly income.</p>
+              <h4 className="font-bold text-primary font-clash">
+                Growth Over Payout
+              </h4>
+              <p>
+                When expected returns (p.a.) exceed the withdrawal rate
+                percentage, the corpus grows over time. This creates a legacy
+                asset that you can pass down to subsequent generations while
+                enjoying consistent monthly income.
+              </p>
             </div>
             <div className="space-y-2">
-              <h4 className="font-bold text-primary font-clash">Tax and Exit Load Efficiency</h4>
-              <p>Structuring withdrawals at least 12 months after your initial investment ensures all payouts are classified as Long-Term Capital Gains (LTCG), which are taxed at lower preferential rates and escape mutual fund exit loads completely.</p>
+              <h4 className="font-bold text-primary font-clash">
+                Tax and Exit Load Efficiency
+              </h4>
+              <p>
+                Structuring withdrawals at least 12 months after your initial
+                investment ensures all payouts are classified as Long-Term
+                Capital Gains (LTCG), which are taxed at lower preferential
+                rates and escape mutual fund exit loads completely.
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       {isLoaded && (
-        <GradualBlur preset="page-footer" height="2rem" style={{ zIndex: 30 }} />
+        <GradualBlur
+          preset="page-footer"
+          height="2rem"
+          style={{ zIndex: 30 }}
+        />
       )}
 
       <Footer />

@@ -37,11 +37,7 @@ export type InvestmentStyle =
   | 'FIRST_TIME_INVESTOR';
 
 export type ExpectedReturn =
-  | '6_TO_8'
-  | '8_TO_12'
-  | '12_TO_15'
-  | '15_PLUS'
-  | 'NOT_SURE';
+  '6_TO_8' | '8_TO_12' | '12_TO_15' | '15_PLUS' | 'NOT_SURE';
 
 export type RiskBehavior =
   | 'SELL_EVERYTHING'

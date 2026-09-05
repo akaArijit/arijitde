@@ -20,7 +20,7 @@ import {
 
 export async function scoreDimension(
   rows: PortfolioRow[],
-  assessment: AssessmentContext
+  assessment: AssessmentContext,
 ): Promise<DimensionResult & { comparison?: any }> {
   let score = 0;
   const insights: string[] = [];
@@ -30,7 +30,7 @@ export async function scoreDimension(
   const fundCount = rows.length;
 
   if (totalInvested <= 0 || fundCount === 0) {
-    return { score: 0, insights: ["Efficiency: No investments recorded"] };
+    return { score: 0, insights: ['Efficiency: No investments recorded'] };
   }
 
   // ── 1. Portfolio XIRR (simplified) (+6) ──
@@ -38,7 +38,10 @@ export async function scoreDimension(
   let totalTenure = 0;
   for (const row of rows) {
     const tenureInMs = Date.now() - new Date(row.startDate).getTime();
-    const tenureInYears = Math.max(0.01, tenureInMs / (365.25 * 24 * 60 * 60 * 1000));
+    const tenureInYears = Math.max(
+      0.01,
+      tenureInMs / (365.25 * 24 * 60 * 60 * 1000),
+    );
     totalTenure += tenureInYears;
   }
   const avgTenure = Math.max(0.01, totalTenure / fundCount);
@@ -51,13 +54,19 @@ export async function scoreDimension(
     score += 6;
   } else if (annualizedReturn >= 8) {
     score += 4;
-    insights.push(`Efficiency: Portfolio annualized return is ${annualizedReturn.toFixed(1)}% — good but below the 12% growth benchmark`);
+    insights.push(
+      `Efficiency: Portfolio annualized return is ${annualizedReturn.toFixed(1)}% — good but below the 12% growth benchmark`,
+    );
   } else if (annualizedReturn >= 5) {
     score += 2;
-    insights.push(`Efficiency: Portfolio annualized return is ${annualizedReturn.toFixed(1)}% — below market average. Review underperforming funds`);
+    insights.push(
+      `Efficiency: Portfolio annualized return is ${annualizedReturn.toFixed(1)}% — below market average. Review underperforming funds`,
+    );
   } else {
     score += 0;
-    insights.push(`Efficiency: Portfolio annualized return is only ${annualizedReturn.toFixed(1)}% — significantly below market benchmarks`);
+    insights.push(
+      `Efficiency: Portfolio annualized return is only ${annualizedReturn.toFixed(1)}% — significantly below market benchmarks`,
+    );
   }
 
   // ── 2. Fund vs Benchmark & Category Top Performers Comparison (+6) ──
@@ -69,14 +78,17 @@ export async function scoreDimension(
     // Get returns for each fund (parallel with timeout)
     const fundReturnPromises = rows.map(async (row) => {
       const category = detectFundCategory(row.fundName);
-      const topPerformer = CATEGORY_TOP_PERFORMERS[category] || CATEGORY_TOP_PERFORMERS['default']!;
-      
-      const [fundResult, benchmarkReturn, bestReturn, bestFundData] = await Promise.all([
-        getFundReturn(row.fundName),
-        getCategoryBenchmarkReturn(category),
-        calculate1YReturn(topPerformer.code),
-        getSchemeNAV(topPerformer.code),
-      ]);
+      const topPerformer =
+        CATEGORY_TOP_PERFORMERS[category] ||
+        CATEGORY_TOP_PERFORMERS['default']!;
+
+      const [fundResult, benchmarkReturn, bestReturn, bestFundData] =
+        await Promise.all([
+          getFundReturn(row.fundName),
+          getCategoryBenchmarkReturn(category),
+          calculate1YReturn(topPerformer.code),
+          getSchemeNAV(topPerformer.code),
+        ]);
       return {
         fundName: row.fundName,
         category,
@@ -90,7 +102,9 @@ export async function scoreDimension(
     });
 
     // Race against a 10-second timeout for all AMFI calls
-    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000));
+    const timeoutPromise = new Promise<null>((resolve) =>
+      setTimeout(() => resolve(null), 10000),
+    );
     const fundReturnsResult = await Promise.race([
       Promise.all(fundReturnPromises),
       timeoutPromise,
@@ -114,7 +128,7 @@ export async function scoreDimension(
         // Fallback returns if API didn't return
         const currentReturn = fr.fundReturn !== null ? fr.fundReturn : 12; // default fallback 12%
         let bestReturn = fr.bestReturn !== null ? fr.bestReturn : 18; // default fallback 18%
-        
+
         // Clamp bestReturn to at least currentReturn if the client is already outperforming
         if (bestReturn < currentReturn) {
           bestReturn = currentReturn;
@@ -142,7 +156,10 @@ export async function scoreDimension(
             currentProfit,
             achievableProfit,
             gap,
-            tenureReturn: fr.invested > 0 ? ((fr.currentValue - fr.invested) / fr.invested) * 100 : 0,
+            tenureReturn:
+              fr.invested > 0
+                ? ((fr.currentValue - fr.invested) / fr.invested) * 100
+                : 0,
           });
         }
 
@@ -159,9 +176,18 @@ export async function scoreDimension(
       }
 
       const totalInvestedAmount = rows.reduce((sum, r) => sum + r.invested, 0);
-      const currentXirr = totalInvestedAmount > 0 ? totalWeightedCurrentReturn / totalInvestedAmount : 12;
-      const achievableXirr = totalInvestedAmount > 0 ? totalWeightedBestReturn / totalInvestedAmount : 18;
-      const totalGap = Math.max(0, totalAchievableEstProfit - totalCurrentEstProfit);
+      const currentXirr =
+        totalInvestedAmount > 0
+          ? totalWeightedCurrentReturn / totalInvestedAmount
+          : 12;
+      const achievableXirr =
+        totalInvestedAmount > 0
+          ? totalWeightedBestReturn / totalInvestedAmount
+          : 18;
+      const totalGap = Math.max(
+        0,
+        totalAchievableEstProfit - totalCurrentEstProfit,
+      );
 
       comparisonData = {
         achievableXirr,
@@ -179,16 +205,24 @@ export async function scoreDimension(
           benchmarkComparisonScore = 6;
         } else if (beatRatio >= 0.4) {
           benchmarkComparisonScore = 3;
-          insights.push(`Efficiency: ${(beatRatio * 100).toFixed(0)}% of comparable funds are beating their category benchmark — aim for 60%+`);
+          insights.push(
+            `Efficiency: ${(beatRatio * 100).toFixed(0)}% of comparable funds are beating their category benchmark — aim for 60%+`,
+          );
         } else {
           benchmarkComparisonScore = 1;
-          insights.push(`Efficiency: Only ${(beatRatio * 100).toFixed(0)}% of funds are outperforming their benchmarks — consider switching to index funds or better-performing active funds`);
+          insights.push(
+            `Efficiency: Only ${(beatRatio * 100).toFixed(0)}% of funds are outperforming their benchmarks — consider switching to index funds or better-performing active funds`,
+          );
         }
 
         // Report top underperformers
         if (underperformingFunds.length > 0) {
-          const topUnderperformers = underperformingFunds.slice(0, 2).join(', ');
-          insights.push(`Efficiency: Underperforming funds (vs benchmark): ${topUnderperformers}`);
+          const topUnderperformers = underperformingFunds
+            .slice(0, 2)
+            .join(', ');
+          insights.push(
+            `Efficiency: Underperforming funds (vs benchmark): ${topUnderperformers}`,
+          );
         }
       } else {
         // No comparable data available — give neutral score
@@ -207,35 +241,52 @@ export async function scoreDimension(
 
   // ── 3. Underperforming Fund Count (+4) ──
   // Funds where currentValue < invested
-  const underperformingCount = rows.filter(r => r.currentValue < r.invested).length;
+  const underperformingCount = rows.filter(
+    (r) => r.currentValue < r.invested,
+  ).length;
   const underperformingRatio = underperformingCount / fundCount;
 
   if (underperformingRatio < 0.2) {
     score += 4;
   } else if (underperformingRatio <= 0.4) {
     score += 2;
-    insights.push(`Efficiency: ${(underperformingRatio * 100).toFixed(0)}% of your funds are in the red (current value below invested) — review these holdings`);
+    insights.push(
+      `Efficiency: ${(underperformingRatio * 100).toFixed(0)}% of your funds are in the red (current value below invested) — review these holdings`,
+    );
   } else {
     score += 0;
-    insights.push(`Efficiency: ${(underperformingRatio * 100).toFixed(0)}% of your funds show negative returns — significant portfolio review needed`);
+    insights.push(
+      `Efficiency: ${(underperformingRatio * 100).toFixed(0)}% of your funds show negative returns — significant portfolio review needed`,
+    );
   }
 
   // ── 4. Value Erosion Check (+4) ──
   // Overall portfolio value vs invested
-  const portfolioGainPct = ((totalCurrentValue - totalInvested) / totalInvested) * 100;
+  const portfolioGainPct =
+    ((totalCurrentValue - totalInvested) / totalInvested) * 100;
 
   if (portfolioGainPct >= 20) {
     score += 4;
   } else if (portfolioGainPct >= 5) {
     score += 2;
-    insights.push(`Efficiency: Portfolio has gained ${portfolioGainPct.toFixed(1)}% overall — decent but room for optimization`);
+    insights.push(
+      `Efficiency: Portfolio has gained ${portfolioGainPct.toFixed(1)}% overall — decent but room for optimization`,
+    );
   } else if (portfolioGainPct >= 0) {
     score += 1;
-    insights.push(`Efficiency: Portfolio has gained only ${portfolioGainPct.toFixed(1)}% overall — underperforming relative to inflation`);
+    insights.push(
+      `Efficiency: Portfolio has gained only ${portfolioGainPct.toFixed(1)}% overall — underperforming relative to inflation`,
+    );
   } else {
     score += 0;
-    insights.push(`Efficiency: Portfolio is in net loss (${portfolioGainPct.toFixed(1)}%) — immediate review recommended`);
+    insights.push(
+      `Efficiency: Portfolio is in net loss (${portfolioGainPct.toFixed(1)}%) — immediate review recommended`,
+    );
   }
 
-  return { score: Math.min(20, Math.max(0, score)), insights, comparison: comparisonData };
+  return {
+    score: Math.min(20, Math.max(0, score)),
+    insights,
+    comparison: comparisonData,
+  };
 }

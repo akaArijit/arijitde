@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import SoftBoxBlurBg from "@/components/SoftBoxBlurBg";
-import GradualBlur from "@/components/GradualBlur";
-import { Coins, Calendar, TrendingUp, ArrowLeft } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
+import GradualBlur from '@/components/GradualBlur';
+import { Coins, Calendar, TrendingUp, ArrowLeft } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function SIPCalculator() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -25,7 +25,7 @@ export default function SIPCalculator() {
   useEffect(() => {
     window.scrollTo(0, 0);
     setMounted(true);
-    document.title = "SIP Calculator | FinAnalysis";
+    document.title = 'SIP Calculator | FinAnalysis';
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 100);
@@ -56,22 +56,24 @@ export default function SIPCalculator() {
 
   // Format currency helper (Indian style)
   const formatCurrency = (val: number) => {
-    if (!mounted) return "₹0";
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
+    if (!mounted) return '₹0';
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
       maximumFractionDigits: 0,
     }).format(val);
   };
 
   // SVG Donut Calculations
   const returnsPercent = totalValue > 0 ? (estReturns / totalValue) * 100 : 0;
-  const investedPercent = totalValue > 0 ? (investedAmount / totalValue) * 100 : 100;
+  const investedPercent =
+    totalValue > 0 ? (investedAmount / totalValue) * 100 : 100;
 
   // Donut parameters
   const radius = 50;
   const circumference = 2 * Math.PI * radius; // ~314.16
-  const strokeDashoffset = circumference - (circumference * returnsPercent) / 100;
+  const strokeDashoffset =
+    circumference - (circumference * returnsPercent) / 100;
 
   return (
     <main className="relative min-h-screen w-full bg-transparent text-foreground flex flex-col font-clash">
@@ -87,14 +89,14 @@ export default function SIPCalculator() {
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== "undefined") {
-              if (!sessionStorage.getItem("savedHomeScrollY")) {
-                sessionStorage.setItem("savedHomeScrollY", "6299");
+            if (typeof window !== 'undefined') {
+              if (!sessionStorage.getItem('savedHomeScrollY')) {
+                sessionStorage.setItem('savedHomeScrollY', '6299');
               }
               if (window.history.length > 1) {
                 window.history.back();
               } else {
-                window.location.href = "/";
+                window.location.href = '/';
               }
             }
           }}
@@ -105,29 +107,33 @@ export default function SIPCalculator() {
         </button>
         <h1
           className={`text-4xl md:text-7xl font-normal tracking-tight mt-12 mb-4 leading-none text-primary font-clash transition-all duration-[1200ms] ease-out ${
-            isLoaded ? "opacity-100 blur-none scale-100" : "opacity-0 blur-lg scale-95"
+            isLoaded
+              ? 'opacity-100 blur-none scale-100'
+              : 'opacity-0 blur-lg scale-95'
           } delay-[200ms]`}
         >
           SIP Calculator
         </h1>
         <p
           className={`text-sm md:text-base text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed font-sans transition-all duration-[1200ms] ease-out ${
-            isLoaded ? "opacity-100 blur-none scale-100" : "opacity-0 blur-md scale-95"
+            isLoaded
+              ? 'opacity-100 blur-none scale-100'
+              : 'opacity-0 blur-md scale-95'
           } delay-[400ms]`}
         >
-          Systematic Investment Plans (SIP) help compound wealth securely over time. Use our calculator to visualize your investment growth.
+          Systematic Investment Plans (SIP) help compound wealth securely over
+          time. Use our calculator to visualize your investment growth.
         </p>
       </div>
 
       {/* Calculator Columns Layout */}
       <div
         className={`relative z-10 w-full max-w-5xl mx-auto px-6 pb-36 grid grid-cols-1 lg:grid-cols-12 gap-10 transition-all duration-[1200ms] ease-out ${
-          isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+          isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
         } delay-[500ms]`}
       >
         {/* Left Column: Sliders and Range Inputs */}
         <div className="lg:col-span-7 bg-white/35 border border-border rounded-3xl p-8 shadow-md backdrop-blur-2xl space-y-8 flex flex-col justify-center text-left">
-          
           {/* Monthly Investment */}
           <div className="space-y-3">
             <div className="flex justify-between items-center text-sm font-sans">
@@ -141,9 +147,13 @@ export default function SIPCalculator() {
                   <input
                     type="number"
                     value={monthlyInvestment}
-                    onChange={(e) => setMonthlyInvestment(Math.max(0, Number(e.target.value)))}
+                    onChange={(e) =>
+                      setMonthlyInvestment(Math.max(0, Number(e.target.value)))
+                    }
                     className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    style={{ width: `${Math.max(3, String(monthlyInvestment).length) * 9 + 5}px` }}
+                    style={{
+                      width: `${Math.max(3, String(monthlyInvestment).length) * 9 + 5}px`,
+                    }}
                   />
                 </div>
               </div>
@@ -176,9 +186,13 @@ export default function SIPCalculator() {
                   type="number"
                   step="0.1"
                   value={expectedReturn}
-                  onChange={(e) => setExpectedReturn(Math.max(0, Number(e.target.value)))}
+                  onChange={(e) =>
+                    setExpectedReturn(Math.max(0, Number(e.target.value)))
+                  }
                   className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  style={{ width: `${Math.max(3, String(expectedReturn).length) * 9 + 5}px` }}
+                  style={{
+                    width: `${Math.max(3, String(expectedReturn).length) * 9 + 5}px`,
+                  }}
                 />
                 <span>%</span>
               </div>
@@ -210,9 +224,13 @@ export default function SIPCalculator() {
                 <input
                   type="number"
                   value={years}
-                  onChange={(e) => setYears(Math.max(0, Number(e.target.value)))}
+                  onChange={(e) =>
+                    setYears(Math.max(0, Number(e.target.value)))
+                  }
                   className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  style={{ width: `${Math.max(2, String(years).length) * 9 + 5}px` }}
+                  style={{
+                    width: `${Math.max(2, String(years).length) * 9 + 5}px`,
+                  }}
                 />
                 <span>{years === 1 ? 'Year' : 'Years'}</span>
               </div>
@@ -239,25 +257,35 @@ export default function SIPCalculator() {
           {/* Metrics summary cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
             <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Invested Capital</span>
-              <span className="text-xl font-bold text-foreground mt-1">{formatCurrency(investedAmount)}</span>
+              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                Invested Capital
+              </span>
+              <span className="text-xl font-bold text-foreground mt-1">
+                {formatCurrency(investedAmount)}
+              </span>
             </div>
             <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-primary/75">Est. Wealth Returns</span>
-              <span className="text-xl font-bold text-primary mt-1">{formatCurrency(estReturns)}</span>
+              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-primary/75">
+                Est. Wealth Returns
+              </span>
+              <span className="text-xl font-bold text-primary mt-1">
+                {formatCurrency(estReturns)}
+              </span>
             </div>
           </div>
-
         </div>
 
         {/* Right Column: SVG Donut Chart and Legend */}
         <div className="lg:col-span-5 bg-white/35 border border-border rounded-3xl p-8 shadow-md backdrop-blur-2xl flex flex-col justify-center items-center">
-          
           {/* Donut container */}
           <div className="relative w-64 h-64 flex justify-center items-center">
-            
             {/* SVG circle */}
-            <svg width="100%" height="100%" viewBox="0 0 120 120" className="transform -rotate-90">
+            <svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 120 120"
+              className="transform -rotate-90"
+            >
               {/* Backing Circle (Invested Amount) */}
               <circle
                 cx="60"
@@ -278,7 +306,7 @@ export default function SIPCalculator() {
                 strokeDashoffset="0"
                 className="transition-all duration-500 ease-out"
               />
-              
+
               {/* Foreground Circle (Est. Returns) */}
               {returnsPercent > 0 && (
                 <circle
@@ -298,10 +326,13 @@ export default function SIPCalculator() {
 
             {/* Inner Center Label */}
             <div className="absolute flex flex-col items-center justify-center text-center">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Future Value</span>
-              <span className="text-xl md:text-2xl font-bold text-foreground mt-1 select-text">{formatCurrency(totalValue)}</span>
+              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                Future Value
+              </span>
+              <span className="text-xl md:text-2xl font-bold text-foreground mt-1 select-text">
+                {formatCurrency(totalValue)}
+              </span>
             </div>
-
           </div>
 
           {/* Donut Legend */}
@@ -319,22 +350,26 @@ export default function SIPCalculator() {
             <div className="flex justify-between items-center text-xs">
               <div className="flex items-center gap-2">
                 <div className="w-3.5 h-3.5 rounded bg-[#3A8293] shrink-0" />
-                <span className="text-muted-foreground">Est. Wealth Returns</span>
+                <span className="text-muted-foreground">
+                  Est. Wealth Returns
+                </span>
               </div>
               <span className="text-foreground font-mono font-bold">
                 {returnsPercent.toFixed(1)}% ({formatCurrency(estReturns)})
               </span>
             </div>
           </div>
-
         </div>
-
       </div>
 
       <Footer />
 
       {isLoaded && (
-        <GradualBlur preset="page-footer" height="2rem" style={{ zIndex: 30 }} />
+        <GradualBlur
+          preset="page-footer"
+          height="2rem"
+          style={{ zIndex: 30 }}
+        />
       )}
     </main>
   );

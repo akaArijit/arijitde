@@ -74,8 +74,10 @@ export default function SoftBoxBlurBg() {
         style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.08) 1px, transparent 0)`,
           backgroundSize: '32px 32px',
-          maskImage: 'radial-gradient(ellipse 90% 80% at 50% 40%, black 20%, transparent 80%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at 50% 40%, black 20%, transparent 80%)',
+          maskImage:
+            'radial-gradient(ellipse 90% 80% at 50% 40%, black 20%, transparent 80%)',
+          WebkitMaskImage:
+            'radial-gradient(ellipse 90% 80% at 50% 40%, black 20%, transparent 80%)',
         }}
       />
 
@@ -85,7 +87,8 @@ export default function SoftBoxBlurBg() {
         <div
           className="orb-1 absolute bottom-[-10%] left-[-5%] w-[680px] h-[680px] rounded-full blur-[110px] pointer-events-none opacity-70"
           style={{
-            background: 'radial-gradient(circle, rgba(147, 197, 253, 0.75) 0%, rgba(186, 230, 253, 0.45) 45%, rgba(242, 240, 239, 0) 75%)',
+            background:
+              'radial-gradient(circle, rgba(147, 197, 253, 0.75) 0%, rgba(186, 230, 253, 0.45) 45%, rgba(242, 240, 239, 0) 75%)',
           }}
         />
 
@@ -93,7 +96,8 @@ export default function SoftBoxBlurBg() {
         <div
           className="orb-2 absolute bottom-[-12%] right-[-8%] w-[750px] h-[750px] rounded-full blur-[120px] pointer-events-none opacity-65"
           style={{
-            background: 'radial-gradient(circle, rgba(191, 219, 254, 0.8) 0%, rgba(224, 242, 254, 0.5) 40%, rgba(242, 240, 239, 0) 75%)',
+            background:
+              'radial-gradient(circle, rgba(191, 219, 254, 0.8) 0%, rgba(224, 242, 254, 0.5) 40%, rgba(242, 240, 239, 0) 75%)',
           }}
         />
 
@@ -101,7 +105,8 @@ export default function SoftBoxBlurBg() {
         <div
           className="orb-3 absolute top-[-10%] left-[30%] w-[550px] h-[550px] rounded-full blur-[130px] pointer-events-none opacity-40"
           style={{
-            background: 'radial-gradient(circle, rgba(253, 230, 138, 0.45) 0%, rgba(254, 243, 199, 0.25) 40%, transparent 70%)',
+            background:
+              'radial-gradient(circle, rgba(253, 230, 138, 0.45) 0%, rgba(254, 243, 199, 0.25) 40%, transparent 70%)',
           }}
         />
 
@@ -109,12 +114,11 @@ export default function SoftBoxBlurBg() {
         <div
           className="orb-1 absolute bottom-[-5%] left-[35%] w-[600px] h-[450px] rounded-full blur-[120px] pointer-events-none opacity-35"
           style={{
-            background: 'radial-gradient(ellipse, rgba(167, 243, 208, 0.5) 0%, rgba(209, 250, 229, 0.25) 45%, transparent 75%)',
+            background:
+              'radial-gradient(ellipse, rgba(167, 243, 208, 0.5) 0%, rgba(209, 250, 229, 0.25) 45%, transparent 75%)',
           }}
         />
       </div>
-
-
 
       {/* 4. Elegant Glowing Financial Wave Curves (Bottom Edge) */}
       <div className="absolute bottom-0 left-0 right-0 h-[280px] overflow-hidden pointer-events-none opacity-40">
@@ -126,12 +130,24 @@ export default function SoftBoxBlurBg() {
           preserveAspectRatio="none"
         >
           <defs>
-            <linearGradient id="fintechWaveGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient
+              id="fintechWaveGrad1"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
               <stop offset="0%" stopColor="rgba(147, 197, 253, 0.4)" />
               <stop offset="50%" stopColor="rgba(186, 230, 253, 0.6)" />
               <stop offset="100%" stopColor="rgba(147, 197, 253, 0.2)" />
             </linearGradient>
-            <linearGradient id="fintechWaveGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient
+              id="fintechWaveGrad2"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
               <stop offset="0%" stopColor="rgba(255, 255, 255, 0.6)" />
               <stop offset="50%" stopColor="rgba(191, 219, 254, 0.4)" />
               <stop offset="100%" stopColor="rgba(255, 255, 255, 0.2)" />
@@ -152,7 +168,8 @@ export default function SoftBoxBlurBg() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle at 50% 35%, transparent 45%, rgba(242, 240, 239, 0.4) 100%)',
+          background:
+            'radial-gradient(circle at 50% 35%, transparent 45%, rgba(242, 240, 239, 0.4) 100%)',
         }}
       />
     </div>

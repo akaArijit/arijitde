@@ -1,12 +1,19 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import SoftBoxBlurBg from "@/components/SoftBoxBlurBg";
-import { Coins, Calendar, TrendingUp, ArrowLeft, ShieldAlert, Award } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import GradualBlur from "@/components/GradualBlur";
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
+import {
+  Coins,
+  Calendar,
+  TrendingUp,
+  ArrowLeft,
+  ShieldAlert,
+  Award,
+} from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import GradualBlur from '@/components/GradualBlur';
 
 export default function InflationCalculator() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -26,7 +33,7 @@ export default function InflationCalculator() {
   useEffect(() => {
     window.scrollTo(0, 0);
     setMounted(true);
-    document.title = "Inflation Calculator | FinAnalysis";
+    document.title = 'Inflation Calculator | FinAnalysis';
     const timer = setTimeout(() => {
       setIsLoaded(true);
     }, 100);
@@ -65,23 +72,26 @@ export default function InflationCalculator() {
 
   // Currency Formatter
   const formatCurrency = (val: number) => {
-    if (!mounted) return "₹0";
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
+    if (!mounted) return '₹0';
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
       maximumFractionDigits: 0,
     }).format(val);
   };
 
   // Percentage visual calculations
   const totalValue = futureCost;
-  const currentCostPercent = totalValue > 0 ? (currentCost / totalValue) * 100 : 100;
-  const inflationGapPercent = totalValue > 0 ? (inflationImpact / totalValue) * 100 : 0;
+  const currentCostPercent =
+    totalValue > 0 ? (currentCost / totalValue) * 100 : 100;
+  const inflationGapPercent =
+    totalValue > 0 ? (inflationImpact / totalValue) * 100 : 0;
 
   // Donut SVG parameters
   const radius = 50;
   const circumference = 2 * Math.PI * radius; // ~314.16
-  const strokeDashoffset = circumference - (circumference * inflationGapPercent) / 100;
+  const strokeDashoffset =
+    circumference - (circumference * inflationGapPercent) / 100;
 
   return (
     <main className="relative min-h-screen w-full bg-transparent text-foreground flex flex-col font-clash">
@@ -97,14 +107,14 @@ export default function InflationCalculator() {
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== "undefined") {
-              if (!sessionStorage.getItem("savedHomeScrollY")) {
-                sessionStorage.setItem("savedHomeScrollY", "6299");
+            if (typeof window !== 'undefined') {
+              if (!sessionStorage.getItem('savedHomeScrollY')) {
+                sessionStorage.setItem('savedHomeScrollY', '6299');
               }
               if (window.history.length > 1) {
                 window.history.back();
               } else {
-                window.location.href = "/";
+                window.location.href = '/';
               }
             }
           }}
@@ -115,29 +125,34 @@ export default function InflationCalculator() {
         </button>
         <h1
           className={`text-4xl md:text-7xl font-normal tracking-tight mt-12 mb-4 leading-none text-primary font-clash transition-all duration-[1200ms] ease-out ${
-            isLoaded ? "opacity-100 blur-none scale-100" : "opacity-0 blur-lg scale-95"
+            isLoaded
+              ? 'opacity-100 blur-none scale-100'
+              : 'opacity-0 blur-lg scale-95'
           } delay-[200ms]`}
         >
           Inflation Calculator
         </h1>
         <p
           className={`text-sm md:text-base text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed font-sans transition-all duration-[1200ms] ease-out ${
-            isLoaded ? "opacity-100 blur-none scale-100" : "opacity-0 blur-md scale-95"
+            isLoaded
+              ? 'opacity-100 blur-none scale-100'
+              : 'opacity-0 blur-md scale-95'
           } delay-[400ms]`}
         >
-          Inflation eats away your purchasing power silently. Calculate how much your financial targets will actually cost in the future and understand why static savings are not enough.
+          Inflation eats away your purchasing power silently. Calculate how much
+          your financial targets will actually cost in the future and understand
+          why static savings are not enough.
         </p>
       </div>
 
       {/* Main content grid */}
       <div
         className={`relative z-10 w-full max-w-5xl mx-auto px-6 pb-36 grid grid-cols-1 lg:grid-cols-12 gap-10 transition-all duration-[1200ms] ease-out ${
-          isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+          isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
         } delay-[500ms]`}
       >
         {/* Left Column: Sliders and Inputs */}
         <div className="lg:col-span-7 bg-white/35 border border-border rounded-3xl p-8 shadow-md backdrop-blur-2xl space-y-8 flex flex-col justify-center text-left">
-          
           {/* Current Cost of Goal */}
           <div className="space-y-3">
             <div className="flex justify-between items-center text-sm">
@@ -150,9 +165,13 @@ export default function InflationCalculator() {
                 <input
                   type="number"
                   value={currentCost}
-                  onChange={(e) => setCurrentCost(Math.max(0, Number(e.target.value)))}
+                  onChange={(e) =>
+                    setCurrentCost(Math.max(0, Number(e.target.value)))
+                  }
                   className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  style={{ width: `${Math.max(3, String(currentCost).length) * 9 + 5}px` }}
+                  style={{
+                    width: `${Math.max(3, String(currentCost).length) * 9 + 5}px`,
+                  }}
                 />
               </div>
             </div>
@@ -183,9 +202,13 @@ export default function InflationCalculator() {
                 <input
                   type="number"
                   value={yearsToGoal}
-                  onChange={(e) => setYearsToGoal(Math.max(0, Number(e.target.value)))}
+                  onChange={(e) =>
+                    setYearsToGoal(Math.max(0, Number(e.target.value)))
+                  }
                   className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  style={{ width: `${Math.max(2, String(yearsToGoal).length) * 9 + 5}px` }}
+                  style={{
+                    width: `${Math.max(2, String(yearsToGoal).length) * 9 + 5}px`,
+                  }}
                 />
                 <span>{yearsToGoal === 1 ? 'Year' : 'Years'}</span>
               </div>
@@ -218,9 +241,13 @@ export default function InflationCalculator() {
                   type="number"
                   step="0.1"
                   value={inflationRate}
-                  onChange={(e) => setInflationRate(Math.max(0, Number(e.target.value)))}
+                  onChange={(e) =>
+                    setInflationRate(Math.max(0, Number(e.target.value)))
+                  }
                   className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  style={{ width: `${Math.max(3, String(inflationRate).length) * 9 + 5}px` }}
+                  style={{
+                    width: `${Math.max(3, String(inflationRate).length) * 9 + 5}px`,
+                  }}
                 />
                 <span>%</span>
               </div>
@@ -253,9 +280,13 @@ export default function InflationCalculator() {
                   type="number"
                   step="0.1"
                   value={expectedReturns}
-                  onChange={(e) => setExpectedReturns(Math.max(0, Number(e.target.value)))}
+                  onChange={(e) =>
+                    setExpectedReturns(Math.max(0, Number(e.target.value)))
+                  }
                   className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  style={{ width: `${Math.max(3, String(expectedReturns).length) * 9 + 5}px` }}
+                  style={{
+                    width: `${Math.max(3, String(expectedReturns).length) * 9 + 5}px`,
+                  }}
                 />
                 <span>%</span>
               </div>
@@ -282,25 +313,34 @@ export default function InflationCalculator() {
           {/* Summary sub cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
             <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Goal Cost Today</span>
-              <span className="text-xl font-bold text-foreground mt-1">{formatCurrency(currentCost)}</span>
+              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                Goal Cost Today
+              </span>
+              <span className="text-xl font-bold text-foreground mt-1">
+                {formatCurrency(currentCost)}
+              </span>
             </div>
             <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
               <span className="text-[10px] font-mono text-[#D32F2F] uppercase tracking-widest font-semibold flex items-center gap-1">
                 Loss of Purchase Power
               </span>
-              <span className="text-xl font-bold text-[#D32F2F] mt-1">-{formatCurrency(inflationImpact)}</span>
+              <span className="text-xl font-bold text-[#D32F2F] mt-1">
+                -{formatCurrency(inflationImpact)}
+              </span>
             </div>
           </div>
-
         </div>
 
         {/* Right Column: Comparison SVG Chart & Required SIP */}
         <div className="lg:col-span-5 bg-white/35 border border-border rounded-3xl p-8 shadow-md backdrop-blur-2xl flex flex-col justify-center items-center">
-          
           {/* Dynamic SVG Circle comparing Today vs Future */}
           <div className="relative w-64 h-64 flex justify-center items-center">
-            <svg width="100%" height="100%" viewBox="0 0 120 120" className="transform -rotate-90">
+            <svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 120 120"
+              className="transform -rotate-90"
+            >
               <circle
                 cx="60"
                 cy="60"
@@ -339,7 +379,9 @@ export default function InflationCalculator() {
             </svg>
 
             <div className="absolute flex flex-col items-center justify-center text-center px-4">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Future Cost</span>
+              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                Future Cost
+              </span>
               <span className="text-xl md:text-2xl font-bold text-foreground mt-1 select-text">
                 {formatCurrency(futureCost)}
               </span>
@@ -349,14 +391,20 @@ export default function InflationCalculator() {
           {/* Legend and comparative breakdown */}
           <div className="w-full mt-6 space-y-4 font-sans text-left">
             <div className="flex justify-between items-center text-xs border-b border-border/40 pb-2">
-              <span className="text-muted-foreground font-clash font-medium">Inflation-adjusted cost</span>
-              <span className="text-foreground font-mono font-bold">{formatCurrency(futureCost)}</span>
+              <span className="text-muted-foreground font-clash font-medium">
+                Inflation-adjusted cost
+              </span>
+              <span className="text-foreground font-mono font-bold">
+                {formatCurrency(futureCost)}
+              </span>
             </div>
 
             <div className="flex justify-between items-center text-xs">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-zinc-400 shrink-0" />
-                <span className="text-muted-foreground">Original cost of goal</span>
+                <span className="text-muted-foreground">
+                  Original cost of goal
+                </span>
               </div>
               <span className="text-foreground font-mono font-medium">
                 {currentCostPercent.toFixed(1)}%
@@ -366,7 +414,9 @@ export default function InflationCalculator() {
             <div className="flex justify-between items-center text-xs">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded bg-[#D32F2F] shrink-0" />
-                <span className="text-muted-foreground">Cost increase due to inflation</span>
+                <span className="text-muted-foreground">
+                  Cost increase due to inflation
+                </span>
               </div>
               <span className="text-foreground font-mono font-medium text-[#D32F2F] font-bold">
                 {inflationGapPercent.toFixed(1)}%
@@ -380,15 +430,24 @@ export default function InflationCalculator() {
                 Beat Inflation Playbook
               </span>
               <div className="w-full flex justify-between items-baseline mt-1.5">
-                <span className="text-xs text-muted-foreground leading-none">Required Monthly SIP:</span>
-                <span className="text-lg font-extrabold text-primary font-clash leading-none">{formatCurrency(requiredMonthlySip)}</span>
+                <span className="text-xs text-muted-foreground leading-none">
+                  Required Monthly SIP:
+                </span>
+                <span className="text-lg font-extrabold text-primary font-clash leading-none">
+                  {formatCurrency(requiredMonthlySip)}
+                </span>
               </div>
               <p className="text-[9px] text-muted-foreground leading-relaxed mt-2">
-                Starting a monthly SIP of <strong className="text-primary">{formatCurrency(requiredMonthlySip)}</strong> today growing at {expectedReturns}% return rate over {yearsToGoal} years will accumulate the target future cost of {formatCurrency(futureCost)} cleanly.
+                Starting a monthly SIP of{' '}
+                <strong className="text-primary">
+                  {formatCurrency(requiredMonthlySip)}
+                </strong>{' '}
+                today growing at {expectedReturns}% return rate over{' '}
+                {yearsToGoal} years will accumulate the target future cost of{' '}
+                {formatCurrency(futureCost)} cleanly.
               </p>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -400,30 +459,61 @@ export default function InflationCalculator() {
               <ShieldAlert className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-primary font-clash">Inflation: The Invisible Wealth Depreciator</h3>
-              <p className="text-xs text-muted-foreground font-sans">Why saving in cash guarantees loss of purchasing power.</p>
+              <h3 className="text-lg font-bold text-primary font-clash">
+                Inflation: The Invisible Wealth Depreciator
+              </h3>
+              <p className="text-xs text-muted-foreground font-sans">
+                Why saving in cash guarantees loss of purchasing power.
+              </p>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-[#64748B] font-sans leading-relaxed">
             <div className="space-y-2">
-              <h4 className="font-bold text-primary font-clash">Goal Cost Escapes Reality</h4>
-              <p>Common lifecycle milestones like education, marriage, and retirement escape standard pricing assumptions. With an average inflation of 6%, prices double roughly every 12 years. Saving with standard low-interest bank accounts ensures you fall short of your targets.</p>
+              <h4 className="font-bold text-primary font-clash">
+                Goal Cost Escapes Reality
+              </h4>
+              <p>
+                Common lifecycle milestones like education, marriage, and
+                retirement escape standard pricing assumptions. With an average
+                inflation of 6%, prices double roughly every 12 years. Saving
+                with standard low-interest bank accounts ensures you fall short
+                of your targets.
+              </p>
             </div>
             <div className="space-y-2">
-              <h4 className="font-bold text-primary font-clash">Real Rate of Return</h4>
-              <p>Your investment must beat inflation to generate true wealth. If inflation is 6% and your deposit returns 5%, your real rate of return is -1% after taxes. To build actual purchasing power, you must compound assets in higher yield products like mutual funds or equity assets.</p>
+              <h4 className="font-bold text-primary font-clash">
+                Real Rate of Return
+              </h4>
+              <p>
+                Your investment must beat inflation to generate true wealth. If
+                inflation is 6% and your deposit returns 5%, your real rate of
+                return is -1% after taxes. To build actual purchasing power, you
+                must compound assets in higher yield products like mutual funds
+                or equity assets.
+              </p>
             </div>
             <div className="space-y-2">
-              <h4 className="font-bold text-primary font-clash">Lead the SIP Early</h4>
-              <p>The earlier you start, the smaller your required monthly investment. Delaying your SIP by just 3 years can increase your required monthly contribution by up to 40% to achieve the same inflation-adjusted target value later.</p>
+              <h4 className="font-bold text-primary font-clash">
+                Lead the SIP Early
+              </h4>
+              <p>
+                The earlier you start, the smaller your required monthly
+                investment. Delaying your SIP by just 3 years can increase your
+                required monthly contribution by up to 40% to achieve the same
+                inflation-adjusted target value later.
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       {isLoaded && (
-        <GradualBlur preset="page-footer" height="2rem" style={{ zIndex: 30 }} />
+        <GradualBlur
+          preset="page-footer"
+          height="2rem"
+          style={{ zIndex: 30 }}
+        />
       )}
 
       <Footer />

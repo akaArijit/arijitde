@@ -8,12 +8,16 @@ interface NavbarProps {
   onBookCallClick?: () => void;
 }
 
-export default function Navbar({ isLoaded = true, activePath = '/', onBookCallClick }: NavbarProps) {
+export default function Navbar({
+  isLoaded = true,
+  activePath = '/',
+  onBookCallClick,
+}: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [dashboardUrl, setDashboardUrl] = useState('/onboarding');
   const [userRole, setUserRole] = useState<string | null>(null);
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -32,7 +36,7 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
           setDashboardUrl('/dashboard/user');
         }
       } catch (err) {
-        console.error("Failed to parse user from localStorage", err);
+        console.error('Failed to parse user from localStorage', err);
         setDashboardUrl('/dashboard/user');
       }
     } else {
@@ -44,25 +48,26 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
     if (token) {
       fetch(`${backendUrl}/api/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
-        .then(res => res.json())
-        .then(data => {
+        .then((res) => res.json())
+        .then((data) => {
           if (data.success && data.data) {
             localStorage.setItem('user', JSON.stringify(data.data));
           }
         })
-        .catch(err => {
-          console.error("Failed to sync user from DB", err);
+        .catch((err) => {
+          console.error('Failed to sync user from DB', err);
         });
     }
   }, []);
 
   return (
     <div
-      className={`fixed top-0 left-0 right-0 z-40 w-full flex flex-col items-center transition-all duration-[1000ms] cubic-bezier(0.25,1,0.5,1) ${isLoaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-24"
-        }`}
+      className={`fixed top-0 left-0 right-0 z-40 w-full flex flex-col items-center transition-all duration-[1000ms] cubic-bezier(0.25,1,0.5,1) ${
+        isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-24'
+      }`}
     >
       {/* Centered Floating Navbar */}
       <div className="w-full max-w-7xl px-4 sm:px-6 mt-4">
@@ -71,7 +76,10 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
           <div className="w-full px-6 py-3.5 flex items-center justify-between">
             {/* Left: Brand Name & Logo */}
             <div className="flex items-center gap-3">
-              <a href="/" className="flex items-center gap-2.5 text-xl font-bold tracking-wider text-primary font-chillax select-none hover:opacity-90">
+              <a
+                href="/"
+                className="flex items-center gap-2.5 text-xl font-bold tracking-wider text-primary font-chillax select-none hover:opacity-90"
+              >
                 <img
                   src="/image.png"
                   alt="FinAnalysis Logo"
@@ -117,12 +125,18 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
 
             <div className="hidden md:flex items-center gap-3">
               {isLoggedIn ? (
-                <a href={dashboardUrl} className="px-5 py-2.5 bg-primary text-primary-foreground font-bold text-xs rounded-xl hover:bg-primary/90 transition duration-200 shadow-sm text-center whitespace-nowrap">
+                <a
+                  href={dashboardUrl}
+                  className="px-5 py-2.5 bg-primary text-primary-foreground font-bold text-xs rounded-xl hover:bg-primary/90 transition duration-200 shadow-sm text-center whitespace-nowrap"
+                >
                   Dashboard
                 </a>
               ) : (
                 <>
-                  <a href="/onboarding" className="px-5 py-2.5 border border-primary/20 hover:border-primary/40 text-primary font-bold text-xs rounded-xl hover:bg-primary/5 transition duration-200 text-center whitespace-nowrap">
+                  <a
+                    href="/onboarding"
+                    className="px-5 py-2.5 border border-primary/20 hover:border-primary/40 text-primary font-bold text-xs rounded-xl hover:bg-primary/5 transition duration-200 text-center whitespace-nowrap"
+                  >
                     Login
                   </a>
                   {onBookCallClick ? (
@@ -151,12 +165,32 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 ) : (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
                   </svg>
                 )}
               </button>
@@ -165,58 +199,85 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
 
           {/* Bottom Row: Mobile Nav Links */}
           <div
-            className={`md:hidden transition-all duration-500 ease-in-out border-t border-border bg-card/40 ${isMobileMenuOpen ? "max-h-[400px] py-6 px-6" : "max-h-0 py-0 px-6 pointer-events-none opacity-0"
-              } overflow-hidden`}
+            className={`md:hidden transition-all duration-500 ease-in-out border-t border-border bg-card/40 ${
+              isMobileMenuOpen
+                ? 'max-h-[400px] py-6 px-6'
+                : 'max-h-0 py-0 px-6 pointer-events-none opacity-0'
+            } overflow-hidden`}
           >
             <nav className="flex flex-col gap-4 text-base font-semibold text-muted-foreground">
               <a
                 href="/#about"
-                className={`hover:text-primary transition-all duration-300 transform ${isMobileMenuOpen ? "opacity-100 translate-x-0 font-clash" : "opacity-0 -translate-x-4"
-                  } delay-[100ms]`}
+                className={`hover:text-primary transition-all duration-300 transform ${
+                  isMobileMenuOpen
+                    ? 'opacity-100 translate-x-0 font-clash'
+                    : 'opacity-0 -translate-x-4'
+                } delay-[100ms]`}
               >
                 About
               </a>
               <a
                 href="/#contact"
-                className={`hover:text-primary transition-all duration-300 transform ${isMobileMenuOpen ? "opacity-100 translate-x-0 font-clash" : "opacity-0 -translate-x-4"
-                  } delay-[200ms]`}
+                className={`hover:text-primary transition-all duration-300 transform ${
+                  isMobileMenuOpen
+                    ? 'opacity-100 translate-x-0 font-clash'
+                    : 'opacity-0 -translate-x-4'
+                } delay-[200ms]`}
               >
                 Contact
               </a>
               <a
                 href="/#calculators"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`hover:text-primary transition-all duration-300 transform ${isMobileMenuOpen ? "opacity-100 translate-x-0 font-clash" : "opacity-0 -translate-x-4"
-                  } delay-[400ms]`}
+                className={`hover:text-primary transition-all duration-300 transform ${
+                  isMobileMenuOpen
+                    ? 'opacity-100 translate-x-0 font-clash'
+                    : 'opacity-0 -translate-x-4'
+                } delay-[400ms]`}
               >
                 Calculators
               </a>
               <a
                 href="/quiz"
-                className={`hover:text-primary transition-all duration-300 transform ${isMobileMenuOpen ? "opacity-100 translate-x-0 font-clash" : "opacity-0 -translate-x-4"
-                  } delay-[450ms]`}
+                className={`hover:text-primary transition-all duration-300 transform ${
+                  isMobileMenuOpen
+                    ? 'opacity-100 translate-x-0 font-clash'
+                    : 'opacity-0 -translate-x-4'
+                } delay-[450ms]`}
               >
                 Investor Quiz
               </a>
               <a
                 href="/#faq"
-                className={`hover:text-primary transition-all duration-300 transform ${isMobileMenuOpen ? "opacity-100 translate-x-0 font-clash" : "opacity-0 -translate-x-4"
-                  } delay-[500ms]`}
+                className={`hover:text-primary transition-all duration-300 transform ${
+                  isMobileMenuOpen
+                    ? 'opacity-100 translate-x-0 font-clash'
+                    : 'opacity-0 -translate-x-4'
+                } delay-[500ms]`}
               >
                 FAQ
               </a>
               <hr className="border-border my-2" />
               <div
-                className={`flex gap-4 items-center transition-all duration-300 transform ${isMobileMenuOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                  } delay-[500ms]`}
+                className={`flex gap-4 items-center transition-all duration-300 transform ${
+                  isMobileMenuOpen
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 translate-y-4'
+                } delay-[500ms]`}
               >
                 {isLoggedIn ? (
-                  <a href={dashboardUrl} className="flex-1 text-center py-2.5 text-sm font-bold text-white bg-primary rounded-xl hover:bg-primary/90 transition duration-200">
+                  <a
+                    href={dashboardUrl}
+                    className="flex-1 text-center py-2.5 text-sm font-bold text-white bg-primary rounded-xl hover:bg-primary/90 transition duration-200"
+                  >
                     Dashboard
                   </a>
                 ) : (
                   <>
-                    <a href="/onboarding" className="flex-1 text-center py-2.5 text-sm font-bold text-primary border border-primary/25 rounded-xl hover:bg-primary/5 transition duration-200">
+                    <a
+                      href="/onboarding"
+                      className="flex-1 text-center py-2.5 text-sm font-bold text-primary border border-primary/25 rounded-xl hover:bg-primary/5 transition duration-200"
+                    >
                       Login
                     </a>
                     {onBookCallClick ? (

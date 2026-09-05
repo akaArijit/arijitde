@@ -1,14 +1,13 @@
-"use client";
+'use client';
 
-import { cn } from "@/lib/utils";
-import { Check, Copy, RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { cn } from '@/lib/utils';
+import { Check, Copy, RotateCcw, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 const COPIED_RESET_MS = 1600;
 const ACTION_STAGGER_MS = 30;
 
-
-export type AIMessageAuthor = "user" | "assistant";
+export type AIMessageAuthor = 'user' | 'assistant';
 
 export type AIMessageProps = {
   /** Rendered to the side of the bubble — an avatar or an orb. */
@@ -31,7 +30,7 @@ export type AIMessageProps = {
    */
   from?: AIMessageAuthor;
   onRetry?: () => void;
-  onVote?: (vote: "up" | "down") => void;
+  onVote?: (vote: 'up' | 'down') => void;
   /** Preformatted timestamp, e.g. "14:32". */
   timestamp?: string;
 };
@@ -52,13 +51,13 @@ export const AIMessage = ({
   copyText,
   onRetry,
   onVote,
-  from = "assistant",
+  from = 'assistant',
   timestamp,
 }: AIMessageProps) => {
   const [hasCopied, setHasCopied] = useState(false);
-  const [vote, setVote] = useState<"up" | "down" | null>(null);
+  const [vote, setVote] = useState<'up' | 'down' | null>(null);
 
-  const isUser = from === "user";
+  const isUser = from === 'user';
 
   useEffect(() => {
     if (!hasCopied) {
@@ -85,8 +84,8 @@ export const AIMessage = ({
       ? {
           active: hasCopied,
           icon: hasCopied ? Check : Copy,
-          key: "copy",
-          label: hasCopied ? "Copied" : "Copy",
+          key: 'copy',
+          label: hasCopied ? 'Copied' : 'Copy',
           onClick: copy,
         }
       : null,
@@ -94,8 +93,8 @@ export const AIMessage = ({
       ? {
           active: false,
           icon: RotateCcw,
-          key: "retry",
-          label: "Retry",
+          key: 'retry',
+          label: 'Retry',
           onClick: onRetry,
         }
       : null,
@@ -103,27 +102,27 @@ export const AIMessage = ({
     // assistant-only even when the consumer passes `onVote` for the thread.
     onVote && !isUser
       ? {
-          active: vote === "up",
+          active: vote === 'up',
           icon: ThumbsUp,
-          key: "up",
-          label: "Good response",
+          key: 'up',
+          label: 'Good response',
           onClick: () => {
-            const next = vote === "up" ? null : "up";
+            const next = vote === 'up' ? null : 'up';
             setVote(next);
-            if (next) onVote("up");
+            if (next) onVote('up');
           },
         }
       : null,
     onVote && !isUser
       ? {
-          active: vote === "down",
+          active: vote === 'down',
           icon: ThumbsDown,
-          key: "down",
-          label: "Bad response",
+          key: 'down',
+          label: 'Bad response',
           onClick: () => {
-            const next = vote === "down" ? null : "down";
+            const next = vote === 'down' ? null : 'down';
             setVote(next);
-            if (next) onVote("down");
+            if (next) onVote('down');
           },
         }
       : null,
@@ -134,26 +133,33 @@ export const AIMessage = ({
       className={cn(
         // The reveal is scoped to this class rather than Tailwind's `group`, so a
         // `group` ancestor elsewhere on the page cannot reveal every row at once.
-        "ai-message-root flex w-full gap-2",
-        isUser ? "flex-row-reverse" : "flex-row",
-        className
+        'ai-message-root flex w-full gap-2',
+        isUser ? 'flex-row-reverse' : 'flex-row',
+        className,
       )}
     >
-      {avatar ? <div className="mt-0.5 shrink-0 select-none">{avatar}</div> : null}
+      {avatar ? (
+        <div className="mt-0.5 shrink-0 select-none">{avatar}</div>
+      ) : null}
 
-      <div className={cn("flex min-w-0 max-w-[85%] flex-col gap-0.5", isUser && "items-end")}>
+      <div
+        className={cn(
+          'flex min-w-0 max-w-[85%] flex-col gap-0.5',
+          isUser && 'items-end',
+        )}
+      >
         <div
           className={cn(
-            "w-fit text-xs md:text-sm leading-relaxed",
-            bubble && "rounded-2xl px-3 py-2",
+            'w-fit text-xs md:text-sm leading-relaxed',
+            bubble && 'rounded-2xl px-3 py-2',
             bubble &&
               isUser &&
-              "rounded-br-sm bg-neutral-900 text-white shadow-xs",
+              'rounded-br-sm bg-neutral-900 text-white shadow-xs',
             bubble &&
               !isUser &&
-              "rounded-bl-sm bg-neutral-100/90 border border-neutral-200/80 text-neutral-800 shadow-xs",
-            !bubble && "text-foreground",
-            bubbleClassName
+              'rounded-bl-sm bg-neutral-100/90 border border-neutral-200/80 text-neutral-800 shadow-xs',
+            !bubble && 'text-foreground',
+            bubbleClassName,
           )}
         >
           {children}
@@ -161,8 +167,8 @@ export const AIMessage = ({
 
         <div
           className={cn(
-            "flex items-center gap-0.5 px-0.5 min-h-[22px]",
-            isUser ? "flex-row-reverse" : "flex-row"
+            'flex items-center gap-0.5 px-0.5 min-h-[22px]',
+            isUser ? 'flex-row-reverse' : 'flex-row',
           )}
         >
           {/* The timestamp comes first so it stays pinned to the edge the
@@ -182,11 +188,11 @@ export const AIMessage = ({
                 aria-label={action.label}
                 aria-pressed={action.active}
                 className={cn(
-                  "ai-message-action cursor-pointer rounded-md p-1 transition-colors",
-                  isUser ? "ai-message-action-user" : "ai-message-action-agent",
+                  'ai-message-action cursor-pointer rounded-md p-1 transition-colors',
+                  isUser ? 'ai-message-action-user' : 'ai-message-action-agent',
                   action.active
-                    ? "text-[#3A8293] bg-[#3A8293]/10"
-                    : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                    ? 'text-[#3A8293] bg-[#3A8293]/10'
+                    : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700',
                 )}
                 key={action.key}
                 onClick={action.onClick}
@@ -196,11 +202,11 @@ export const AIMessage = ({
                 <Icon
                   aria-hidden="true"
                   className={
-                    action.key === "copy" && hasCopied
-                      ? "ai-message-pop"
+                    action.key === 'copy' && hasCopied
+                      ? 'ai-message-pop'
                       : undefined
                   }
-                  key={action.key === "copy" && hasCopied ? "copied" : "idle"}
+                  key={action.key === 'copy' && hasCopied ? 'copied' : 'idle'}
                   size={12}
                 />
               </button>

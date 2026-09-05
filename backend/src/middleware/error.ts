@@ -6,12 +6,14 @@ export function errorHandler(
   req: Request,
   res: Response,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: NextFunction
+  next: NextFunction,
 ): void {
   console.error('API Error: ', err);
 
   if (err instanceof ZodError) {
-    const errorMessages = err.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
+    const errorMessages = err.issues
+      .map((e) => `${e.path.join('.')}: ${e.message}`)
+      .join(', ');
     res.status(400).json({
       success: false,
       error: `Validation error - ${errorMessages}`,
@@ -33,6 +35,8 @@ export function errorHandler(
   const isProduction = process.env.NODE_ENV === 'production';
   res.status(status).json({
     success: false,
-    error: isProduction ? 'Internal Server Error' : (err.message || 'Internal Server Error'),
+    error: isProduction
+      ? 'Internal Server Error'
+      : err.message || 'Internal Server Error',
   });
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import React, { useRef, useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 interface ScrollBlurRevealProps {
   children: React.ReactNode;
@@ -11,12 +11,12 @@ interface ScrollBlurRevealProps {
   style?: React.CSSProperties;
 }
 
-export default function ScrollBlurReveal({ 
-  children, 
-  className, 
+export default function ScrollBlurReveal({
+  children,
+  className,
   delay = 0,
   duration,
-  style
+  style,
 }: ScrollBlurRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isIntersecting, setIsIntersecting] = useState(false);
@@ -38,8 +38,8 @@ export default function ScrollBlurReveal({
       },
       {
         threshold: 0.1,
-        rootMargin: "0px 0px -80px 0px",
-      }
+        rootMargin: '0px 0px -80px 0px',
+      },
     );
 
     if (ref.current) {
@@ -59,9 +59,11 @@ export default function ScrollBlurReveal({
 
   const customTransitionStyle: React.CSSProperties = {
     ...style,
-    ...(duration ? {
-      transitionDuration: `${duration}s`,
-    } : {})
+    ...(duration
+      ? {
+          transitionDuration: `${duration}s`,
+        }
+      : {}),
   };
 
   return (
@@ -69,9 +71,9 @@ export default function ScrollBlurReveal({
       ref={ref}
       style={customTransitionStyle}
       className={cn(
-        "reveal-fallback-hidden",
-        isIntersecting && "reveal-fallback-visible",
-        className
+        'reveal-fallback-hidden',
+        isIntersecting && 'reveal-fallback-visible',
+        className,
       )}
     >
       {children}

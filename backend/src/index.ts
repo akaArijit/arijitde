@@ -37,7 +37,9 @@ for (const envVar of requiredEnvVars) {
 
 // Warn if GMAIL_USER is missing, since nodemailer relies on it
 if (!process.env.GMAIL_USER) {
-  console.warn('Warning: GMAIL_USER environment variable is not set. OTP emails might fail.');
+  console.warn(
+    'Warning: GMAIL_USER environment variable is not set. OTP emails might fail.',
+  );
 }
 
 const app = express();
@@ -63,21 +65,24 @@ app.use(
         }
         return callback(null, true);
       }
-      
+
       const normalizedOrigin = origin.trim().replace(/\/$/, '');
       const isAllowed = allowedOrigins.some(
-        (allowed) => allowed.replace(/\/$/, '') === normalizedOrigin
+        (allowed) => allowed.replace(/\/$/, '') === normalizedOrigin,
       );
-      
+
       if (isAllowed) {
         callback(null, true);
       } else {
-        console.warn(`CORS blocked request from origin: ${origin}. Allowed origins:`, allowedOrigins);
+        console.warn(
+          `CORS blocked request from origin: ${origin}. Allowed origins:`,
+          allowedOrigins,
+        );
         callback(null, false);
       }
     },
     credentials: true,
-  })
+  }),
 );
 
 // F8: Explicit JSON body size limit to prevent payload abuse
@@ -89,7 +94,10 @@ const globalLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: 'Too many requests, please try again later.' },
+  message: {
+    success: false,
+    error: 'Too many requests, please try again later.',
+  },
 });
 app.use(globalLimiter);
 
@@ -103,7 +111,11 @@ app.get('/api/health', (req, res) => {
 });
 
 // F7: Serve uploaded files behind authentication instead of publicly
-app.use('/uploads', authMiddleware, express.static(path.join(__dirname, '../uploads')));
+app.use(
+  '/uploads',
+  authMiddleware,
+  express.static(path.join(__dirname, '../uploads')),
+);
 
 app.use('/api/auth', authRouter);
 

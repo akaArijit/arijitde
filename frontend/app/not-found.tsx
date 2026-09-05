@@ -1,8 +1,8 @@
 'use client';
 
-import Link from "next/link";
-import SoftBoxBlurBg from "@/components/SoftBoxBlurBg";
-import { GoArrowLeft } from "react-icons/go";
+import Link from 'next/link';
+import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
+import { GoArrowLeft } from 'react-icons/go';
 
 export default function NotFound() {
   return (
@@ -25,13 +25,14 @@ export default function NotFound() {
             Page Not Found
           </h1>
           <p className="text-[#64748B] text-sm leading-relaxed font-sans max-w-sm mx-auto">
-            The page you are looking for doesn't exist or has been shifted. Let's redirect you back to safety.
+            The page you are looking for doesn't exist or has been shifted.
+            Let's redirect you back to safety.
           </p>
         </div>
 
         {/* Home Button */}
         <div className="pt-2">
-           <Link
+          <Link
             href="/"
             className="inline-flex items-center gap-2 px-8 py-4 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs rounded-2xl transition duration-200 shadow-md uppercase tracking-wider group cursor-pointer"
           >

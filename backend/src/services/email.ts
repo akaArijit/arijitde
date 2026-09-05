@@ -23,7 +23,7 @@ export const transporter = {
       const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
-          'accept': 'application/json',
+          accept: 'application/json',
           'content-type': 'application/json',
           'api-key': process.env.BREVO_API_KEY,
         },

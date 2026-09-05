@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://finanalysis.site';
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://finanalysis.site';
 
   const routes = [
     '',
@@ -19,7 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/inflation-calculator',
     '/privacy',
     '/terms',
-    '/cookies'
+    '/cookies',
   ];
 
   return routes.map((route) => ({

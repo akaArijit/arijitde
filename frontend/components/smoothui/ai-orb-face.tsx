@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
 import {
   motion,
   useAnimationControls,
   useReducedMotion,
   useSpring,
-} from "motion/react";
-import { useCallback, useEffect, useId, useRef } from "react";
+} from 'motion/react';
+import { useCallback, useEffect, useId, useRef } from 'react';
 import {
   type AIAmplitude,
   type AIState,
   getAIStateMotion,
   useAmplitudeValue,
-} from "./ai-core";
+} from './ai-core';
 
 const VIEWBOX = 100;
 const CENTER = VIEWBOX / 2;
@@ -29,7 +29,7 @@ const GAZE_FALLOFF = 220;
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 const EASE_IN = [0.4, 0, 1, 1] as const;
 /** A ~1.25-turn swirl; spun in place it reads as dizzy. */
-const SPIRAL = "M0 0C-0.6 -4 5 -5 6 -0.6C7 4.5 1 8 -4 6C-9 4.5 -9.5 -2 -6 -6";
+const SPIRAL = 'M0 0C-0.6 -4 5 -5 6 -0.6C7 4.5 1 8 -4 6C-9 4.5 -9.5 -2 -6 -6';
 const BLINK_MIN_MS = 3200;
 const BLINK_EXTRA_MS = 2600;
 const DOUBLE_BLINK_CHANCE = 0.25;
@@ -45,7 +45,7 @@ const SACCADE_TARGETS = [
 
 export type AIOrbFaceProps = {
   /** Accessible label. Omit to keep the character decorative. */
-  "aria-label"?: string;
+  'aria-label'?: string;
   /** Live audio level, 0–1. Widens the eyes and lifts the body while speaking. */
   amplitude?: AIAmplitude;
   className?: string;
@@ -61,9 +61,9 @@ export type AIOrbFaceProps = {
 };
 
 const DEFAULT_COLORS = {
-  body: "oklch(78% 0.14 280)",
-  bodyEdge: "oklch(70% 0.16 320)",
-  feature: "oklch(24% 0.03 280)",
+  body: 'oklch(78% 0.14 280)',
+  bodyEdge: 'oklch(70% 0.16 320)',
+  feature: 'oklch(24% 0.03 280)',
 };
 
 /**
@@ -76,13 +76,13 @@ const DEFAULT_COLORS = {
  * two feel like the same creature.
  */
 const AIOrbFace = ({
-  "aria-label": ariaLabel,
+  'aria-label': ariaLabel,
   amplitude,
   className,
   colors,
   gaze = true,
   size = 128,
-  state = "idle",
+  state = 'idle',
 }: AIOrbFaceProps) => {
   const shouldReduceMotion = useReducedMotion();
   const amplitudeValue = useAmplitudeValue(amplitude);
@@ -100,12 +100,12 @@ const AIOrbFace = ({
   const gazeX = useSpring(0, { damping: 26, stiffness: 220 });
   const gazeY = useSpring(0, { damping: 26, stiffness: 220 });
 
-  const resolvedSize = typeof size === "number" ? `${size}px` : size;
+  const resolvedSize = typeof size === 'number' ? `${size}px` : size;
 
-  const isHappy = state === "done";
-  const isThinking = state === "thinking";
-  const isListening = state === "listening";
-  const isBroken = state === "error";
+  const isHappy = state === 'done';
+  const isThinking = state === 'thinking';
+  const isListening = state === 'listening';
+  const isBroken = state === 'error';
   const eyesOpen = !(isHappy || isBroken);
 
   // How open the eyes rest for this state.
@@ -120,7 +120,7 @@ const AIOrbFace = ({
     if (isThinking) {
       return 0.62;
     }
-    if (state === "streaming") {
+    if (state === 'streaming') {
       return 0.88;
     }
     return 1;
@@ -160,7 +160,7 @@ const AIOrbFace = ({
         await blink(false);
       }
     },
-    [leftLid, rightLid]
+    [leftLid, rightLid],
   );
 
   // Idle blinking, occasionally a double.
@@ -178,7 +178,7 @@ const AIOrbFace = ({
           }
           schedule();
         },
-        BLINK_MIN_MS + Math.random() * BLINK_EXTRA_MS
+        BLINK_MIN_MS + Math.random() * BLINK_EXTRA_MS,
       );
     };
     schedule();
@@ -208,8 +208,8 @@ const AIOrbFace = ({
       gazeX.set(Math.cos(angle) * reach);
       gazeY.set(Math.sin(angle) * reach);
     };
-    window.addEventListener("pointermove", handle);
-    return () => window.removeEventListener("pointermove", handle);
+    window.addEventListener('pointermove', handle);
+    return () => window.removeEventListener('pointermove', handle);
   }, [gaze, gazeX, gazeY, isThinking, eyesOpen, shouldReduceMotion]);
 
   // Thinking saccades.
@@ -232,7 +232,7 @@ const AIOrbFace = ({
           gazeY.set(target.y * GAZE_RANGE);
           schedule();
         },
-        SACCADE_MIN_MS + Math.random() * SACCADE_EXTRA_MS
+        SACCADE_MIN_MS + Math.random() * SACCADE_EXTRA_MS,
       );
     };
     schedule();
@@ -257,7 +257,7 @@ const AIOrbFace = ({
     // leave a broken assistant looking fine.
     bodyControls.start(
       { rotate: [0, -11, 9, -7, 5, -3, 0], x: [0, -5, 4, -3, 2, -1, 0] },
-      { duration: 1.05, ease: [0.45, 0, 0.55, 1] }
+      { duration: 1.05, ease: [0.45, 0, 0.55, 1] },
     );
   }, [bodyControls, gazeX, gazeY, isBroken, shouldReduceMotion]);
 
@@ -272,7 +272,7 @@ const AIOrbFace = ({
         scaleY: [1, 0.9, 1.08, 0.95, 1.02, 1],
         y: [0, 3, -9, 0, -3, 0],
       },
-      { duration: 0.85, ease: EASE_OUT, times: [0, 0.12, 0.4, 0.62, 0.82, 1] }
+      { duration: 0.85, ease: EASE_OUT, times: [0, 0.12, 0.4, 0.62, 0.82, 1] },
     );
   }, [bodyControls, isHappy, shouldReduceMotion]);
 
@@ -282,7 +282,7 @@ const AIOrbFace = ({
     if (shouldReduceMotion || !isListening) {
       return;
     }
-    const unsubscribe = amplitudeValue.on("change", (level: number) => {
+    const unsubscribe = amplitudeValue.on('change', (level: number) => {
       bodyControls.set({ scale: 1 + level * 0.07, y: -level * 2 });
     });
     return unsubscribe;
@@ -320,7 +320,7 @@ const AIOrbFace = ({
         transition={
           shouldReduceMotion
             ? { duration: 0 }
-            : { bounce: 0.1, duration: 0.25, type: "spring" }
+            : { bounce: 0.1, duration: 0.25, type: 'spring' }
         }
         width={EYE_WIDTH}
         x={x}
@@ -365,7 +365,7 @@ const AIOrbFace = ({
       }}
       transition={{
         duration: 2.4,
-        ease: "linear",
+        ease: 'linear',
         repeat: Number.POSITIVE_INFINITY,
       }}
     />
@@ -444,9 +444,9 @@ const AIOrbFace = ({
       animate={bodyControls}
       aria-hidden={ariaLabel ? undefined : true}
       aria-label={ariaLabel}
-      className={cn("block overflow-visible", className)}
+      className={cn('block overflow-visible', className)}
       ref={svgRef}
-      role={ariaLabel ? "img" : undefined}
+      role={ariaLabel ? 'img' : undefined}
       style={{
         filter: `saturate(${stateMotion.saturation})`,
         height: resolvedSize,
@@ -454,7 +454,7 @@ const AIOrbFace = ({
       }}
       viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
     >
-      <title>{ariaLabel ?? "AI assistant character"}</title>
+      <title>{ariaLabel ?? 'AI assistant character'}</title>
       <defs>
         <radialGradient cx="35%" cy="28%" id={bodyGradientId} r="80%">
           <stop offset="0%" stopColor={finalColors.body} />
@@ -484,13 +484,13 @@ const AIOrbFace = ({
 };
 
 export const Companion = ({
-  state = "idle",
+  state = 'idle',
   size = 96,
-  "aria-label": ariaLabel,
+  'aria-label': ariaLabel,
 }: {
   state?: AIState;
   size?: number | string;
-  "aria-label"?: string;
+  'aria-label'?: string;
 }) => (
   <AIOrbFace
     aria-label={ariaLabel ?? `Assistant is ${state}`}

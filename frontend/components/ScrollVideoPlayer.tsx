@@ -8,7 +8,10 @@ interface ScrollVideoPlayerProps {
   isLoaded: boolean;
 }
 
-export default function ScrollVideoPlayer({ src, isLoaded }: ScrollVideoPlayerProps) {
+export default function ScrollVideoPlayer({
+  src,
+  isLoaded,
+}: ScrollVideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -68,14 +71,16 @@ export default function ScrollVideoPlayer({ src, isLoaded }: ScrollVideoPlayerPr
       ([entry]) => {
         isVisible = entry.isIntersecting;
         if (isVisible) {
-          window.addEventListener('scroll', handleScrollTick, { passive: true });
+          window.addEventListener('scroll', handleScrollTick, {
+            passive: true,
+          });
           handleScroll(); // initial sync
         } else {
           window.removeEventListener('scroll', handleScrollTick);
           cancelAnimationFrame(animationFrameId);
         }
       },
-      { threshold: Array.from({ length: 41 }, (_, i) => i / 40) } // more granular observations for smoothness
+      { threshold: Array.from({ length: 41 }, (_, i) => i / 40) }, // more granular observations for smoothness
     );
 
     observer.observe(container);
@@ -94,12 +99,16 @@ export default function ScrollVideoPlayer({ src, isLoaded }: ScrollVideoPlayerPr
   }, []);
 
   return (
-    <div ref={containerRef} className="h-[200vh] w-full relative bg-black select-none">
+    <div
+      ref={containerRef}
+      className="h-[200vh] w-full relative bg-black select-none"
+    >
       {/* Sticky container that centers the video in viewport */}
       <div className="sticky top-0 h-screen w-full flex items-center justify-center bg-black overflow-hidden">
         <div
-          className={`w-full h-full flex items-center justify-center transition-all duration-[1000ms] ease-out ${isLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
+          className={`w-full h-full flex items-center justify-center transition-all duration-[1000ms] ease-out ${
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
         >
           <ScrollBlurReveal className="w-full h-full">
             <video

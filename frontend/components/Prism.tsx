@@ -41,7 +41,7 @@ const Prism: React.FC<PrismProps> = ({
   suspendWhenOffscreen = false,
   timeScale = 0.5,
   lightMode = false,
-  className = ''
+  className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -72,7 +72,7 @@ const Prism: React.FC<PrismProps> = ({
     const renderer = new Renderer({
       dpr,
       alpha: transparent,
-      antialias: false
+      antialias: false,
     });
     const gl = renderer.gl;
     gl.disable(gl.DEPTH_TEST);
@@ -84,7 +84,7 @@ const Prism: React.FC<PrismProps> = ({
       inset: '0',
       width: '100%',
       height: '100%',
-      display: 'block'
+      display: 'block',
     });
     container.appendChild(gl.canvas);
 
@@ -246,11 +246,11 @@ const Prism: React.FC<PrismProps> = ({
         uInvHeight: { value: 1 / H },
         uMinAxis: { value: Math.min(BASE_HALF, H) },
         uPxScale: {
-          value: 1 / ((gl.drawingBufferHeight || 1) * 0.1 * SCALE)
+          value: 1 / ((gl.drawingBufferHeight || 1) * 0.1 * SCALE),
         },
         uTimeScale: { value: TS },
-        uLightMode: { value: lightMode ? 1.0 : 0.0 }
-      }
+        uLightMode: { value: lightMode ? 1.0 : 0.0 },
+      },
     });
     const mesh = new Mesh(gl, { geometry, program });
 
@@ -262,14 +262,20 @@ const Prism: React.FC<PrismProps> = ({
       iResBuf[1] = gl.drawingBufferHeight;
       offsetPxBuf[0] = offX * dpr;
       offsetPxBuf[1] = offY * dpr;
-      program.uniforms.uPxScale.value = 1 / ((gl.drawingBufferHeight || 1) * 0.1 * SCALE);
+      program.uniforms.uPxScale.value =
+        1 / ((gl.drawingBufferHeight || 1) * 0.1 * SCALE);
     };
     const ro = new ResizeObserver(resize);
     ro.observe(container);
     resize();
 
     const rotBuf = new Float32Array(9);
-    const setMat3FromEuler = (yawY: number, pitchX: number, rollZ: number, out: Float32Array) => {
+    const setMat3FromEuler = (
+      yawY: number,
+      pitchX: number,
+      rollZ: number,
+      out: Float32Array,
+    ) => {
       const cy = Math.cos(yawY),
         sy = Math.sin(yawY);
       const cx = Math.cos(pitchX),
@@ -379,11 +385,18 @@ const Prism: React.FC<PrismProps> = ({
         yaw = lerp(prevYaw, targetYaw, INERT);
         pitch = lerp(prevPitch, targetPitch, INERT);
         roll = lerp(prevRoll, 0, 0.1);
-        program.uniforms.uRot.value = setMat3FromEuler(yaw, pitch, roll, rotBuf);
+        program.uniforms.uRot.value = setMat3FromEuler(
+          yaw,
+          pitch,
+          roll,
+          rotBuf,
+        );
 
         if (NOISE_IS_ZERO) {
           const settled =
-            Math.abs(yaw - targetYaw) < 1e-4 && Math.abs(pitch - targetPitch) < 1e-4 && Math.abs(roll) < 1e-4;
+            Math.abs(yaw - targetYaw) < 1e-4 &&
+            Math.abs(pitch - targetPitch) < 1e-4 &&
+            Math.abs(roll) < 1e-4;
           if (settled) continueRAF = false;
         }
       } else if (animationType === '3drotate') {
@@ -391,7 +404,12 @@ const Prism: React.FC<PrismProps> = ({
         yaw = tScaled * wY;
         pitch = Math.sin(tScaled * wX + phX) * 0.6;
         roll = Math.sin(tScaled * wZ + phZ) * 0.5;
-        program.uniforms.uRot.value = setMat3FromEuler(yaw, pitch, roll, rotBuf);
+        program.uniforms.uRot.value = setMat3FromEuler(
+          yaw,
+          pitch,
+          roll,
+          rotBuf,
+        );
         if (TS < 1e-6) continueRAF = false;
       } else {
         rotBuf[0] = 1;
@@ -417,8 +435,8 @@ const Prism: React.FC<PrismProps> = ({
 
     let io: IntersectionObserver | null = null;
     if (suspendWhenOffscreen) {
-      io = new IntersectionObserver(entries => {
-        const vis = entries.some(e => e.isIntersecting);
+      io = new IntersectionObserver((entries) => {
+        const vis = entries.some((e) => e.isIntersecting);
         if (vis) startRAF();
         else stopRAF();
       });
@@ -431,7 +449,8 @@ const Prism: React.FC<PrismProps> = ({
       stopRAF();
       ro.disconnect();
       if (animationType === 'hover') {
-        if (onPointerMove) window.removeEventListener('pointermove', onPointerMove);
+        if (onPointerMove)
+          window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('mouseleave', onLeave);
         window.removeEventListener('blur', onBlur);
       }
@@ -459,7 +478,7 @@ const Prism: React.FC<PrismProps> = ({
     inertia,
     bloom,
     suspendWhenOffscreen,
-    lightMode
+    lightMode,
   ]);
 
   return <div className={`prism-container ${className}`} ref={containerRef} />;

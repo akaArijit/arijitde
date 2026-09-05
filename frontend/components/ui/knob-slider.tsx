@@ -1,21 +1,16 @@
-"use client";
+'use client';
 
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useCallback,
-} from "react";
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 /* ───────── Dynamic Risk Gradient Helper ───────── */
 
 export function getRiskGradientColor(ratio: number): string {
   // ratio: 0 to 1
-  if (ratio < 0.25) return "#10B981"; // Emerald Green (Elephant)
-  if (ratio < 0.50) return "#06B6D4"; // Cyan / Sky Blue (Deer)
-  if (ratio < 0.72) return "#F59E0B"; // Amber Gold (Tiger)
-  if (ratio < 0.85) return "#EA580C"; // Deep Orange (Fox)
-  return "#EF4444"; // Vivid Crimson (Lion)
+  if (ratio < 0.25) return '#10B981'; // Emerald Green (Elephant)
+  if (ratio < 0.5) return '#06B6D4'; // Cyan / Sky Blue (Deer)
+  if (ratio < 0.72) return '#F59E0B'; // Amber Gold (Tiger)
+  if (ratio < 0.85) return '#EA580C'; // Deep Orange (Fox)
+  return '#EF4444'; // Vivid Crimson (Lion)
 }
 
 /* ───────── Smooth Rolling Digit Component ───────── */
@@ -30,16 +25,16 @@ function RollingDigit({
   return (
     <div
       className="relative inline-block h-[1.12em] overflow-hidden leading-[1.12em] tabular-nums"
-      style={{ width: "0.62em" }}
+      style={{ width: '0.62em' }}
     >
       <div
         className="flex flex-col"
         style={{
           transform: `translateY(-${digit * 10}%)`,
           transition: isDragging
-            ? "none"
-            : "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
-          willChange: "transform",
+            ? 'none'
+            : 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+          willChange: 'transform',
         }}
       >
         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
@@ -61,12 +56,16 @@ function SmoothNumberDisplay({
 }) {
   const clamped = Math.max(0, Math.min(100, Math.round(value)));
   const str = clamped.toString();
-  const digits = str.split("").map((d) => parseInt(d, 10));
+  const digits = str.split('').map((d) => parseInt(d, 10));
 
   return (
     <div className="flex items-center justify-center font-chillax font-black tracking-tight text-primary select-none">
       {digits.map((d, i) => (
-        <RollingDigit key={`${digits.length}-${i}`} digit={d} isDragging={isDragging} />
+        <RollingDigit
+          key={`${digits.length}-${i}`}
+          digit={d}
+          isDragging={isDragging}
+        />
       ))}
     </div>
   );
@@ -91,7 +90,7 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
   max = 100,
   size = 250,
   color,
-  label = "RISK INDEX",
+  label = 'RISK INDEX',
 }) => {
   const knobRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
@@ -145,7 +144,10 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
 
   const tickCount = 72;
   const innerSize = size * 0.68;
-  const currentRatio = Math.max(0, Math.min(1, (displayValue - min) / (max - min)));
+  const currentRatio = Math.max(
+    0,
+    Math.min(1, (displayValue - min) / (max - min)),
+  );
   const activeColor = color || getRiskGradientColor(currentRatio);
 
   /* Convert pointer coordinates → value with wrap-around guard */
@@ -175,7 +177,7 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
       setDisplayValue(newValue);
       onChange(newValue);
     },
-    [min, max, onChange]
+    [min, max, onChange],
   );
 
   /* Pointer events with hardware pointer capture for 120 FPS tracking */
@@ -226,9 +228,9 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
       }
     };
 
-    el.addEventListener("wheel", handleWheel, { passive: false });
+    el.addEventListener('wheel', handleWheel, { passive: false });
     return () => {
-      el.removeEventListener("wheel", handleWheel);
+      el.removeEventListener('wheel', handleWheel);
     };
   }, [displayValue, min, max, onChange]);
 
@@ -242,12 +244,12 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
       className={`relative flex items-center justify-center rounded-full select-none transition-shadow duration-300 ${
-        isDragging ? "cursor-grabbing" : "cursor-grab"
+        isDragging ? 'cursor-grabbing' : 'cursor-grab'
       }`}
       style={{
         width: size,
         height: size,
-        touchAction: "none",
+        touchAction: 'none',
         boxShadow: `0 18px 45px -10px ${activeColor}35, 0 0 35px -6px ${activeColor}20`,
       }}
     >
@@ -265,8 +267,20 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
         className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
       >
         <defs>
-          <filter id="knobTickGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0" dy="0" stdDeviation="1.5" floodColor={activeColor} floodOpacity="0.8" />
+          <filter
+            id="knobTickGlow"
+            x="-50%"
+            y="-50%"
+            width="200%"
+            height="200%"
+          >
+            <feDropShadow
+              dx="0"
+              dy="0"
+              stdDeviation="1.5"
+              floodColor={activeColor}
+              floodOpacity="0.8"
+            />
           </filter>
         </defs>
 
@@ -284,7 +298,8 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
         {Array.from({ length: tickCount }).map((_, i) => {
           const angle = (i * 360) / tickCount;
           const tickRatio = i / tickCount;
-          const isActive = angle <= currentAngle || (currentAngle >= 355 && i === 0);
+          const isActive =
+            angle <= currentAngle || (currentAngle >= 355 && i === 0);
           const tickColor = getRiskGradientColor(tickRatio);
           const isMajor = i % 6 === 0;
 
@@ -294,14 +309,16 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
               x1="50"
               y1="4"
               x2="50"
-              y2={isMajor ? "11.5" : "8.5"}
+              y2={isMajor ? '11.5' : '8.5'}
               transform={`rotate(${angle} 50 50)`}
-              stroke={isActive ? tickColor : "currentColor"}
-              strokeWidth={isActive ? (isMajor ? "1.6" : "1.1") : "0.75"}
+              stroke={isActive ? tickColor : 'currentColor'}
+              strokeWidth={isActive ? (isMajor ? '1.6' : '1.1') : '0.75'}
               strokeLinecap="round"
-              className={isActive ? "" : "text-neutral-300 dark:text-neutral-700"}
+              className={
+                isActive ? '' : 'text-neutral-300 dark:text-neutral-700'
+              }
               opacity={isActive ? 1 : 0.35}
-              filter={isActive ? "url(#knobTickGlow)" : undefined}
+              filter={isActive ? 'url(#knobTickGlow)' : undefined}
             />
           );
         })}
@@ -312,7 +329,9 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
         className="absolute inset-0 pointer-events-none"
         style={{
           transform: `rotate(${currentAngle}deg)`,
-          transition: isDragging ? "none" : "transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          transition: isDragging
+            ? 'none'
+            : 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
         <div
@@ -324,7 +343,7 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
             style={{
               backgroundColor: activeColor,
               boxShadow: `0 0 12px 3px ${activeColor}, 0 0 20px ${activeColor}90`,
-              border: "2px solid #ffffff",
+              border: '2px solid #ffffff',
             }}
           />
           <div
@@ -357,10 +376,7 @@ export const KnobSlider: React.FC<KnobSliderProps> = ({
         />
 
         {/* Numeric Display */}
-        <div
-          className="relative z-10"
-          style={{ fontSize: innerSize * 0.34 }}
-        >
+        <div className="relative z-10" style={{ fontSize: innerSize * 0.34 }}>
           <SmoothNumberDisplay value={displayValue} isDragging={isDragging} />
         </div>
 

@@ -13,7 +13,10 @@ const chatLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: 'Too many chat messages, please try again in 15 minutes.' },
+  message: {
+    success: false,
+    error: 'Too many chat messages, please try again in 15 minutes.',
+  },
 });
 
 const SYSTEM_PROMPT = `You are Virtual Arijit, the AI extension of Arijit De (AMFI-registered Mutual Fund Distributor ARN-273396 and B.Tech in Computer Science). You represent Arijit directly, speaking in the first person ("I", "my", "me", "my father Arindam De", "my startup FinAnalysis").
@@ -63,98 +66,111 @@ const chatRequestSchema = z.object({
     z.object({
       role: z.enum(['user', 'assistant']),
       content: z.string().min(1, 'Message content cannot be empty'),
-    })
+    }),
   ),
 });
 
-router.post('/', chatLimiter, optionalAuthMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
-  try {
-    const apiKey = process.env.GROQ_API_KEY || process.env.GROK_API_KEY;
-    if (!apiKey) {
-      res.status(500).json({
-        success: false,
-        error: 'Groq API Key is not configured on the server.',
-      });
-      return;
-    }
-
-    const parsed = chatRequestSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid request body. Messages array with role and content is required.',
-      });
-      return;
-    }
-
-    const { messages } = parsed.data;
-
-    // Optional user personalization if authenticated
-    let dynamicSystemPrompt = SYSTEM_PROMPT;
-    if (req.user) {
-      dynamicSystemPrompt += `\n\nUser Context:\n- Authenticated Client Name: ${req.user.name || 'Valued Client'}\n- Email: ${req.user.email || 'N/A'}`;
-    }
-
-    // Models to try in order of preference
-    const candidateModels = [
-      process.env.GROQ_MODEL,
-      'qwen/qwen3.8-27b',
-      'openai/gpt-oss-120b',
-      'groq/compound-mini',
-    ].filter(Boolean) as string[];
-
-    let reply = '';
-    let lastError = '';
-
-    for (const model of candidateModels) {
-      try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: 'system', content: dynamicSystemPrompt },
-              ...messages,
-            ],
-            temperature: 0.2,
-            max_tokens: 350,
-          }),
+router.post(
+  '/',
+  chatLimiter,
+  optionalAuthMiddleware,
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const apiKey = process.env.GROQ_API_KEY || process.env.GROK_API_KEY;
+      if (!apiKey) {
+        res.status(500).json({
+          success: false,
+          error: 'Groq API Key is not configured on the server.',
         });
-
-        if (response.ok) {
-          const data = (await response.json()) as any;
-          reply = data.choices?.[0]?.message?.content || '';
-          if (reply) break;
-        } else {
-          lastError = await response.text();
-          console.warn(`Groq model ${model} attempt failed:`, lastError);
-        }
-      } catch (err: any) {
-        lastError = err?.message || String(err);
-        console.warn(`Groq model ${model} request error:`, lastError);
+        return;
       }
-    }
 
-    if (!reply) {
-      console.error('All candidate Groq models failed. Last error:', lastError);
-      res.status(502).json({
-        success: false,
-        error: 'Failed to generate response from AI model. Please check Groq API status.',
+      const parsed = chatRequestSchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({
+          success: false,
+          error:
+            'Invalid request body. Messages array with role and content is required.',
+        });
+        return;
+      }
+
+      const { messages } = parsed.data;
+
+      // Optional user personalization if authenticated
+      let dynamicSystemPrompt = SYSTEM_PROMPT;
+      if (req.user) {
+        dynamicSystemPrompt += `\n\nUser Context:\n- Authenticated Client Name: ${req.user.name || 'Valued Client'}\n- Email: ${req.user.email || 'N/A'}`;
+      }
+
+      // Models to try in order of preference
+      const candidateModels = [
+        process.env.GROQ_MODEL,
+        'qwen/qwen3.8-27b',
+        'openai/gpt-oss-120b',
+        'groq/compound-mini',
+      ].filter(Boolean) as string[];
+
+      let reply = '';
+      let lastError = '';
+
+      for (const model of candidateModels) {
+        try {
+          const response = await fetch(
+            'https://api.groq.com/openai/v1/chat/completions',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model,
+                messages: [
+                  { role: 'system', content: dynamicSystemPrompt },
+                  ...messages,
+                ],
+                temperature: 0.2,
+                max_tokens: 350,
+              }),
+            },
+          );
+
+          if (response.ok) {
+            const data = (await response.json()) as any;
+            reply = data.choices?.[0]?.message?.content || '';
+            if (reply) break;
+          } else {
+            lastError = await response.text();
+            console.warn(`Groq model ${model} attempt failed:`, lastError);
+          }
+        } catch (err: any) {
+          lastError = err?.message || String(err);
+          console.warn(`Groq model ${model} request error:`, lastError);
+        }
+      }
+
+      if (!reply) {
+        console.error(
+          'All candidate Groq models failed. Last error:',
+          lastError,
+        );
+        res.status(502).json({
+          success: false,
+          error:
+            'Failed to generate response from AI model. Please check Groq API status.',
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        text: reply.trim(),
       });
-      return;
+    } catch (error) {
+      next(error);
     }
-
-    res.json({
-      success: true,
-      text: reply.trim(),
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 export default router;

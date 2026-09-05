@@ -42,7 +42,7 @@ export interface ScoreResult {
  */
 export async function calculateScore(
   rows: PortfolioRow[],
-  assessment: AssessmentContext
+  assessment: AssessmentContext,
 ): Promise<ScoreResult> {
   if (rows.length === 0) {
     const goalResult = scoreGoalAlignment(rows, assessment);
@@ -50,7 +50,11 @@ export async function calculateScore(
     const scaledTotal = Math.min(97, Math.max(2, qScore * 5));
 
     let tag: ScoreTag;
-    if (!assessment.goal || assessment.goal === Goal.EXPLORING || assessment.goal === Goal.NOT_SURE_YET) {
+    if (
+      !assessment.goal ||
+      assessment.goal === Goal.EXPLORING ||
+      assessment.goal === Goal.NOT_SURE_YET
+    ) {
       tag = ScoreTag.NEEDS_STRUCTURING;
     } else if (scaledTotal >= 75) {
       tag = ScoreTag.ALIGNED;
@@ -62,13 +66,16 @@ export async function calculateScore(
 
     const selectedInsights = [...goalResult.insights];
     const generalInsights = [
-      "Portfolio: Review and rebalance your portfolio annually to maintain your target risk profile",
-      "Portfolio: Maintain an emergency fund separate from your market-linked investments",
-      "Portfolio: Review your investment goals periodically to account for any lifecycle changes"
+      'Portfolio: Review and rebalance your portfolio annually to maintain your target risk profile',
+      'Portfolio: Maintain an emergency fund separate from your market-linked investments',
+      'Portfolio: Review your investment goals periodically to account for any lifecycle changes',
     ];
     let padIdx = 0;
     while (selectedInsights.length < 3) {
-      selectedInsights.push(generalInsights[padIdx++] || "Portfolio: Stay invested for the long-term to beat inflation");
+      selectedInsights.push(
+        generalInsights[padIdx++] ||
+          'Portfolio: Stay invested for the long-term to beat inflation',
+      );
     }
 
     return {
@@ -81,28 +88,38 @@ export async function calculateScore(
       tag,
       insights: {
         textInsights: selectedInsights.slice(0, 5),
-        comparison: null
-      }
+        comparison: null,
+      },
     };
   }
 
   // Run all dimensions (efficiency is async due to AMFI API calls)
-  const [goalResult, assetResult, divResult, discResult, effResult] = await Promise.all([
-    Promise.resolve(scoreGoalAlignment(rows, assessment)),
-    Promise.resolve(scoreAssetAllocation(rows, assessment)),
-    Promise.resolve(scoreDiversification(rows, assessment)),
-    Promise.resolve(scoreDiscipline(rows, assessment)),
-    scoreEfficiency(rows, assessment),
-  ]);
+  const [goalResult, assetResult, divResult, discResult, effResult] =
+    await Promise.all([
+      Promise.resolve(scoreGoalAlignment(rows, assessment)),
+      Promise.resolve(scoreAssetAllocation(rows, assessment)),
+      Promise.resolve(scoreDiversification(rows, assessment)),
+      Promise.resolve(scoreDiscipline(rows, assessment)),
+      scoreEfficiency(rows, assessment),
+    ]);
 
-  const rawTotal = goalResult.score + assetResult.score + divResult.score + discResult.score + effResult.score;
+  const rawTotal =
+    goalResult.score +
+    assetResult.score +
+    divResult.score +
+    discResult.score +
+    effResult.score;
 
   // Clamp display score: min 2, max 97
   const total = Math.min(97, Math.max(2, rawTotal));
 
   // Determine Tag
   let tag: ScoreTag;
-  if (!assessment.goal || assessment.goal === Goal.EXPLORING || assessment.goal === Goal.NOT_SURE_YET) {
+  if (
+    !assessment.goal ||
+    assessment.goal === Goal.EXPLORING ||
+    assessment.goal === Goal.NOT_SURE_YET
+  ) {
     tag = ScoreTag.NEEDS_STRUCTURING;
   } else if (total >= 75) {
     tag = ScoreTag.ALIGNED;
@@ -114,11 +131,36 @@ export async function calculateScore(
 
   // Collect all insights from all dimensions, prioritize by dimension score (worst first)
   const dimensions = [
-    { name: 'Goal Alignment', score: goalResult.score, maxScore: 20, insights: goalResult.insights },
-    { name: 'Asset Allocation', score: assetResult.score, maxScore: 20, insights: assetResult.insights },
-    { name: 'Diversification', score: divResult.score, maxScore: 20, insights: divResult.insights },
-    { name: 'Discipline', score: discResult.score, maxScore: 20, insights: discResult.insights },
-    { name: 'Efficiency', score: effResult.score, maxScore: 20, insights: effResult.insights },
+    {
+      name: 'Goal Alignment',
+      score: goalResult.score,
+      maxScore: 20,
+      insights: goalResult.insights,
+    },
+    {
+      name: 'Asset Allocation',
+      score: assetResult.score,
+      maxScore: 20,
+      insights: assetResult.insights,
+    },
+    {
+      name: 'Diversification',
+      score: divResult.score,
+      maxScore: 20,
+      insights: divResult.insights,
+    },
+    {
+      name: 'Discipline',
+      score: discResult.score,
+      maxScore: 20,
+      insights: discResult.insights,
+    },
+    {
+      name: 'Efficiency',
+      score: effResult.score,
+      maxScore: 20,
+      insights: effResult.insights,
+    },
   ];
 
   // Sort by score ascending (worst-scoring dimensions first)
@@ -135,13 +177,16 @@ export async function calculateScore(
 
   // Pad to at least 3 insights
   const generalInsights = [
-    "Portfolio: Review and rebalance your portfolio annually to maintain your target risk profile",
-    "Portfolio: Maintain an emergency fund separate from your market-linked investments",
-    "Portfolio: Review your investment goals periodically to account for any lifecycle changes"
+    'Portfolio: Review and rebalance your portfolio annually to maintain your target risk profile',
+    'Portfolio: Maintain an emergency fund separate from your market-linked investments',
+    'Portfolio: Review your investment goals periodically to account for any lifecycle changes',
   ];
   let padIdx = 0;
   while (selectedInsights.length < 3) {
-    selectedInsights.push(generalInsights[padIdx++] || "Portfolio: Stay invested for the long-term to beat inflation");
+    selectedInsights.push(
+      generalInsights[padIdx++] ||
+        'Portfolio: Stay invested for the long-term to beat inflation',
+    );
   }
 
   return {
@@ -154,7 +199,7 @@ export async function calculateScore(
     tag,
     insights: {
       textInsights: selectedInsights,
-      comparison: (effResult as any).comparison || null
+      comparison: (effResult as any).comparison || null,
     },
   };
 }

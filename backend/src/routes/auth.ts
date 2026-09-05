@@ -15,9 +15,10 @@ async function generateUniqueReferralCode() {
   let referralCode = '';
   let isUnique = false;
   while (!isUnique) {
-    referralCode = 'FIN-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    referralCode =
+      'FIN-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     const existing = await prisma.user.findUnique({
-      where: { referralCode }
+      where: { referralCode },
     });
     if (!existing) {
       isUnique = true;
@@ -35,7 +36,11 @@ const authLimiter = rateLimit({
   max: 15, // 15 attempts per window
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: 'Too many authentication attempts. Please wait 15 minutes and try again.' },
+  message: {
+    success: false,
+    error:
+      'Too many authentication attempts. Please wait 15 minutes and try again.',
+  },
 });
 
 // 1. POST /api/auth/otp/send
@@ -56,7 +61,8 @@ router.post('/otp/send', authLimiter, async (req, res, next) => {
       if (existingUser) {
         res.status(400).json({
           success: false,
-          error: 'Unable to complete registration. Please try logging in or contact support.',
+          error:
+            'Unable to complete registration. Please try logging in or contact support.',
         });
         return;
       }
@@ -69,7 +75,7 @@ router.post('/otp/send', authLimiter, async (req, res, next) => {
 
     // Send email in background to prevent blocking the response
     sendOTP(formattedEmail, otp).catch((err) =>
-      console.error('Failed to send OTP in background:', err)
+      console.error('Failed to send OTP in background:', err),
     );
 
     res.json({
@@ -86,7 +92,8 @@ const verifyOtpSchema = z.object({
   email: z.string().email('Invalid email address'),
   otp: z.string().length(6, 'OTP must be 6 digits'),
   name: z.string().optional(),
-  password: z.string()
+  password: z
+    .string()
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number')
@@ -96,7 +103,9 @@ const verifyOtpSchema = z.object({
 
 router.post('/otp/verify', authLimiter, async (req, res, next) => {
   try {
-    const { email, otp, name, password, referredBy } = verifyOtpSchema.parse(req.body);
+    const { email, otp, name, password, referredBy } = verifyOtpSchema.parse(
+      req.body,
+    );
     const formattedEmail = email.toLowerCase();
 
     const isValid = verifyOTP(formattedEmail, otp);
@@ -108,13 +117,15 @@ router.post('/otp/verify', authLimiter, async (req, res, next) => {
       return;
     }
 
-    const hashedPassword = password ? await bcrypt.hash(password, 10) : undefined;
+    const hashedPassword = password
+      ? await bcrypt.hash(password, 10)
+      : undefined;
 
     // Find referrer if referredBy is passed
     let referrerId: string | null = null;
     if (referredBy) {
       const referrerUser = await prisma.user.findUnique({
-        where: { referralCode: referredBy.trim().toUpperCase() }
+        where: { referralCode: referredBy.trim().toUpperCase() },
       });
       if (referrerUser) {
         referrerId = referrerUser.id;
@@ -301,9 +312,10 @@ router.post('/google', authLimiter, async (req, res, next) => {
       if (clientRecords.length > 0) {
         const accounts = clientRecords.map((c) => {
           const pan = c.pan || '';
-          const panMasked = pan.length >= 4
-            ? '*'.repeat(pan.length - 4) + pan.substring(pan.length - 4)
-            : 'N/A';
+          const panMasked =
+            pan.length >= 4
+              ? '*'.repeat(pan.length - 4) + pan.substring(pan.length - 4)
+              : 'N/A';
           return {
             id: c.id,
             name: c.name || 'N/A',
@@ -312,9 +324,13 @@ router.post('/google', authLimiter, async (req, res, next) => {
         });
 
         const tempToken = jwt.sign(
-          { email: formattedEmail, googleId, purpose: 'client_pan_verification' },
+          {
+            email: formattedEmail,
+            googleId,
+            purpose: 'client_pan_verification',
+          },
           process.env.JWT_SECRET!,
-          { expiresIn: '15m' }
+          { expiresIn: '15m' },
         );
 
         res.json({
@@ -342,9 +358,10 @@ router.post('/google', authLimiter, async (req, res, next) => {
         // Require account selection and identity verification (PAN)
         const accounts = clientRecords.map((c) => {
           const pan = c.pan || '';
-          const panMasked = pan.length >= 4
-            ? '*'.repeat(pan.length - 4) + pan.substring(pan.length - 4)
-            : 'N/A';
+          const panMasked =
+            pan.length >= 4
+              ? '*'.repeat(pan.length - 4) + pan.substring(pan.length - 4)
+              : 'N/A';
           return {
             id: c.id,
             name: c.name || 'N/A',
@@ -353,9 +370,13 @@ router.post('/google', authLimiter, async (req, res, next) => {
         });
 
         const tempToken = jwt.sign(
-          { email: formattedEmail, googleId, purpose: 'client_pan_verification' },
+          {
+            email: formattedEmail,
+            googleId,
+            purpose: 'client_pan_verification',
+          },
           process.env.JWT_SECRET!,
-          { expiresIn: '15m' }
+          { expiresIn: '15m' },
         );
 
         res.json({
@@ -389,7 +410,7 @@ router.post('/google', authLimiter, async (req, res, next) => {
         let referrerId: string | null = null;
         if (referredBy) {
           const referrerUser = await prisma.user.findUnique({
-            where: { referralCode: referredBy.trim().toUpperCase() }
+            where: { referralCode: referredBy.trim().toUpperCase() },
           });
           if (referrerUser) {
             referrerId = referrerUser.id;
@@ -473,37 +494,41 @@ router.post('/google', authLimiter, async (req, res, next) => {
 });
 
 // 4. GET /api/auth/me
-router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
-  try {
-    const userId = req.user!.id;
-    let user = req.user!;
+router.get(
+  '/me',
+  authMiddleware,
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const userId = req.user!.id;
+      let user = req.user!;
 
-    // 1. Backfill referral code if missing (legacy users)
-    if (!user.referralCode) {
-      const refCode = await generateUniqueReferralCode();
-      user = await prisma.user.update({
-        where: { id: userId },
-        data: { referralCode: refCode },
-        include: {
-          client: {
-            select: {
-              activePlan: true,
-              advisorNotes: true,
-              activatedAt: true,
-            }
-          }
-        }
-      }) as any;
+      // 1. Backfill referral code if missing (legacy users)
+      if (!user.referralCode) {
+        const refCode = await generateUniqueReferralCode();
+        user = (await prisma.user.update({
+          where: { id: userId },
+          data: { referralCode: refCode },
+          include: {
+            client: {
+              select: {
+                activePlan: true,
+                advisorNotes: true,
+                activatedAt: true,
+              },
+            },
+          },
+        })) as any;
+      }
+
+      res.json({
+        success: true,
+        data: user,
+      });
+    } catch (error) {
+      next(error);
     }
-
-    res.json({
-      success: true,
-      data: user,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 // 5. POST /api/auth/logout
 router.post('/logout', (req, res) => {
@@ -516,49 +541,62 @@ router.post('/logout', (req, res) => {
 // 6. POST /api/auth/phone
 const updatePhoneSchema = z.object({
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
-  dob: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: 'Invalid date of birth format',
-  }).transform((val) => new Date(val)),
-  anniversary: z.string().optional().nullable().refine((val) => !val || val.trim() === '' || !isNaN(Date.parse(val)), {
-    message: 'Invalid anniversary date format',
-  }).transform((val) => (val && val.trim() !== '') ? new Date(val) : null),
+  dob: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: 'Invalid date of birth format',
+    })
+    .transform((val) => new Date(val)),
+  anniversary: z
+    .string()
+    .optional()
+    .nullable()
+    .refine((val) => !val || val.trim() === '' || !isNaN(Date.parse(val)), {
+      message: 'Invalid anniversary date format',
+    })
+    .transform((val) => (val && val.trim() !== '' ? new Date(val) : null)),
 });
 
-router.post('/phone', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
-  try {
-    const { phone, dob, anniversary } = updatePhoneSchema.parse(req.body);
-    const userId = req.user!.id;
+router.post(
+  '/phone',
+  authMiddleware,
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const { phone, dob, anniversary } = updatePhoneSchema.parse(req.body);
+      const userId = req.user!.id;
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { 
-        phone,
-        dob,
-        anniversary,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        phone: true,
-        dob: true,
-        anniversary: true,
-      }
-    });
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          phone,
+          dob,
+          anniversary,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          phone: true,
+          dob: true,
+          anniversary: true,
+        },
+      });
 
-    res.json({
-      success: true,
-      data: updatedUser,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+      res.json({
+        success: true,
+        data: updatedUser,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 // 7. POST /api/auth/pan/login
 const panLoginSchema = z.object({
-  pan: z.string()
+  pan: z
+    .string()
     .min(1, 'PAN is required')
     .transform((val) => val.trim().toUpperCase())
     .pipe(z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format')),
@@ -652,7 +690,8 @@ router.post('/password/reset/send-otp', authLimiter, async (req, res, next) => {
     if (!user) {
       res.status(404).json({
         success: false,
-        error: 'Unable to process your request. Please verify your email or contact support.',
+        error:
+          'Unable to process your request. Please verify your email or contact support.',
       });
       return;
     }
@@ -661,7 +700,7 @@ router.post('/password/reset/send-otp', authLimiter, async (req, res, next) => {
     saveOTP(formattedEmail, otp);
     // Send email in background to prevent blocking the response
     sendOTP(formattedEmail, otp).catch((err) =>
-      console.error('Failed to send OTP in background:', err)
+      console.error('Failed to send OTP in background:', err),
     );
 
     res.json({
@@ -677,7 +716,8 @@ router.post('/password/reset/send-otp', authLimiter, async (req, res, next) => {
 const confirmResetSchema = z.object({
   email: z.string().email('Invalid email address'),
   otp: z.string().length(6, 'OTP must be 6 digits'),
-  password: z.string()
+  password: z
+    .string()
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
@@ -700,7 +740,7 @@ router.post('/password/reset/confirm', authLimiter, async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const userToUpdate = await prisma.user.findFirst({
-      where: { email: formattedEmail }
+      where: { email: formattedEmail },
     });
     if (!userToUpdate) {
       res.status(404).json({ success: false, error: 'User not found' });
@@ -723,7 +763,8 @@ router.post('/password/reset/confirm', authLimiter, async (req, res, next) => {
 
 // 10. POST /api/auth/activation/send-otp
 const sendActivationOtpSchema = z.object({
-  pan: z.string()
+  pan: z
+    .string()
     .min(1, 'PAN is required')
     .transform((val) => val.trim().toUpperCase())
     .pipe(z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format')),
@@ -738,12 +779,13 @@ router.post('/activation/send-otp', authLimiter, async (req, res, next) => {
 
     // 1. Check if user already exists with this PAN
     const userWithPan = await prisma.user.findUnique({
-      where: { pan: formattedPan }
+      where: { pan: formattedPan },
     });
     if (userWithPan) {
       res.status(400).json({
         success: false,
-        error: 'An account has already been activated for this PAN. Please log in using your PAN.'
+        error:
+          'An account has already been activated for this PAN. Please log in using your PAN.',
       });
       return;
     }
@@ -754,8 +796,8 @@ router.post('/activation/send-otp', authLimiter, async (req, res, next) => {
     const existingClientMatch = await prisma.existingClient.findFirst({
       where: {
         pan: { equals: formattedPan, mode: 'insensitive' },
-        email: { equals: formattedEmail, mode: 'insensitive' }
-      }
+        email: { equals: formattedEmail, mode: 'insensitive' },
+      },
     });
 
     let matches = !!existingClientMatch;
@@ -765,10 +807,10 @@ router.post('/activation/send-otp', authLimiter, async (req, res, next) => {
         where: {
           OR: [
             { clientPan: { equals: formattedPan, mode: 'insensitive' } },
-            { panAsPerFolio: { equals: formattedPan, mode: 'insensitive' } }
+            { panAsPerFolio: { equals: formattedPan, mode: 'insensitive' } },
           ],
-          email: { equals: formattedEmail, mode: 'insensitive' }
-        }
+          email: { equals: formattedEmail, mode: 'insensitive' },
+        },
       });
       matches = !!folioMatch;
     }
@@ -776,7 +818,8 @@ router.post('/activation/send-otp', authLimiter, async (req, res, next) => {
     if (!matches) {
       res.status(404).json({
         success: false,
-        error: 'No matching client profile found with the provided PAN and Email combination. Please verify your details or contact support.'
+        error:
+          'No matching client profile found with the provided PAN and Email combination. Please verify your details or contact support.',
       });
       return;
     }
@@ -786,12 +829,12 @@ router.post('/activation/send-otp', authLimiter, async (req, res, next) => {
     saveOTP(formattedEmail, otp);
     // Send email in background to prevent blocking the response
     sendOTP(formattedEmail, otp).catch((err) =>
-      console.error('Failed to send OTP in background:', err)
+      console.error('Failed to send OTP in background:', err),
     );
 
     res.json({
       success: true,
-      data: { message: 'Activation OTP sent successfully' }
+      data: { message: 'Activation OTP sent successfully' },
     });
   } catch (error) {
     next(error);
@@ -800,13 +843,15 @@ router.post('/activation/send-otp', authLimiter, async (req, res, next) => {
 
 // 11. POST /api/auth/activation/verify-otp
 const verifyActivationOtpSchema = z.object({
-  pan: z.string()
+  pan: z
+    .string()
     .min(1, 'PAN is required')
     .transform((val) => val.trim().toUpperCase())
     .pipe(z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format')),
   email: z.string().email('Invalid email address'),
   otp: z.string().length(6, 'OTP must be 6 digits'),
-  password: z.string()
+  password: z
+    .string()
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
@@ -814,18 +859,21 @@ const verifyActivationOtpSchema = z.object({
 
 router.post('/activation/verify-otp', authLimiter, async (req, res, next) => {
   try {
-    const { pan, email, otp, password } = verifyActivationOtpSchema.parse(req.body);
+    const { pan, email, otp, password } = verifyActivationOtpSchema.parse(
+      req.body,
+    );
     const formattedPan = pan.trim().toUpperCase();
     const formattedEmail = email.toLowerCase();
 
     // 1. Double check PAN uniqueness to avoid race conditions
     const userWithPan = await prisma.user.findUnique({
-      where: { pan: formattedPan }
+      where: { pan: formattedPan },
     });
     if (userWithPan) {
       res.status(400).json({
         success: false,
-        error: 'An account has already been activated for this PAN. Please log in using your PAN.'
+        error:
+          'An account has already been activated for this PAN. Please log in using your PAN.',
       });
       return;
     }
@@ -835,7 +883,7 @@ router.post('/activation/verify-otp', authLimiter, async (req, res, next) => {
     if (!isValid) {
       res.status(400).json({
         success: false,
-        error: 'Invalid or expired activation OTP.'
+        error: 'Invalid or expired activation OTP.',
       });
       return;
     }
@@ -845,8 +893,8 @@ router.post('/activation/verify-otp', authLimiter, async (req, res, next) => {
     const existingClientMatch = await prisma.existingClient.findFirst({
       where: {
         pan: { equals: formattedPan, mode: 'insensitive' },
-        email: { equals: formattedEmail, mode: 'insensitive' }
-      }
+        email: { equals: formattedEmail, mode: 'insensitive' },
+      },
     });
     if (existingClientMatch) {
       clientName = existingClientMatch.name;
@@ -855,10 +903,10 @@ router.post('/activation/verify-otp', authLimiter, async (req, res, next) => {
         where: {
           OR: [
             { clientPan: { equals: formattedPan, mode: 'insensitive' } },
-            { panAsPerFolio: { equals: formattedPan, mode: 'insensitive' } }
+            { panAsPerFolio: { equals: formattedPan, mode: 'insensitive' } },
           ],
-          email: { equals: formattedEmail, mode: 'insensitive' }
-        }
+          email: { equals: formattedEmail, mode: 'insensitive' },
+        },
       });
       if (folioMatch) {
         clientName = folioMatch.clientName || folioMatch.nameAsPerFolio;
@@ -870,7 +918,7 @@ router.post('/activation/verify-otp', authLimiter, async (req, res, next) => {
       const hashedPassword = await bcrypt.hash(password, 10);
       // Find a guest user with this email who hasn't set their PAN yet
       const guestUser = await tx.user.findFirst({
-        where: { email: formattedEmail, pan: null }
+        where: { email: formattedEmail, pan: null },
       });
 
       let updatedUser;
@@ -882,8 +930,8 @@ router.post('/activation/verify-otp', authLimiter, async (req, res, next) => {
             pan: formattedPan,
             name: guestUser.name || clientName || undefined,
             password: hashedPassword,
-            role: targetRole
-          }
+            role: targetRole,
+          },
         });
       } else {
         const refCode = await generateUniqueReferralCode();
@@ -894,8 +942,8 @@ router.post('/activation/verify-otp', authLimiter, async (req, res, next) => {
             name: clientName,
             password: hashedPassword,
             role: 'CLIENT',
-            referralCode: refCode
-          }
+            referralCode: refCode,
+          },
         });
       }
 
@@ -909,7 +957,7 @@ router.post('/activation/verify-otp', authLimiter, async (req, res, next) => {
           activatedAt: new Date(),
           advisorNotes: 'Activated via PAN + Email OTP',
           activePlan: 'PREMIUM',
-        }
+        },
       });
 
       return updatedUser;
@@ -932,14 +980,13 @@ router.post('/activation/verify-otp', authLimiter, async (req, res, next) => {
           role: user.role,
           pan: user.pan,
           phone: user.phone,
-        }
-      }
+        },
+      },
     });
   } catch (error) {
     next(error);
   }
 });
-
 
 // ─── CLIENT PASSWORDLESS LOGIN (Email OTP) ───────────────────────────────
 
@@ -963,7 +1010,8 @@ router.post('/client/otp/send', authLimiter, async (req, res, next) => {
     if (!clientRecord) {
       res.status(400).json({
         success: false,
-        error: 'This email is not registered as a client. Please contact your advisor for assistance.',
+        error:
+          'This email is not registered as a client. Please contact your advisor for assistance.',
       });
       return;
     }
@@ -973,7 +1021,7 @@ router.post('/client/otp/send', authLimiter, async (req, res, next) => {
 
     // Send OTP email in background
     sendOTP(formattedEmail, otp).catch((err) =>
-      console.error('Failed to send client OTP in background:', err)
+      console.error('Failed to send client OTP in background:', err),
     );
 
     res.json({
@@ -1023,9 +1071,10 @@ router.post('/client/otp/verify', authLimiter, async (req, res, next) => {
     // Generate masked PANs for accounts selection
     const accounts = clientRecords.map((c) => {
       const pan = c.pan || '';
-      const panMasked = pan.length >= 4
-        ? '*'.repeat(pan.length - 4) + pan.substring(pan.length - 4)
-        : 'N/A';
+      const panMasked =
+        pan.length >= 4
+          ? '*'.repeat(pan.length - 4) + pan.substring(pan.length - 4)
+          : 'N/A';
       return {
         id: c.id,
         name: c.name || 'N/A',
@@ -1037,7 +1086,7 @@ router.post('/client/otp/verify', authLimiter, async (req, res, next) => {
     const tempToken = jwt.sign(
       { email: formattedEmail, purpose: 'client_pan_verification' },
       process.env.JWT_SECRET!,
-      { expiresIn: '15m' }
+      { expiresIn: '15m' },
     );
 
     res.json({
@@ -1056,7 +1105,10 @@ router.post('/client/otp/verify', authLimiter, async (req, res, next) => {
 const clientPanVerifySchema = z.object({
   tempToken: z.string().min(1, 'Verification token is required'),
   accountId: z.string().uuid('Invalid account ID'),
-  pan: z.string().min(1, 'PAN is required').transform((v) => v.trim().toUpperCase()),
+  pan: z
+    .string()
+    .min(1, 'PAN is required')
+    .transform((v) => v.trim().toUpperCase()),
 });
 
 router.post('/client/pan/verify', authLimiter, async (req, res, next) => {
@@ -1069,7 +1121,8 @@ router.post('/client/pan/verify', authLimiter, async (req, res, next) => {
     } catch (err) {
       res.status(400).json({
         success: false,
-        error: 'Session expired or invalid. Please request a new verification code.',
+        error:
+          'Session expired or invalid. Please request a new verification code.',
       });
       return;
     }
@@ -1193,6 +1246,5 @@ router.post('/client/pan/verify', authLimiter, async (req, res, next) => {
     next(error);
   }
 });
-
 
 export default router;

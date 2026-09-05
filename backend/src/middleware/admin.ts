@@ -5,7 +5,7 @@ import { Role } from '@prisma/client';
 export function adminMiddleware(
   req: AuthenticatedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   if (!req.user) {
     res.status(401).json({

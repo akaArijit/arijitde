@@ -77,13 +77,19 @@ export const LIFE_STAGE_OPTIONS: { value: LifeStage; label: string }[] = [
   { value: 'EARLY_CAREER', label: 'Early Career Professional' },
   { value: 'MID_CAREER', label: 'Mid-Career Professional' },
   { value: 'BUSINESS_OWNER', label: 'Business Owner' },
-  { value: 'HIGH_LEVEL_PROFESSIONAL', label: 'High-Level Professional (10+ Years Experience)' },
+  {
+    value: 'HIGH_LEVEL_PROFESSIONAL',
+    label: 'High-Level Professional (10+ Years Experience)',
+  },
   { value: 'RETIRED', label: 'Retired' },
 ];
 
 // ──── Investment Tenure Config ────
 
-export const INVESTMENT_TENURE_OPTIONS: { value: InvestmentTenure; label: string }[] = [
+export const INVESTMENT_TENURE_OPTIONS: {
+  value: InvestmentTenure;
+  label: string;
+}[] = [
   { value: 'LESS_THAN_3_YEARS', label: 'Less than 3 Years' },
   { value: '3_TO_5_YEARS', label: '3–5 Years' },
   { value: '5_TO_10_YEARS', label: '5–10 Years' },
@@ -93,7 +99,10 @@ export const INVESTMENT_TENURE_OPTIONS: { value: InvestmentTenure; label: string
 
 // ──── Investment Style Config ────
 
-export const INVESTMENT_STYLE_OPTIONS: { value: InvestmentStyle; label: string }[] = [
+export const INVESTMENT_STYLE_OPTIONS: {
+  value: InvestmentStyle;
+  label: string;
+}[] = [
   { value: 'REGULAR_MONTHLY_SIP', label: 'Regular Monthly SIP' },
   { value: 'OCCASIONAL_SIP', label: 'Occasional SIP' },
   { value: 'MOSTLY_LUMPSUM', label: 'Mostly Lumpsum' },
@@ -103,7 +112,10 @@ export const INVESTMENT_STYLE_OPTIONS: { value: InvestmentStyle; label: string }
 
 // ──── Expected Return Config ────
 
-export const EXPECTED_RETURN_OPTIONS: { value: ExpectedReturn; label: string }[] = [
+export const EXPECTED_RETURN_OPTIONS: {
+  value: ExpectedReturn;
+  label: string;
+}[] = [
   { value: '6_TO_8', label: '6–8%' },
   { value: '8_TO_12', label: '8–12%' },
   { value: '12_TO_15', label: '12–15%' },
@@ -118,5 +130,8 @@ export const RISK_BEHAVIOR_OPTIONS: { value: RiskBehavior; label: string }[] = [
   { value: 'STOP_INVESTING', label: 'Stop investing temporarily' },
   { value: 'WAIT_PATIENTLY', label: 'Wait patiently' },
   { value: 'INVEST_MORE', label: 'Invest more' },
-  { value: 'REVIEW_FUNDAMENTALS', label: 'Review and decide based on fundamentals' },
+  {
+    value: 'REVIEW_FUNDAMENTALS',
+    label: 'Review and decide based on fundamentals',
+  },
 ];

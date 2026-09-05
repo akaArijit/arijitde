@@ -19,7 +19,7 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
           setIsVisible(true);
         }
       },
-      { threshold: 0.05 }
+      { threshold: 0.05 },
     );
     const el = containerRef.current;
     if (el) {
@@ -34,13 +34,13 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
     const updateTime = () => {
       const now = new Date();
       const options: Intl.DateTimeFormatOptions = {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
         hour12: false,
-        timeZone: "Asia/Kolkata",
+        timeZone: 'Asia/Kolkata',
       };
-      setCurrentTime(now.toLocaleTimeString("en-US", options));
+      setCurrentTime(now.toLocaleTimeString('en-US', options));
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
@@ -48,18 +48,20 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
   }, []);
 
   return (
-    <footer ref={footerRef as any} className="w-full bg-transparent relative z-10 pt-24 pb-16 overflow-hidden text-foreground">
+    <footer
+      ref={footerRef as any}
+      className="w-full bg-transparent relative z-10 pt-24 pb-16 overflow-hidden text-foreground"
+    >
       {/* Top Columns Grid */}
       <div className="w-full max-w-5xl mx-auto px-6 mb-20 flex flex-col items-center gap-12 text-center">
         {/* Big "Good buy." title */}
         <h2 className="font-instrument-serif text-7xl sm:text-7xl md:text-[8rem] lg:text-[12rem] font-normal text-primary tracking-tight leading-none drop-shadow-sm select-none">
           Invest Better.
         </h2>
-        
+
         {/* Paragraph description */}
         <p className="font-clash text-sm md:text-lg text-muted-foreground max-w-xl leading-relaxed text-center mx-auto whitespace-pre-line">
-          Contact us about your portfolio health report
-          or wealth targets. Let's
+          Contact us about your portfolio health report or wealth targets. Let's
           collaborate, call us today!
         </p>
 
@@ -67,8 +69,13 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
         <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-12 text-sm font-clash mt-6 text-center">
           {/* General Enquiries */}
           <div className="flex flex-col items-center gap-2.5">
-            <span className="text-primary font-bold text-base md:text-lg">General Enquiries</span>
-            <a href="mailto:arijit1504@gmail.com" className="text-muted-foreground hover:text-primary transition duration-200 underline decoration-primary/30 underline-offset-4 font-normal">
+            <span className="text-primary font-bold text-base md:text-lg">
+              General Enquiries
+            </span>
+            <a
+              href="mailto:arijit1504@gmail.com"
+              className="text-muted-foreground hover:text-primary transition duration-200 underline decoration-primary/30 underline-offset-4 font-normal"
+            >
               arijit1504@gmail.com
             </a>
             {onBookCallClick ? (
@@ -90,7 +97,9 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
 
           {/* Visit us */}
           <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <span className="text-primary font-bold text-base md:text-lg mb-0.5">Visit us</span>
+            <span className="text-primary font-bold text-base md:text-lg mb-0.5">
+              Visit us
+            </span>
             <span className="font-normal">Baguiati, Jardabagan</span>
             <span className="font-normal">Kolkata, West Bengal</span>
             <span className="font-normal">India</span>
@@ -98,11 +107,19 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
 
           {/* Quick Links */}
           <div className="flex flex-col items-center gap-2.5">
-            <span className="text-primary font-bold text-base md:text-lg">Quick Links</span>
-            <a href="https://www.linkedin.com/in/arijit-de-ba1594358" className="text-muted-foreground hover:text-primary transition duration-200 underline decoration-primary/30 underline-offset-4 font-normal">
+            <span className="text-primary font-bold text-base md:text-lg">
+              Quick Links
+            </span>
+            <a
+              href="https://www.linkedin.com/in/arijit-de-ba1594358"
+              className="text-muted-foreground hover:text-primary transition duration-200 underline decoration-primary/30 underline-offset-4 font-normal"
+            >
               LinkedIn
             </a>
-            <a href="https://www.instagram.com/arijit_.04" className="text-muted-foreground hover:text-primary transition duration-200 underline decoration-primary/30 underline-offset-4 font-normal">
+            <a
+              href="https://www.instagram.com/arijit_.04"
+              className="text-muted-foreground hover:text-primary transition duration-200 underline decoration-primary/30 underline-offset-4 font-normal"
+            >
               Instagram
             </a>
           </div>
@@ -120,10 +137,15 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
             className="w-24 h-24 md:w-36 md:h-36 rounded-2xl object-cover object-[center_47%] shrink-0 border border-amber-500/15 shadow-md animate-fade-in relative z-10"
           />
           <div className="flex-1 flex flex-col gap-2.5 relative z-10">
-            <h3 className="font-instrument-serif text-xl sm:text-3xl font-bold text-amber-800">New investment?</h3>
+            <h3 className="font-instrument-serif text-xl sm:text-3xl font-bold text-amber-800">
+              New investment?
+            </h3>
             <p className="font-chillax text-base sm:text-xl text-neutral-800 leading-relaxed">
-              Reach out today to Arijit De for new financial enquiries at{" "}
-              <a href="mailto:arijit1504@gmail.com" className="text-amber-700 hover:text-amber-900 hover:underline font-semibold font-chillax">
+              Reach out today to Arijit De for new financial enquiries at{' '}
+              <a
+                href="mailto:arijit1504@gmail.com"
+                className="text-amber-700 hover:text-amber-900 hover:underline font-semibold font-chillax"
+              >
                 arijit1504@gmail.com
               </a>
             </p>
@@ -137,10 +159,12 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
           Arijit De | AMFI-registered Mutual Fund Distributor | ARN-273396
         </p>
         <p>
-          Portfolio reports on this platform are automated technology outputs and do not constitute investment advice under SEBI regulations.
+          Portfolio reports on this platform are automated technology outputs
+          and do not constitute investment advice under SEBI regulations.
         </p>
         <p className="text-[13px] sm:text-sm font-medium text-slate-900 mt-1">
-          Mutual fund investments are subject to market risks. Please read all scheme related documents carefully.
+          Mutual fund investments are subject to market risks. Please read all
+          scheme related documents carefully.
         </p>
       </div>
 
@@ -148,22 +172,47 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
       <div className="flex flex-col md:flex-row justify-between items-center w-full border-t border-border max-w-5xl mx-auto px-6 py-6 text-xs text-slate-500 font-sans gap-4">
         <span>©2026 FinAnalysis</span>
         <div className="flex gap-6">
-          <a href="/privacy" className="hover:text-primary transition duration-200">Privacy</a>
-          <a href="/terms" className="hover:text-primary transition duration-200">Terms</a>
-          <a href="/cookies" className="hover:text-primary transition duration-200">Cookies</a>
+          <a
+            href="/privacy"
+            className="hover:text-primary transition duration-200"
+          >
+            Privacy
+          </a>
+          <a
+            href="/terms"
+            className="hover:text-primary transition duration-200"
+          >
+            Terms
+          </a>
+          <a
+            href="/cookies"
+            className="hover:text-primary transition duration-200"
+          >
+            Cookies
+          </a>
         </div>
-        <span>Designed and Developed by <a href="https://arddev.in" target="_blank" rel="noopener noreferrer" className="hover:text-primary font-bold transition duration-200 font-sans">ard.dev</a></span>
+        <span>
+          Designed and Developed by{' '}
+          <a
+            href="https://arddev.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary font-bold transition duration-200 font-sans"
+          >
+            ard.dev
+          </a>
+        </span>
       </div>
 
       {/* Big Brand Logo Text */}
-      <div 
+      <div
         ref={containerRef}
         className="w-full overflow-hidden flex flex-col justify-end items-center relative min-h-[140px] mt-10"
       >
         <div className="absolute bottom-[-10vw] left-1/2 -translate-x-1/2 w-[60vw] h-[20vw] rounded-full bg-[radial-gradient(circle,rgba(0,0,0,0.03)_0%,transparent_70%)] pointer-events-none select-none" />
 
         {/* Thank You Note */}
-        <div 
+        <div
           style={{
             transition: 'all 2000ms cubic-bezier(0.16, 1, 0.3, 1)',
             opacity: isVisible ? 1 : 0,
@@ -174,15 +223,17 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
           Thank you for choosing us!
         </div>
 
-        <h1 
-          style={{ 
-            fontSize: "13vw",
+        <h1
+          style={{
+            fontSize: '13vw',
             transition: 'all 2400ms cubic-bezier(0.16, 1, 0.3, 1)',
             letterSpacing: isVisible ? '0.06em' : '-0.08em',
             filter: isVisible ? 'blur(0px)' : 'blur(24px)',
-            transform: isVisible ? 'translateY(5%) scale(1)' : 'translateY(100px) scale(0.85)',
-            opacity: isVisible ? 1 : 0
-          }} 
+            transform: isVisible
+              ? 'translateY(5%) scale(1)'
+              : 'translateY(100px) scale(0.85)',
+            opacity: isVisible ? 1 : 0,
+          }}
           className="font-chillax font-bold text-black leading-none select-none text-center uppercase"
         >
           FinAnalysis
@@ -190,5 +241,4 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
       </div>
     </footer>
   );
-  
 }

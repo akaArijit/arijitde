@@ -1,37 +1,37 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { KnobSlider } from "@/components/ui/knob-slider";
-import CalculatorsCarousel from "@/components/CalculatorsCarousel";
-import SoftBoxBlurBg from "@/components/SoftBoxBlurBg";
-import LightTunnel from "@/components/LightTunnel";
-import GradualBlur from "@/components/GradualBlur";
-import ScrollRevealSection from "@/components/ScrollRevealSection";
-import ScrollBlurReveal from "@/components/ScrollBlurReveal";
-import SvgScrollWipe from "@/components/SvgScrollWipe";
-import ScrollTextReveal from "@/components/ScrollTextReveal";
-import ServicesConstellation from "@/components/ServicesConstellation";
-import { GoArrowDownRight } from "react-icons/go";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import ChatbotWidget from "@/components/ChatbotWidget";
-import AIOrbFace from "@/components/smoothui/ai-orb-face";
-import BookCallModal from "@/components/BookCallModal";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-import { 
-  Target, 
-  PieChart, 
-  ShieldCheck, 
-  TrendingUp, 
-  Coins, 
-  Zap, 
-  Clock, 
-  Flame, 
-  Briefcase, 
-  Landmark, 
-  PiggyBank, 
-  CreditCard, 
-  Scale, 
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { KnobSlider } from '@/components/ui/knob-slider';
+import CalculatorsCarousel from '@/components/CalculatorsCarousel';
+import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
+import LightTunnel from '@/components/LightTunnel';
+import GradualBlur from '@/components/GradualBlur';
+import ScrollRevealSection from '@/components/ScrollRevealSection';
+import ScrollBlurReveal from '@/components/ScrollBlurReveal';
+import SvgScrollWipe from '@/components/SvgScrollWipe';
+import ScrollTextReveal from '@/components/ScrollTextReveal';
+import ServicesConstellation from '@/components/ServicesConstellation';
+import { GoArrowDownRight } from 'react-icons/go';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import ChatbotWidget from '@/components/ChatbotWidget';
+import AIOrbFace from '@/components/smoothui/ai-orb-face';
+import BookCallModal from '@/components/BookCallModal';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import {
+  Target,
+  PieChart,
+  ShieldCheck,
+  TrendingUp,
+  Coins,
+  Zap,
+  Clock,
+  Flame,
+  Briefcase,
+  Landmark,
+  PiggyBank,
+  CreditCard,
+  Scale,
   Activity,
   CheckCircle2,
   ArrowRight,
@@ -44,234 +44,265 @@ import {
   FileCheck2,
   BrainCircuit,
   Quote,
-  RotateCw
-} from "lucide-react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+  RotateCw,
+} from 'lucide-react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-if (typeof window !== "undefined") {
+if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const archetypesMap: Record<string, {
-  name: string;
-  emoji: string;
-  category: string;
-  score: number;
-  badge: string;
-  needleAngle: number;
-  color: string;
-  gradient: string;
-  breakdown: { label: string; pct: string; active?: boolean }[];
-  description: string;
-}> = {
+const archetypesMap: Record<
+  string,
+  {
+    name: string;
+    emoji: string;
+    category: string;
+    score: number;
+    badge: string;
+    needleAngle: number;
+    color: string;
+    gradient: string;
+    breakdown: { label: string; pct: string; active?: boolean }[];
+    description: string;
+  }
+> = {
   tiger: {
-    name: "Aggressive Tiger",
-    emoji: "🐅",
-    category: "High Conviction Growth",
+    name: 'Aggressive Tiger',
+    emoji: '🐅',
+    category: 'High Conviction Growth',
     score: 65,
-    badge: "Optimal Fit",
+    badge: 'Optimal Fit',
     needleAngle: 27,
-    color: "#F59E0B",
-    gradient: "from-amber-500 to-orange-500",
+    color: '#F59E0B',
+    gradient: 'from-amber-500 to-orange-500',
     breakdown: [
-      { label: "🐘 Elephant", pct: "20%" },
-      { label: "🐅 Tiger", pct: "65%", active: true },
-      { label: "🦊 Fox", pct: "15%" }
+      { label: '🐘 Elephant', pct: '20%' },
+      { label: '🐅 Tiger', pct: '65%', active: true },
+      { label: '🦊 Fox', pct: '15%' },
     ],
-    description: "Prioritizes high-compounding alpha via disciplined systematic equity, multi-cap funds, and SIF portfolios."
+    description:
+      'Prioritizes high-compounding alpha via disciplined systematic equity, multi-cap funds, and SIF portfolios.',
   },
   elephant: {
-    name: "Conservative Elephant",
-    emoji: "🐘",
-    category: "Capital Preservation",
+    name: 'Conservative Elephant',
+    emoji: '🐘',
+    category: 'Capital Preservation',
     score: 25,
-    badge: "High Security",
+    badge: 'High Security',
     needleAngle: -45,
-    color: "#10B981",
-    gradient: "from-emerald-500 to-teal-600",
+    color: '#10B981',
+    gradient: 'from-emerald-500 to-teal-600',
     breakdown: [
-      { label: "🐘 Elephant", pct: "70%", active: true },
-      { label: "🦌 Deer", pct: "20%" },
-      { label: "🐅 Tiger", pct: "10%" }
+      { label: '🐘 Elephant', pct: '70%', active: true },
+      { label: '🦌 Deer', pct: '20%' },
+      { label: '🐅 Tiger', pct: '10%' },
     ],
-    description: "Prioritizes capital stability and predictable yields through AAA corporate bonds, target-maturity debt, and sovereign instruments."
+    description:
+      'Prioritizes capital stability and predictable yields through AAA corporate bonds, target-maturity debt, and sovereign instruments.',
   },
   deer: {
-    name: "Balanced Deer",
-    emoji: "🦌",
-    category: "Steady Dynamic Allocation",
+    name: 'Balanced Deer',
+    emoji: '🦌',
+    category: 'Steady Dynamic Allocation',
     score: 45,
-    badge: "Balanced Growth",
+    badge: 'Balanced Growth',
     needleAngle: -10,
-    color: "#0284C7",
-    gradient: "from-sky-500 to-blue-600",
+    color: '#0284C7',
+    gradient: 'from-sky-500 to-blue-600',
     breakdown: [
-      { label: "🐘 Elephant", pct: "35%" },
-      { label: "🦌 Deer", pct: "50%", active: true },
-      { label: "🦊 Fox", pct: "15%" }
+      { label: '🐘 Elephant', pct: '35%' },
+      { label: '🦌 Deer', pct: '50%', active: true },
+      { label: '🦊 Fox', pct: '15%' },
     ],
-    description: "Balances steady equity compounding with defensive debt hedges and multi-asset dynamic allocation strategies."
+    description:
+      'Balances steady equity compounding with defensive debt hedges and multi-asset dynamic allocation strategies.',
   },
   fox: {
-    name: "Strategic Fox",
-    emoji: "🦊",
-    category: "Tactical Opportunist",
+    name: 'Strategic Fox',
+    emoji: '🦊',
+    category: 'Tactical Opportunist',
     score: 78,
-    badge: "Tactical Alpha",
+    badge: 'Tactical Alpha',
     needleAngle: 50,
-    color: "#EA580C",
-    gradient: "from-orange-500 to-amber-600",
+    color: '#EA580C',
+    gradient: 'from-orange-500 to-amber-600',
     breakdown: [
-      { label: "🦊 Fox", pct: "60%", active: true },
-      { label: "🐅 Tiger", pct: "30%" },
-      { label: "🐘 Elephant", pct: "10%" }
+      { label: '🦊 Fox', pct: '60%', active: true },
+      { label: '🐅 Tiger', pct: '30%' },
+      { label: '🐘 Elephant', pct: '10%' },
     ],
-    description: "Capitalizes on sector rotation, macroeconomic tailwinds, and dynamic momentum portfolio shifts."
+    description:
+      'Capitalizes on sector rotation, macroeconomic tailwinds, and dynamic momentum portfolio shifts.',
   },
   lion: {
-    name: "Visionary Lion",
-    emoji: "🦁",
-    category: "Frontier Equity Leader",
+    name: 'Visionary Lion',
+    emoji: '🦁',
+    category: 'Frontier Equity Leader',
     score: 90,
-    badge: "Maximum Expansion",
+    badge: 'Maximum Expansion',
     needleAngle: 72,
-    color: "#DC2626",
-    gradient: "from-rose-500 to-red-600",
+    color: '#DC2626',
+    gradient: 'from-rose-500 to-red-600',
     breakdown: [
-      { label: "🦁 Lion", pct: "75%", active: true },
-      { label: "🐅 Tiger", pct: "20%" },
-      { label: "🦊 Fox", pct: "5%" }
+      { label: '🦁 Lion', pct: '75%', active: true },
+      { label: '🐅 Tiger', pct: '20%' },
+      { label: '🦊 Fox', pct: '5%' },
     ],
-    description: "Engineered for maximum long-horizon growth utilizing specialized PMS strategies, small-cap innovators, and alternative asset vehicles."
-  }
+    description:
+      'Engineered for maximum long-horizon growth utilizing specialized PMS strategies, small-cap innovators, and alternative asset vehicles.',
+  },
 };
 
 const servicesData = [
   {
-    title: "Mutual Funds & SIP Planning",
-    description: "Build robust, long-term wealth using systematically structured mutual fund portfolios, tailored to balance growth targets with proper risk management."
+    title: 'Mutual Funds & SIP Planning',
+    description:
+      'Build robust, long-term wealth using systematically structured mutual fund portfolios, tailored to balance growth targets with proper risk management.',
   },
   {
-    title: "Specialised Investment Funds (SIF)",
-    description: "Gain access to bespoke, high-growth investment vehicles engineered for sophisticated investors seeking alternative asset class diversification."
+    title: 'Specialised Investment Funds (SIF)',
+    description:
+      'Gain access to bespoke, high-growth investment vehicles engineered for sophisticated investors seeking alternative asset class diversification.',
   },
   {
-    title: "Portfolio Management Services (PMS)",
-    description: "Leverage personalized wealth management models with active monitoring, strategic allocation adjustments, and direct equity integration."
+    title: 'Portfolio Management Services (PMS)',
+    description:
+      'Leverage personalized wealth management models with active monitoring, strategic allocation adjustments, and direct equity integration.',
   },
   {
-    title: "Life Insurance & LIC Products",
-    description: "Secure your family's future and safeguard your capital with top-tier life protection policies, endowment options, and customizable term riders."
+    title: 'Life Insurance & LIC Products',
+    description:
+      "Secure your family's future and safeguard your capital with top-tier life protection policies, endowment options, and customizable term riders.",
   },
   {
-    title: "Mediclaim & Health Insurance",
-    description: "Guard against sudden medical emergencies and rising healthcare inflation with comprehensive personal, family, and corporate health covers."
+    title: 'Mediclaim & Health Insurance',
+    description:
+      'Guard against sudden medical emergencies and rising healthcare inflation with comprehensive personal, family, and corporate health covers.',
   },
   {
-    title: "Vehicle & Householder Insurance",
-    description: "Protect your physical assets, including automobiles and residential property, from accidental damage, theft, and third-party liabilities."
+    title: 'Vehicle & Householder Insurance',
+    description:
+      'Protect your physical assets, including automobiles and residential property, from accidental damage, theft, and third-party liabilities.',
   },
   {
-    title: "Fixed Deposits",
-    description: "Secure fixed interest rates and guaranteed capital preservation through high-yield fixed deposit options backed by leading banking institutions."
+    title: 'Fixed Deposits',
+    description:
+      'Secure fixed interest rates and guaranteed capital preservation through high-yield fixed deposit options backed by leading banking institutions.',
   },
   {
-    title: "PNB Housing Finance",
-    description: "Unlock structural leverage and long-term homeownership support through customized home loans, construction finance, and refinancing services."
-  }
+    title: 'PNB Housing Finance',
+    description:
+      'Unlock structural leverage and long-term homeownership support through customized home loans, construction finance, and refinancing services.',
+  },
 ];
 
 const faqData = [
   {
-    question: "Is the portfolio health report really free?",
-    answer: "Yes. Your portfolio health report is completely free."
+    question: 'Is the portfolio health report really free?',
+    answer: 'Yes. Your portfolio health report is completely free.',
   },
   {
-    question: "How is my portfolio score calculated?",
-    answer: "Your score is calculated out of 100 across five dimensions: Goal Alignment, Asset Allocation, Diversification, Investment Discipline, and Portfolio Efficiency. Each dimension is evaluated against your age, financial goal, and investment behavior — not generic benchmarks."
+    question: 'How is my portfolio score calculated?',
+    answer:
+      'Your score is calculated out of 100 across five dimensions: Goal Alignment, Asset Allocation, Diversification, Investment Discipline, and Portfolio Efficiency. Each dimension is evaluated against your age, financial goal, and investment behavior — not generic benchmarks.',
   },
   {
-    question: "Do I need to be a client to use the platform?",
-    answer: "No. Anyone can sign up, take the Investor Personality Assessment, and upload their portfolio for analysis"
+    question: 'Do I need to be a client to use the platform?',
+    answer:
+      'No. Anyone can sign up, take the Investor Personality Assessment, and upload their portfolio for analysis',
   },
   {
-    question: "Can I analyze a portfolio that wasn't built through your distribution?",
-    answer: "Absolutely. The platform analyzes any mutual fund portfolio regardless of where it was built — Groww, Zerodha, Paytm Money, or anywhere else."
+    question:
+      "Can I analyze a portfolio that wasn't built through your distribution?",
+    answer:
+      'Absolutely. The platform analyzes any mutual fund portfolio regardless of where it was built — Groww, Zerodha, Paytm Money, or anywhere else.',
   },
   {
-    question: "What format do I need to upload my portfolio in?",
-    answer: "We use a fixed Excel template with six fields: Fund Name, Investment Type, Start Date, Monthly SIP Amount, Total Invested, and Current Value."
+    question: 'What format do I need to upload my portfolio in?',
+    answer:
+      'We use a fixed Excel template with six fields: Fund Name, Investment Type, Start Date, Monthly SIP Amount, Total Invested, and Current Value.',
   },
   {
-    question: "Is my data safe?",
-    answer: "Yes. Your portfolio data is stored on secure, encrypted servers with strict access controls. Your information is never sold, shared, or visible to other users. Only you and our team can access your data."
+    question: 'Is my data safe?',
+    answer:
+      'Yes. Your portfolio data is stored on secure, encrypted servers with strict access controls. Your information is never sold, shared, or visible to other users. Only you and our team can access your data.',
   },
   {
-    question: "What is the Investor Personality Assessment?",
-    answer: "It's a 15-question behavioral assessment that identifies your natural investing style — not your financial knowledge. Based on your responses, you are classified into one of five investor archetypes: Tiger, Elephant, Deer, Fox, or Lion. It takes under 3 minutes and is completely free."
+    question: 'What is the Investor Personality Assessment?',
+    answer:
+      "It's a 15-question behavioral assessment that identifies your natural investing style — not your financial knowledge. Based on your responses, you are classified into one of five investor archetypes: Tiger, Elephant, Deer, Fox, or Lion. It takes under 3 minutes and is completely free.",
   },
   {
-    question: "Does this platform give stock tips or guaranteed returns?",
-    answer: "No. We do not provide stock recommendations, trading tips, or return guarantees of any kind. Our platform provides portfolio health report, goal-based planning, and structured distribution — all regulated under SEBI and AMFI guidelines."
+    question: 'Does this platform give stock tips or guaranteed returns?',
+    answer:
+      'No. We do not provide stock recommendations, trading tips, or return guarantees of any kind. Our platform provides portfolio health report, goal-based planning, and structured distribution — all regulated under SEBI and AMFI guidelines.',
   },
   {
-    question: "What do I get after my portfolio health report?",
-    answer: "You receive a Portfolio Score out of 100, three key insights specific to your portfolio, and the option to discuss your results with Arijit De directly through a one-on-one portfolio review discussion."
+    question: 'What do I get after my portfolio health report?',
+    answer:
+      'You receive a Portfolio Score out of 100, three key insights specific to your portfolio, and the option to discuss your results with Arijit De directly through a one-on-one portfolio review discussion.',
   },
   {
-    question: "How do I schedule a consultation?",
-    answer: "After your analysis, you can book a call directly through the platform by selecting your preferred time slot. Calls are available daily between 8:00 PM and 1:00 AM. You can also request a callback and we'll reach out to confirm."
+    question: 'How do I schedule a consultation?',
+    answer:
+      "After your analysis, you can book a call directly through the platform by selecting your preferred time slot. Calls are available daily between 8:00 PM and 1:00 AM. You can also request a callback and we'll reach out to confirm.",
   },
   {
-    question: "Who is behind this platform?",
-    answer: "FinAnalysis is built and operated by Arijit De — SEBI-certified Mutual Fund Distributor (ARN-273396) and SIF Distributor — backed by 35 years of AMFI-registered Mutual Fund distribution experience from his father, Arindam De. This is not a faceless app. There is a real, certified distributor behind every analysis."
+    question: 'Who is behind this platform?',
+    answer:
+      'FinAnalysis is built and operated by Arijit De — SEBI-certified Mutual Fund Distributor (ARN-273396) and SIF Distributor — backed by 35 years of AMFI-registered Mutual Fund distribution experience from his father, Arindam De. This is not a faceless app. There is a real, certified distributor behind every analysis.',
   },
   {
-    question: "I already have a AMFI-registered Mutual Fund Distributor. Can I still use this?",
-    answer: "Yes. A second opinion never hurts. Our platform gives you an independent, data-backed view of your portfolio health regardless of who manages it."
+    question:
+      'I already have a AMFI-registered Mutual Fund Distributor. Can I still use this?',
+    answer:
+      'Yes. A second opinion never hurts. Our platform gives you an independent, data-backed view of your portfolio health regardless of who manages it.',
   },
   {
-    question: "What if I disagree with my portfolio score?",
-    answer: "Your score is based on rule-based financial parameters and is reviewed by a certified distributor before being released to you. If you feel something is inaccurate, book a call and we'll walk through it together."
+    question: 'What if I disagree with my portfolio score?',
+    answer:
+      "Your score is based on rule-based financial parameters and is reviewed by a certified distributor before being released to you. If you feel something is inaccurate, book a call and we'll walk through it together.",
   },
   {
-    question: "Is this platform only for mutual fund investors?",
-    answer: "Currently, the portfolio health report engine is built for mutual fund portfolios. However, Arindam De's distribution services cover the full spectrum — Insurance, PMS, Fixed Deposits, PNB Housing Finance, and more. Reach out directly for anything beyond mutual funds."
-  }
-]
+    question: 'Is this platform only for mutual fund investors?',
+    answer:
+      "Currently, the portfolio health report engine is built for mutual fund portfolios. However, Arindam De's distribution services cover the full spectrum — Insurance, PMS, Fixed Deposits, PNB Housing Finance, and more. Reach out directly for anything beyond mutual funds.",
+  },
+];
 
 const servicesList = [
   {
-    title: "Mutual Funds & SIP",
-    desc: "Systematically managed for long-term compound growth.",
-    tag: "Wealth Creation"
+    title: 'Mutual Funds & SIP',
+    desc: 'Systematically managed for long-term compound growth.',
+    tag: 'Wealth Creation',
   },
   {
-    title: "Fixed Deposits",
-    desc: "Secure, high-yield options for guaranteed stable returns.",
-    tag: "Capital Protection"
+    title: 'Fixed Deposits',
+    desc: 'Secure, high-yield options for guaranteed stable returns.',
+    tag: 'Capital Protection',
   },
   {
-    title: "Specialized Investment Funds (SIF)",
-    desc: "Sophisticated compounding returns using hurdle rates and strategic top-ups.",
-    tag: "High Yield"
+    title: 'Specialized Investment Funds (SIF)',
+    desc: 'Sophisticated compounding returns using hurdle rates and strategic top-ups.',
+    tag: 'High Yield',
   },
   {
-    title: "Portfolio Management (PMS)",
-    desc: "Tailored active strategies for customized asset allocation.",
-    tag: "Premium Advisory"
+    title: 'Portfolio Management (PMS)',
+    desc: 'Tailored active strategies for customized asset allocation.',
+    tag: 'Premium Advisory',
   },
   {
-    title: "Insurance Solutions",
-    desc: "Robust Life Insurance (LIC), Mediclaim health, and property protection.",
-    tag: "Risk Mitigation"
+    title: 'Insurance Solutions',
+    desc: 'Robust Life Insurance (LIC), Mediclaim health, and property protection.',
+    tag: 'Risk Mitigation',
   },
   {
-    title: "Housing Finance & Loans",
-    desc: "Structured leverage options through PNB Housing Finance home loans.",
-    tag: "Leverage Options"
-  }
+    title: 'Housing Finance & Loans',
+    desc: 'Structured leverage options through PNB Housing Finance home loans.',
+    tag: 'Leverage Options',
+  },
 ];
 
 export default function Home() {
@@ -284,35 +315,31 @@ export default function Home() {
   const scrollVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const scrollToFaq = () => {
-    const faqElement = document.getElementById("faq");
+    const faqElement = document.getElementById('faq');
     if (faqElement) {
-      faqElement.scrollIntoView({ behavior: "smooth" });
+      faqElement.scrollIntoView({ behavior: 'smooth' });
     }
   };
-
-
 
   // Daily Rewards Section States
   const [isFlipped, setIsFlipped] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [dashboardUrl, setDashboardUrl] = useState("/onboarding");
-  const [dailyQuote, setDailyQuote] = useState({ text: "", author: "" });
+  const [dashboardUrl, setDashboardUrl] = useState('/onboarding');
+  const [dailyQuote, setDailyQuote] = useState({ text: '', author: '' });
 
   // Contact Form States
-  const [contactName, setContactName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [contactMessage, setContactMessage] = useState("");
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
   const [contactSubmitting, setContactSubmitting] = useState(false);
   const [contactSuccess, setContactSuccess] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
-  const [submittedName, setSubmittedName] = useState("");
-
-
+  const [submittedName, setSubmittedName] = useState('');
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactName.trim() || !contactEmail.trim() || !contactMessage.trim()) {
-      setContactError("Please fill out all fields.");
+      setContactError('Please fill out all fields.');
       return;
     }
     try {
@@ -320,11 +347,12 @@ export default function Home() {
       setContactError(null);
       setContactSuccess(false);
 
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${backendUrl}/api/contact`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name: contactName,
@@ -335,16 +363,19 @@ export default function Home() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to submit contact message. Please try again.");
+        throw new Error(
+          data.error || 'Failed to submit contact message. Please try again.',
+        );
       }
 
       setSubmittedName(contactName);
       setContactSuccess(true);
-      setContactName("");
-      setContactEmail("");
-      setContactMessage("");
+      setContactName('');
+      setContactEmail('');
+      setContactMessage('');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "An unexpected error occurred.";
+      const msg =
+        err instanceof Error ? err.message : 'An unexpected error occurred.';
       setContactError(msg);
     } finally {
       setContactSubmitting(false);
@@ -357,7 +388,7 @@ export default function Home() {
 
     // If flipping to the back side:
     if (nextFlipped) {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('token');
       const loggedInNow = !!token;
       setIsLoggedIn(loggedInNow);
     }
@@ -365,48 +396,71 @@ export default function Home() {
 
   useEffect(() => {
     // Check if token exists
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
 
-    const userStr = localStorage.getItem("user");
+    const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        if (user.role === "ADMIN") {
-          setDashboardUrl("/dashboard/admin");
-        } else if (user.role === "CLIENT") {
-          setDashboardUrl("/dashboard/client");
+        if (user.role === 'ADMIN') {
+          setDashboardUrl('/dashboard/admin');
+        } else if (user.role === 'CLIENT') {
+          setDashboardUrl('/dashboard/client');
         } else {
-          setDashboardUrl("/dashboard/user");
+          setDashboardUrl('/dashboard/user');
         }
       } catch (e) {
-        setDashboardUrl("/dashboard/user");
+        setDashboardUrl('/dashboard/user');
       }
     }
 
     // Select daily quote based on calendar day
     const quotesList = [
-      { text: "Do not save what is left after spending, but spend what is left after saving.", author: "Warren Buffett" },
-      { text: "The individual investor should act consistently as an investor and not as a speculator.", author: "Benjamin Graham" },
-      { text: "In investing, what is comfortable is rarely profitable.", author: "Robert Arnott" },
-      { text: "The four most dangerous words in investing are: 'This time it's different.'", author: "John Templeton" },
-      { text: "The most powerful force in the universe is compound interest.", author: "Albert Einstein" },
-      { text: "Beware of little expenses; a small leak will sink a great ship.", author: "Benjamin Franklin" },
-      { text: "Know what you own, and know why you own it.", author: "Peter Lynch" }
+      {
+        text: 'Do not save what is left after spending, but spend what is left after saving.',
+        author: 'Warren Buffett',
+      },
+      {
+        text: 'The individual investor should act consistently as an investor and not as a speculator.',
+        author: 'Benjamin Graham',
+      },
+      {
+        text: 'In investing, what is comfortable is rarely profitable.',
+        author: 'Robert Arnott',
+      },
+      {
+        text: "The four most dangerous words in investing are: 'This time it's different.'",
+        author: 'John Templeton',
+      },
+      {
+        text: 'The most powerful force in the universe is compound interest.',
+        author: 'Albert Einstein',
+      },
+      {
+        text: 'Beware of little expenses; a small leak will sink a great ship.',
+        author: 'Benjamin Franklin',
+      },
+      {
+        text: 'Know what you own, and know why you own it.',
+        author: 'Peter Lynch',
+      },
     ];
     const day = new Date().getDate();
     setDailyQuote(quotesList[day % quotesList.length] || quotesList[0]);
-
-
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get("book") === "true") {
+      if (params.get('book') === 'true') {
         setIsBookingModalOpen(true);
         // Clean up the URL search params so reloading doesn't re-open it
-        window.history.replaceState({}, document.title, window.location.pathname);
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname,
+        );
       }
     }
   }, []);
@@ -414,7 +468,7 @@ export default function Home() {
   // Cookie Acceptance State
   const [showCookieBox, setShowCookieBox] = useState(false);
   useEffect(() => {
-    const consent = localStorage.getItem("cookieConsent");
+    const consent = localStorage.getItem('cookieConsent');
     if (!consent) {
       const timer = setTimeout(() => {
         setShowCookieBox(true);
@@ -426,11 +480,13 @@ export default function Home() {
   const animationRef = useRef<number | null>(null);
 
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [expandedOption, setExpandedOption] = useState<string>("why-us");
-  const [serviceCategory, setServiceCategory] = useState<"investments" | "insurance">("investments");
-  const [selectedArchetype, setSelectedArchetype] = useState<string>("tiger");
+  const [expandedOption, setExpandedOption] = useState<string>('why-us');
+  const [serviceCategory, setServiceCategory] = useState<
+    'investments' | 'insurance'
+  >('investments');
+  const [selectedArchetype, setSelectedArchetype] = useState<string>('tiger');
   const [riskScore, setRiskScore] = useState<number>(65);
-  const lastArchetypeRef = useRef("tiger");
+  const lastArchetypeRef = useRef('tiger');
 
   const handleSelectArchetype = useCallback((id: string) => {
     setSelectedArchetype(id);
@@ -442,22 +498,30 @@ export default function Home() {
   const handleKnobChange = useCallback((newScore: number) => {
     setRiskScore(newScore);
 
-    let matched = "tiger";
-    if (newScore <= 35) matched = "elephant";
-    else if (newScore <= 55) matched = "deer";
-    else if (newScore <= 72) matched = "tiger";
-    else if (newScore <= 84) matched = "fox";
-    else matched = "lion";
+    let matched = 'tiger';
+    if (newScore <= 35) matched = 'elephant';
+    else if (newScore <= 55) matched = 'deer';
+    else if (newScore <= 72) matched = 'tiger';
+    else if (newScore <= 84) matched = 'fox';
+    else matched = 'lion';
 
     if (lastArchetypeRef.current !== matched) {
       lastArchetypeRef.current = matched;
       setSelectedArchetype(matched);
     }
   }, []);
-  const [activeHoverLevel1, setActiveHoverLevel1] = useState<string | null>(null);
-  const [activeHoverLevel2, setActiveHoverLevel2] = useState<string | null>(null);
-  const [mobileActiveLevel1, setMobileActiveLevel1] = useState<string | null>(null);
-  const [mobileActiveLevel2, setMobileActiveLevel2] = useState<string | null>(null);
+  const [activeHoverLevel1, setActiveHoverLevel1] = useState<string | null>(
+    null,
+  );
+  const [activeHoverLevel2, setActiveHoverLevel2] = useState<string | null>(
+    null,
+  );
+  const [mobileActiveLevel1, setMobileActiveLevel1] = useState<string | null>(
+    null,
+  );
+  const [mobileActiveLevel2, setMobileActiveLevel2] = useState<string | null>(
+    null,
+  );
   // Services scroll sync tracking
   const [activeService, setActiveService] = useState(0);
   const serviceRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -486,10 +550,10 @@ export default function Home() {
       setActiveService(currentActive);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
 
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Clock state removed, handled in component
@@ -511,8 +575,8 @@ export default function Home() {
       },
       {
         threshold: 0,
-        rootMargin: "0px 0px 100px 0px",
-      }
+        rootMargin: '0px 0px 100px 0px',
+      },
     );
 
     observer.observe(footer);
@@ -521,7 +585,6 @@ export default function Home() {
 
   const envelopeRef = useRef<HTMLDivElement>(null);
   const helloSectionRef = useRef<HTMLDivElement>(null);
-
 
   useEffect(() => {
     let animationFrameId: number;
@@ -561,7 +624,6 @@ export default function Home() {
         } else {
           video.currentTime = targetTime;
         }
-
       }
 
       animationFrameId = requestAnimationFrame(handleScrollVideo);
@@ -585,17 +647,17 @@ export default function Home() {
     setCount(100);
     setTimeout(() => {
       setShowPreloader(false); // Unmounts preloader
-      import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
+      import('gsap/ScrollTrigger').then(({ ScrollTrigger }) => {
         ScrollTrigger.refresh();
       });
     }, 1000); // Match slide duration
   };
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
 
-    if (!sessionStorage.getItem("hasSeenPreloader")) {
-      sessionStorage.setItem("hasSeenPreloader", "true");
+    if (!sessionStorage.getItem('hasSeenPreloader')) {
+      sessionStorage.setItem('hasSeenPreloader', 'true');
       setShowPreloader(true);
       setIsLoaded(false);
 
@@ -632,17 +694,22 @@ export default function Home() {
         <SoftBoxBlurBg />
       </div>
 
-      <Navbar isLoaded={isLoaded} onBookCallClick={() => setIsBookingModalOpen(true)} />
+      <Navbar
+        isLoaded={isLoaded}
+        onBookCallClick={() => setIsBookingModalOpen(true)}
+      />
 
       <SvgScrollWipe
         screen1={
           <div className="relative w-full min-h-[90vh] md:min-h-screen flex items-center justify-center -mt-16 md:-mt-24 px-4 overflow-hidden">
             {/* LightTunnel component strictly attached to the hero section so it stays ONLY in the hero */}
-            <div 
+            <div
               className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0"
               style={{
-                maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 60%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0) 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 60%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0) 100%)',
+                maskImage:
+                  'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 60%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0) 100%)',
+                WebkitMaskImage:
+                  'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 60%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0) 100%)',
               }}
             >
               <LightTunnel
@@ -678,29 +745,47 @@ export default function Home() {
               />
             </div>
 
-            <ScrollBlurReveal 
+            <ScrollBlurReveal
               delay={700}
               duration={1.8}
               className="relative z-10 flex flex-col items-center justify-center text-center px-6 max-w-5xl mx-auto space-y-6 pt-24 md:pt-20"
             >
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-white/40 bg-white/30 backdrop-blur-md text-xs font-semibold text-primary select-none shadow-sm">
-                <span>35+ Years of Certified Amfi-Registered Mutual Fund Distribution</span>
+                <span>
+                  35+ Years of Certified Amfi-Registered Mutual Fund
+                  Distribution
+                </span>
               </div>
               <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold text-primary font-chillax leading-tight tracking-tight uppercase">
-                Built on the legacy<br />
+                Built on the legacy
+                <br />
                 <span className="text-primary">of Mr. Arindam De</span>
               </h1>
               <p className="text-slate-800 text-xs sm:text-sm md:text-sm max-w-xl mx-auto font-sans leading-relaxed font-medium">
-                Combining 35+ years of generation-spanning trust with systematic portfolio optimization and machine learning diagnostics to accelerate your growth.
+                Combining 35+ years of generation-spanning trust with systematic
+                portfolio optimization and machine learning diagnostics to
+                accelerate your growth.
               </p>
               <div className="pt-2">
                 <a
                   href="/onboarding"
                   className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs rounded-2xl transition duration-200 shadow-xl uppercase tracking-wider group cursor-pointer"
                 >
-                  <span className="font-bold text-xs">Get My Free Portfolio Report</span>
-                  <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200 stroke-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  <span className="font-bold text-xs">
+                    Get My Free Portfolio Report
+                  </span>
+                  <svg
+                    className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200 stroke-white"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    />
                   </svg>
                 </a>
               </div>
@@ -722,17 +807,17 @@ export default function Home() {
             {/* Interactive Segmented Pill Tabs */}
             <div className="inline-flex p-1.5 rounded-full border border-white/60 bg-white/40 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.04)] gap-1.5 max-w-full overflow-x-auto">
               {[
-                { id: "why-us", label: "01 • Why We Exist" },
-                { id: "services", label: "02 • What We Provide" },
-                { id: "about", label: "03 • About & Legacy" }
+                { id: 'why-us', label: '01 • Why We Exist' },
+                { id: 'services', label: '02 • What We Provide' },
+                { id: 'about', label: '03 • About & Legacy' },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setExpandedOption(tab.id)}
                   className={`px-5 sm:px-7 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer select-none whitespace-nowrap ${
                     expandedOption === tab.id
-                      ? "bg-primary text-primary-foreground shadow-md scale-[1.02]"
-                      : "text-muted-foreground hover:text-primary hover:bg-white/60"
+                      ? 'bg-primary text-primary-foreground shadow-md scale-[1.02]'
+                      : 'text-muted-foreground hover:text-primary hover:bg-white/60'
                   }`}
                 >
                   {tab.label}
@@ -745,7 +830,7 @@ export default function Home() {
               {/* Left Column: Founder Glassmorphic Card (5 cols on lg) */}
               <div className="lg:col-span-5 rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-6 sm:p-8 flex flex-col justify-between items-center text-center relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
-                
+
                 <div className="flex flex-col items-center w-full">
                   {/* Portrait with Crisp Framing & Soft Ambient Depth */}
                   <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-[28px] border-2 border-white/90 shadow-[0_12px_30px_rgba(0,0,0,0.08)] overflow-hidden bg-card mb-4">
@@ -762,7 +847,9 @@ export default function Home() {
                     <span className="text-[11px] font-mono font-bold text-primary tracking-wider uppercase">
                       ARN-273396
                     </span>
-                    <span className="text-[10px] font-mono text-muted-foreground">• VERIFIED</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      • VERIFIED
+                    </span>
                   </div>
 
                   <h3 className="text-2xl sm:text-3xl font-bold text-primary font-chillax">
@@ -772,23 +859,37 @@ export default function Home() {
                     SEBI-Certified MFD & SIF Distributor
                   </p>
                   <p className="text-xs sm:text-sm text-muted-foreground font-sans mt-2.5 leading-relaxed max-w-xs">
-                    Carrying forward 35+ years of family distribution legacy started by <strong>Mr. Arindam De</strong> in 1989 with modern computational portfolio intelligence.
+                    Carrying forward 35+ years of family distribution legacy
+                    started by <strong>Mr. Arindam De</strong> in 1989 with
+                    modern computational portfolio intelligence.
                   </p>
                 </div>
 
                 {/* Stats & Credential Pills */}
                 <div className="w-full grid grid-cols-3 gap-2 mt-6 pt-5 border-t border-border/50">
                   <div className="flex flex-col items-center p-2 rounded-xl bg-white/50 border border-white/60">
-                    <span className="text-xs sm:text-sm font-bold text-primary font-chillax">35+ Yrs</span>
-                    <span className="text-[9px] text-muted-foreground font-mono uppercase">Heritage</span>
+                    <span className="text-xs sm:text-sm font-bold text-primary font-chillax">
+                      35+ Yrs
+                    </span>
+                    <span className="text-[9px] text-muted-foreground font-mono uppercase">
+                      Heritage
+                    </span>
                   </div>
                   <div className="flex flex-col items-center p-2 rounded-xl bg-white/50 border border-white/60">
-                    <span className="text-xs sm:text-sm font-bold text-primary font-chillax">AMFI</span>
-                    <span className="text-[9px] text-muted-foreground font-mono uppercase">Registered</span>
+                    <span className="text-xs sm:text-sm font-bold text-primary font-chillax">
+                      AMFI
+                    </span>
+                    <span className="text-[9px] text-muted-foreground font-mono uppercase">
+                      Registered
+                    </span>
                   </div>
                   <div className="flex flex-col items-center p-2 rounded-xl bg-white/50 border border-white/60">
-                    <span className="text-xs sm:text-sm font-bold text-primary font-chillax">1-on-1</span>
-                    <span className="text-[9px] text-muted-foreground font-mono uppercase">Guidance</span>
+                    <span className="text-xs sm:text-sm font-bold text-primary font-chillax">
+                      1-on-1
+                    </span>
+                    <span className="text-[9px] text-muted-foreground font-mono uppercase">
+                      Guidance
+                    </span>
                   </div>
                 </div>
 
@@ -803,7 +904,7 @@ export default function Home() {
               {/* Right Column: Dynamic Stage Content (7 cols on lg) */}
               <div className="lg:col-span-7 flex flex-col justify-between gap-4">
                 {/* 03. About Us Panel */}
-                {expandedOption === "about" && (
+                {expandedOption === 'about' && (
                   <div className="h-full flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300">
                     <div className="p-6 sm:p-8 rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] flex flex-col justify-between h-full relative overflow-hidden">
                       <div>
@@ -816,10 +917,26 @@ export default function Home() {
                           Generation-Spanning Trust Meets Modern Data Science
                         </h4>
                         <p className="text-xs sm:text-sm text-foreground/80 font-sans leading-relaxed font-medium mb-3">
-                          FinAnalysis blends over 35 years of trusted AMFI-registered Mutual Fund distribution with modern technology and algorithmic portfolio modeling. Founded on a legacy started by <strong className="text-primary font-extrabold">Arindam De</strong> in 1989, we have navigated through multiple market cycles, recessions, and structural reforms to safeguard client wealth.
+                          FinAnalysis blends over 35 years of trusted
+                          AMFI-registered Mutual Fund distribution with modern
+                          technology and algorithmic portfolio modeling. Founded
+                          on a legacy started by{' '}
+                          <strong className="text-primary font-extrabold">
+                            Arindam De
+                          </strong>{' '}
+                          in 1989, we have navigated through multiple market
+                          cycles, recessions, and structural reforms to
+                          safeguard client wealth.
                         </p>
                         <p className="text-xs sm:text-sm text-foreground/80 font-sans leading-relaxed font-medium">
-                          Today, <strong className="text-primary font-extrabold">Arijit De</strong> incorporates computer science diagnostics, factor weighting, and structured asset allocation, delivering a rigorous, data-backed approach to wealth management that prior generations never had access to.
+                          Today,{' '}
+                          <strong className="text-primary font-extrabold">
+                            Arijit De
+                          </strong>{' '}
+                          incorporates computer science diagnostics, factor
+                          weighting, and structured asset allocation, delivering
+                          a rigorous, data-backed approach to wealth management
+                          that prior generations never had access to.
                         </p>
                       </div>
 
@@ -834,12 +951,22 @@ export default function Home() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-border/50">
                         <div className="p-4 rounded-2xl bg-white/40 border border-white/60">
-                          <h5 className="text-xs font-bold text-primary uppercase tracking-wider font-mono">1989 Foundations</h5>
-                          <p className="text-xs text-muted-foreground font-sans mt-1">Decade-spanning trust built through personal client stewardship.</p>
+                          <h5 className="text-xs font-bold text-primary uppercase tracking-wider font-mono">
+                            1989 Foundations
+                          </h5>
+                          <p className="text-xs text-muted-foreground font-sans mt-1">
+                            Decade-spanning trust built through personal client
+                            stewardship.
+                          </p>
                         </div>
                         <div className="p-4 rounded-2xl bg-white/40 border border-white/60">
-                          <h5 className="text-xs font-bold text-primary uppercase tracking-wider font-mono">Modern Analytics</h5>
-                          <p className="text-xs text-muted-foreground font-sans mt-1">Rule-based portfolio scoring across 5 distinct risk & growth dimensions.</p>
+                          <h5 className="text-xs font-bold text-primary uppercase tracking-wider font-mono">
+                            Modern Analytics
+                          </h5>
+                          <p className="text-xs text-muted-foreground font-sans mt-1">
+                            Rule-based portfolio scoring across 5 distinct risk
+                            & growth dimensions.
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -847,28 +974,28 @@ export default function Home() {
                 )}
 
                 {/* 01. What We Provide Panel (Segmented Button Tabs with Downward Tree) */}
-                {expandedOption === "services" && (
+                {expandedOption === 'services' && (
                   <div className="h-full flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300">
                     <div className="p-5 sm:p-7 rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] flex flex-col justify-between h-full relative overflow-hidden">
                       <div className="w-full flex flex-col">
                         {/* Top Segmented Button Bar inside the Card */}
                         <div className="w-full flex items-center justify-between p-1.5 rounded-full border border-white/70 bg-white/60 backdrop-blur-xl shadow-xs">
                           <button
-                            onClick={() => setServiceCategory("investments")}
+                            onClick={() => setServiceCategory('investments')}
                             className={`flex-1 py-2.5 px-4 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 cursor-pointer select-none text-center ${
-                              serviceCategory === "investments"
-                                ? "bg-primary text-primary-foreground shadow-md scale-[1.01]"
-                                : "text-muted-foreground hover:text-primary hover:bg-white/60"
+                              serviceCategory === 'investments'
+                                ? 'bg-primary text-primary-foreground shadow-md scale-[1.01]'
+                                : 'text-muted-foreground hover:text-primary hover:bg-white/60'
                             }`}
                           >
                             Investments
                           </button>
                           <button
-                            onClick={() => setServiceCategory("insurance")}
+                            onClick={() => setServiceCategory('insurance')}
                             className={`flex-1 py-2.5 px-4 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 cursor-pointer select-none text-center ${
-                              serviceCategory === "insurance"
-                                ? "bg-primary text-primary-foreground shadow-md scale-[1.01]"
-                                : "text-muted-foreground hover:text-primary hover:bg-white/60"
+                              serviceCategory === 'insurance'
+                                ? 'bg-primary text-primary-foreground shadow-md scale-[1.01]'
+                                : 'text-muted-foreground hover:text-primary hover:bg-white/60'
                             }`}
                           >
                             Life Insurance
@@ -876,7 +1003,7 @@ export default function Home() {
                         </div>
 
                         {/* Dynamic Stage Content based on Selected Category */}
-                        {serviceCategory === "investments" ? (
+                        {serviceCategory === 'investments' ? (
                           <div className="flex flex-col w-full animate-in fade-in duration-300 mt-1">
                             {/* Downward Connector Line / Arrow Aligned to Investments Tab (Left Half Center) */}
                             <div className="w-full grid grid-cols-2">
@@ -899,7 +1026,9 @@ export default function Home() {
                                     Fixed Deposits
                                   </h5>
                                   <p className="text-xs text-muted-foreground font-sans leading-relaxed">
-                                    Secure, stable high-yield options designed for capital preservation and guaranteed returns.
+                                    Secure, stable high-yield options designed
+                                    for capital preservation and guaranteed
+                                    returns.
                                   </p>
                                 </div>
 
@@ -910,7 +1039,7 @@ export default function Home() {
                                 </div>
 
                                 {/* Level 3: Company Deposit */}
-                                <div 
+                                <div
                                   onClick={scrollToFaq}
                                   className="p-4 sm:p-5 w-full flex-1 rounded-2xl border border-amber-500/25 bg-white/85 backdrop-blur-md shadow-xs text-left cursor-pointer hover:bg-white hover:border-amber-500/50 hover:shadow-sm transition-all flex flex-col justify-center"
                                 >
@@ -921,7 +1050,8 @@ export default function Home() {
                                     Company Deposit
                                   </h6>
                                   <p className="text-xs text-muted-foreground font-sans leading-relaxed">
-                                    Corporate deposits with CRISIL AAA verified ratings, reliable payouts, and safety.
+                                    Corporate deposits with CRISIL AAA verified
+                                    ratings, reliable payouts, and safety.
                                   </p>
                                 </div>
                               </div>
@@ -936,7 +1066,9 @@ export default function Home() {
                                     Mutual Funds
                                   </h5>
                                   <p className="text-xs text-muted-foreground font-sans leading-relaxed">
-                                    Market-linked wealth acceleration with algorithmic diversification and factor scoring.
+                                    Market-linked wealth acceleration with
+                                    algorithmic diversification and factor
+                                    scoring.
                                   </p>
                                 </div>
 
@@ -949,13 +1081,25 @@ export default function Home() {
                                 {/* Level 3: 2x2 Grid of Growth Products (SIP, Lumpsum, SIF, PMS) */}
                                 <div className="grid grid-cols-2 gap-2 w-full flex-1">
                                   {[
-                                    { title: "SIP", desc: "Systematic monthly compounding." },
-                                    { title: "Lumpsum", desc: "Tactical one-time deployment." },
-                                    { title: "SIF", desc: "Specialized alternative funds." },
-                                    { title: "PMS", desc: "Direct active asset allocation." }
+                                    {
+                                      title: 'SIP',
+                                      desc: 'Systematic monthly compounding.',
+                                    },
+                                    {
+                                      title: 'Lumpsum',
+                                      desc: 'Tactical one-time deployment.',
+                                    },
+                                    {
+                                      title: 'SIF',
+                                      desc: 'Specialized alternative funds.',
+                                    },
+                                    {
+                                      title: 'PMS',
+                                      desc: 'Direct active asset allocation.',
+                                    },
                                   ].map((item, i) => (
-                                    <div 
-                                      key={i} 
+                                    <div
+                                      key={i}
                                       onClick={scrollToFaq}
                                       className="p-3 rounded-2xl border border-blue-500/20 bg-white/85 backdrop-blur-md shadow-xs text-left cursor-pointer hover:bg-white hover:border-blue-500/50 hover:shadow-sm transition-all flex flex-col justify-between"
                                     >
@@ -997,22 +1141,39 @@ export default function Home() {
                                   Life Insurance & Capital Shield
                                 </h4>
                                 <p className="text-xs sm:text-sm text-muted-foreground font-sans leading-relaxed">
-                                  Shielding your family&apos;s future, safeguarding physical assets, and providing health emergency liquidity across generations.
+                                  Shielding your family&apos;s future,
+                                  safeguarding physical assets, and providing
+                                  health emergency liquidity across generations.
                                 </p>
                               </div>
 
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-border/50">
                                 <div className="p-3.5 rounded-2xl bg-white/75 border border-white/80">
-                                  <span className="text-[9px] font-mono font-bold uppercase text-primary font-mono block mb-1">LIC Life Insurance</span>
-                                  <p className="text-xs text-muted-foreground font-sans">Guaranteed term protection & endowment plans.</p>
+                                  <span className="text-[9px] font-mono font-bold uppercase text-primary font-mono block mb-1">
+                                    LIC Life Insurance
+                                  </span>
+                                  <p className="text-xs text-muted-foreground font-sans">
+                                    Guaranteed term protection & endowment
+                                    plans.
+                                  </p>
                                 </div>
                                 <div className="p-3.5 rounded-2xl bg-white/75 border border-white/80">
-                                  <span className="text-[9px] font-mono font-bold uppercase text-primary font-mono block mb-1">Mediclaim Health</span>
-                                  <p className="text-xs text-muted-foreground font-sans">Complete medical inflation & hospitalization cover.</p>
+                                  <span className="text-[9px] font-mono font-bold uppercase text-primary font-mono block mb-1">
+                                    Mediclaim Health
+                                  </span>
+                                  <p className="text-xs text-muted-foreground font-sans">
+                                    Complete medical inflation & hospitalization
+                                    cover.
+                                  </p>
                                 </div>
                                 <div className="p-3.5 rounded-2xl bg-white/75 border border-white/80">
-                                  <span className="text-[9px] font-mono font-bold uppercase text-primary font-mono block mb-1">PNB Housing</span>
-                                  <p className="text-xs text-muted-foreground font-sans">Structured home construction & loan solutions.</p>
+                                  <span className="text-[9px] font-mono font-bold uppercase text-primary font-mono block mb-1">
+                                    PNB Housing
+                                  </span>
+                                  <p className="text-xs text-muted-foreground font-sans">
+                                    Structured home construction & loan
+                                    solutions.
+                                  </p>
                                 </div>
                               </div>
                             </div>
@@ -1025,7 +1186,8 @@ export default function Home() {
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                           <span className="text-xs text-muted-foreground font-sans font-medium">
-                            Personalized allocation based on SEBI-certified risk profiling & factor scoring.
+                            Personalized allocation based on SEBI-certified risk
+                            profiling & factor scoring.
                           </span>
                         </div>
                         <button
@@ -1040,7 +1202,7 @@ export default function Home() {
                 )}
 
                 {/* 01. Why We Exist Panel */}
-                {expandedOption === "why-us" && (
+                {expandedOption === 'why-us' && (
                   <div className="h-full flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300">
                     <div className="p-6 sm:p-8 rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] flex flex-col justify-between h-full relative overflow-hidden">
                       <div>
@@ -1051,10 +1213,20 @@ export default function Home() {
                           Why Relationship-Driven Distribution Matters
                         </h4>
                         <p className="text-xs sm:text-sm text-foreground/80 font-sans leading-relaxed font-medium mb-2.5">
-                          In an era dominated by cold robo-distribution apps and generic automated suggestions, your hard-earned wealth deserves personalized, <strong className="text-primary font-extrabold">relationship-driven human stewardship</strong>.
+                          In an era dominated by cold robo-distribution apps and
+                          generic automated suggestions, your hard-earned wealth
+                          deserves personalized,{' '}
+                          <strong className="text-primary font-extrabold">
+                            relationship-driven human stewardship
+                          </strong>
+                          .
                         </p>
                         <p className="text-xs sm:text-sm text-foreground/80 font-sans leading-relaxed font-medium">
-                          We bridge the gap between human empathy and data precision. By standing by our clients through decades of market turbulence, recessions, and regulatory shifts, we prioritize multi-generational trust and structured planning over short-term transactions.
+                          We bridge the gap between human empathy and data
+                          precision. By standing by our clients through decades
+                          of market turbulence, recessions, and regulatory
+                          shifts, we prioritize multi-generational trust and
+                          structured planning over short-term transactions.
                         </p>
                       </div>
 
@@ -1072,16 +1244,28 @@ export default function Home() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-border/50">
                         <div className="p-3.5 rounded-2xl bg-white/40 border border-white/60">
-                          <span className="text-xs font-bold text-primary font-mono block">Zero Bots</span>
-                          <span className="text-[11px] text-muted-foreground font-sans mt-0.5 block">Direct certified human advisory.</span>
+                          <span className="text-xs font-bold text-primary font-mono block">
+                            Zero Bots
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-sans mt-0.5 block">
+                            Direct certified human advisory.
+                          </span>
                         </div>
                         <div className="p-3.5 rounded-2xl bg-white/40 border border-white/60">
-                          <span className="text-xs font-bold text-primary font-mono block">Decades Long</span>
-                          <span className="text-[11px] text-muted-foreground font-sans mt-0.5 block">Stewardship across full market cycles.</span>
+                          <span className="text-xs font-bold text-primary font-mono block">
+                            Decades Long
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-sans mt-0.5 block">
+                            Stewardship across full market cycles.
+                          </span>
                         </div>
                         <div className="p-3.5 rounded-2xl bg-white/40 border border-white/60">
-                          <span className="text-xs font-bold text-primary font-mono block">SEBI Regulated</span>
-                          <span className="text-[11px] text-muted-foreground font-sans mt-0.5 block">100% compliant ARN distribution.</span>
+                          <span className="text-xs font-bold text-primary font-mono block">
+                            SEBI Regulated
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-sans mt-0.5 block">
+                            100% compliant ARN distribution.
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1111,7 +1295,10 @@ export default function Home() {
                 Meet Virtual Arijit : Real-Time Insights, Zero Waiting.
               </h2>
               <p className="text-muted-foreground text-sm leading-relaxed font-sans font-medium">
-                Have questions regarding portfolio diagnostics, asset rebalancing, expense ratio optimization, or structured distribution? Ask Virtual Arijit for immediate institutional guidance.
+                Have questions regarding portfolio diagnostics, asset
+                rebalancing, expense ratio optimization, or structured
+                distribution? Ask Virtual Arijit for immediate institutional
+                guidance.
               </p>
             </div>
 
@@ -1125,7 +1312,9 @@ export default function Home() {
                   aria-label="Virtual Arijit Assistant Preview"
                 />
               </div>
-              <span className="text-base font-bold text-primary font-chillax">Try Virtual Arijit Now</span>
+              <span className="text-base font-bold text-primary font-chillax">
+                Try Virtual Arijit Now
+              </span>
 
               <button
                 onClick={() => setIsChatOpen(true)}
@@ -1158,7 +1347,10 @@ export default function Home() {
                   Know What Kind of Investor You Are
                 </h2>
                 <p className="text-muted-foreground text-sm md:text-base leading-relaxed font-sans font-medium max-w-md">
-                  Are you a Conservative Protector, a Strategic Compounder, or an Aggressive Visionary? Take our 2-minute diagnostic to analyze your risk preference and uncover the asset allocation engineered for your lifecycle.
+                  Are you a Conservative Protector, a Strategic Compounder, or
+                  an Aggressive Visionary? Take our 2-minute diagnostic to
+                  analyze your risk preference and uncover the asset allocation
+                  engineered for your lifecycle.
                 </p>
 
                 {/* Interactive Animal Archetype Selector Badges */}
@@ -1168,11 +1360,19 @@ export default function Home() {
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { id: "tiger", label: "🐅 Tiger", desc: "Aggressive Growth" },
-                      { id: "elephant", label: "🐘 Elephant", desc: "Capital Preservation" },
-                      { id: "deer", label: "🦌 Deer", desc: "Balanced" },
-                      { id: "fox", label: "🦊 Fox", desc: "Tactical" },
-                      { id: "lion", label: "🦁 Lion", desc: "Frontier Alpha" }
+                      {
+                        id: 'tiger',
+                        label: '🐅 Tiger',
+                        desc: 'Aggressive Growth',
+                      },
+                      {
+                        id: 'elephant',
+                        label: '🐘 Elephant',
+                        desc: 'Capital Preservation',
+                      },
+                      { id: 'deer', label: '🦌 Deer', desc: 'Balanced' },
+                      { id: 'fox', label: '🦊 Fox', desc: 'Tactical' },
+                      { id: 'lion', label: '🦁 Lion', desc: 'Frontier Alpha' },
                     ].map((item) => (
                       <button
                         key={item.id}
@@ -1180,8 +1380,8 @@ export default function Home() {
                         onClick={() => handleSelectArchetype(item.id)}
                         className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all duration-200 cursor-pointer select-none flex items-center gap-1.5 ${
                           selectedArchetype === item.id
-                            ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
-                            : "bg-white/60 text-foreground/80 border-white/80 hover:bg-white hover:border-primary/30"
+                            ? 'bg-primary text-primary-foreground border-primary shadow-md scale-105'
+                            : 'bg-white/60 text-foreground/80 border-white/80 hover:bg-white hover:border-primary/30'
                         }`}
                       >
                         <span>{item.label}</span>
@@ -1196,7 +1396,9 @@ export default function Home() {
                   href="/quiz"
                   className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs rounded-2xl transition duration-200 shadow-md uppercase tracking-wider group cursor-pointer"
                 >
-                  <span className="font-mono font-bold">Start Full Diagnostic Quiz</span>
+                  <span className="font-mono font-bold">
+                    Start Full Diagnostic Quiz
+                  </span>
                   <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" />
                 </a>
               </div>
@@ -1204,7 +1406,8 @@ export default function Home() {
 
             {/* Right Column: Live Interactive Archetype Preview Card */}
             {(() => {
-              const current = archetypesMap[selectedArchetype] || archetypesMap.tiger;
+              const current =
+                archetypesMap[selectedArchetype] || archetypesMap.tiger;
               return (
                 <div className="flex-1 flex items-center justify-center relative">
                   <div className="w-full max-w-[380px] h-[370px] p-6 bg-gradient-to-br from-white/95 via-white/85 to-white/70 backdrop-blur-2xl rounded-3xl border border-white shadow-[0_20px_45px_rgba(0,0,0,0.06)] flex flex-col justify-between relative group overflow-hidden transition-all duration-300">
@@ -1221,7 +1424,9 @@ export default function Home() {
                     {/* Clean Fixed Header: Archetype Identity & Category */}
                     <div className="flex justify-between items-center border-b border-border/40 pb-2.5 min-h-[46px] relative z-10">
                       <div className="flex items-center gap-2 min-w-0 pr-2">
-                        <span className="text-xl shrink-0">{current.emoji}</span>
+                        <span className="text-xl shrink-0">
+                          {current.emoji}
+                        </span>
                         <div className="min-w-0">
                           <h4 className="text-sm sm:text-base font-bold text-primary font-chillax leading-tight whitespace-nowrap truncate">
                             {current.name}
@@ -1236,7 +1441,7 @@ export default function Home() {
                         style={{
                           backgroundColor: `${current.color}15`,
                           color: current.color,
-                          borderColor: `${current.color}35`
+                          borderColor: `${current.color}35`,
                         }}
                       >
                         {current.category}
@@ -1282,33 +1487,60 @@ export default function Home() {
                   Analyze Your Portfolio in Real-Time
                 </h2>
                 <p className="text-muted-foreground text-sm md:text-base leading-relaxed font-sans font-medium max-w-md">
-                  Get a comprehensive overview of your investment health. We measure your portfolio across 5 core regulatory and performance dimensions to systematically eliminate leakages and optimize returns.
+                  Get a comprehensive overview of your investment health. We
+                  measure your portfolio across 5 core regulatory and
+                  performance dimensions to systematically eliminate leakages
+                  and optimize returns.
                 </p>
               </div>
 
               {/* 5 Pillar Bento Chips */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { icon: Target, name: "Goal Alignment", desc: "Matching assets to lifespan horizon" },
-                  { icon: PieChart, name: "Asset Allocation", desc: "Optimal equity, debt & gold balance" },
-                  { icon: ShieldCheck, name: "Diversification", desc: "Multi-cap risk dispersion index" },
-                  { icon: TrendingUp, name: "SIP Discipline", desc: "Compounding consistency tracker" },
-                  { icon: Coins, name: "Fee Efficiency", desc: "Minimizing expense ratios" }
+                  {
+                    icon: Target,
+                    name: 'Goal Alignment',
+                    desc: 'Matching assets to lifespan horizon',
+                  },
+                  {
+                    icon: PieChart,
+                    name: 'Asset Allocation',
+                    desc: 'Optimal equity, debt & gold balance',
+                  },
+                  {
+                    icon: ShieldCheck,
+                    name: 'Diversification',
+                    desc: 'Multi-cap risk dispersion index',
+                  },
+                  {
+                    icon: TrendingUp,
+                    name: 'SIP Discipline',
+                    desc: 'Compounding consistency tracker',
+                  },
+                  {
+                    icon: Coins,
+                    name: 'Fee Efficiency',
+                    desc: 'Minimizing expense ratios',
+                  },
                 ].map((pillar, idx) => {
                   const Icon = pillar.icon;
                   return (
-                    <div 
-                      key={idx} 
+                    <div
+                      key={idx}
                       className={`flex gap-3 items-center p-3 rounded-2xl bg-white/60 border border-white/80 shadow-xs hover:bg-white hover:border-primary/20 transition-all duration-200 ${
-                        idx === 4 ? "sm:col-span-2" : ""
+                        idx === 4 ? 'sm:col-span-2' : ''
                       }`}
                     >
                       <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0 text-primary">
                         <Icon className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className="text-xs font-bold text-primary font-chillax">{pillar.name}</h4>
-                        <p className="text-[10px] text-muted-foreground font-sans">{pillar.desc}</p>
+                        <h4 className="text-xs font-bold text-primary font-chillax">
+                          {pillar.name}
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground font-sans">
+                          {pillar.desc}
+                        </p>
                       </div>
                     </div>
                   );
@@ -1346,8 +1578,18 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row items-center justify-around gap-6 py-1">
                   {/* Radial Progress Circle */}
                   <div className="relative w-32 h-32 flex items-center justify-center select-none shrink-0">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" r="40" stroke="rgba(0, 0, 0, 0.05)" strokeWidth="8" fill="transparent" />
+                    <svg
+                      className="w-full h-full transform -rotate-90"
+                      viewBox="0 0 100 100"
+                    >
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        stroke="rgba(0, 0, 0, 0.05)"
+                        strokeWidth="8"
+                        fill="transparent"
+                      />
                       <circle
                         cx="50"
                         cy="50"
@@ -1362,23 +1604,47 @@ export default function Home() {
                       />
                     </svg>
                     <div className="absolute flex flex-col items-center justify-center">
-                      <span className="text-3xl font-bold font-chillax text-primary leading-none">78</span>
-                      <span className="text-[9px] font-mono text-muted-foreground uppercase mt-1">Health Score</span>
+                      <span className="text-3xl font-bold font-chillax text-primary leading-none">
+                        78
+                      </span>
+                      <span className="text-[9px] font-mono text-muted-foreground uppercase mt-1">
+                        Health Score
+                      </span>
                     </div>
                   </div>
 
                   {/* Diagnostic Metric Progress Bars */}
                   <div className="flex-1 w-full space-y-2.5">
                     {[
-                      { name: "Goal Match Horizon", score: 85, color: "bg-emerald-500" },
-                      { name: "Asset Diversification", score: 74, color: "bg-sky-500" },
-                      { name: "Expense Fee Efficiency", score: 92, color: "bg-emerald-500" },
-                      { name: "SIP Compounding Index", score: 88, color: "bg-amber-500" }
+                      {
+                        name: 'Goal Match Horizon',
+                        score: 85,
+                        color: 'bg-emerald-500',
+                      },
+                      {
+                        name: 'Asset Diversification',
+                        score: 74,
+                        color: 'bg-sky-500',
+                      },
+                      {
+                        name: 'Expense Fee Efficiency',
+                        score: 92,
+                        color: 'bg-emerald-500',
+                      },
+                      {
+                        name: 'SIP Compounding Index',
+                        score: 88,
+                        color: 'bg-amber-500',
+                      },
                     ].map((metric, i) => (
                       <div key={i} className="space-y-1">
                         <div className="flex justify-between text-[11px] font-semibold text-primary">
-                          <span className="font-sans text-[11px]">{metric.name}</span>
-                          <span className="font-mono text-[10px] font-bold">{metric.score}%</span>
+                          <span className="font-sans text-[11px]">
+                            {metric.name}
+                          </span>
+                          <span className="font-mono text-[10px] font-bold">
+                            {metric.score}%
+                          </span>
                         </div>
                         <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div
@@ -1395,7 +1661,11 @@ export default function Home() {
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 flex items-center gap-2.5 text-left">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   <p className="text-[11px] text-foreground/80 font-sans leading-tight">
-                    <strong className="text-emerald-700 font-semibold">Portfolio Status:</strong> Well-calibrated. Fee drag is in the bottom 8th percentile of peers.
+                    <strong className="text-emerald-700 font-semibold">
+                      Portfolio Status:
+                    </strong>{' '}
+                    Well-calibrated. Fee drag is in the bottom 8th percentile of
+                    peers.
                   </p>
                 </div>
               </div>
@@ -1405,14 +1675,20 @@ export default function Home() {
       </div>
 
       {/* Calculators Hub Section (Compact Glassmorphic Carousel) */}
-      <div id="calculators" className="w-full relative z-10 py-12 px-6 bg-transparent">
+      <div
+        id="calculators"
+        className="w-full relative z-10 py-12 px-6 bg-transparent"
+      >
         <ScrollBlurReveal className="w-full max-w-5xl mx-auto">
           <CalculatorsCarousel />
         </ScrollBlurReveal>
       </div>
 
       {/* Daily Rewards Quotes Section */}
-      <div id="daily-rewards" className="w-full relative z-10 py-16 px-6 bg-transparent">
+      <div
+        id="daily-rewards"
+        className="w-full relative z-10 py-16 px-6 bg-transparent"
+      >
         <ScrollBlurReveal className="w-full max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-primary/10 bg-white/60 text-xs font-semibold text-primary font-mono select-none shadow-xs mb-3">
@@ -1423,7 +1699,8 @@ export default function Home() {
               Daily Market Wisdom
             </h2>
             <p className="text-muted-foreground text-sm leading-relaxed font-sans mt-2 max-w-xl mx-auto font-medium">
-              Curated timeless investment principles to keep you grounded across market cycles.
+              Curated timeless investment principles to keep you grounded across
+              market cycles.
             </p>
           </div>
 
@@ -1436,7 +1713,7 @@ export default function Home() {
               className="relative w-full h-full duration-700 transition-transform"
               style={{
                 transformStyle: 'preserve-3d',
-                transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
               }}
             >
               {/* Front Side of Card */}
@@ -1484,7 +1761,7 @@ export default function Home() {
                 className="absolute inset-0 w-full h-full p-7 sm:p-9 rounded-[32px] bg-white/60 backdrop-blur-2xl border border-white/80 shadow-[0_20px_50px_rgba(0,0,0,0.06)] flex flex-col justify-between items-center text-center overflow-hidden"
                 style={{
                   backfaceVisibility: 'hidden',
-                  transform: 'rotateY(180deg)'
+                  transform: 'rotateY(180deg)',
                 }}
               >
                 {/* Decorative glows */}
@@ -1511,10 +1788,16 @@ export default function Home() {
                         className="w-full h-full object-cover object-[center_42%]"
                       />
                     </div>
-                    <h3 className="text-base font-bold font-chillax text-primary">Arijit De</h3>
-                    <p className="text-[11px] text-muted-foreground font-mono font-semibold">Certified MFD & Portfolio Distributor</p>
+                    <h3 className="text-base font-bold font-chillax text-primary">
+                      Arijit De
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground font-mono font-semibold">
+                      Certified MFD & Portfolio Distributor
+                    </p>
                     <p className="text-xs text-foreground/80 leading-relaxed font-sans font-medium">
-                      “True financial freedom is built through patience and structured asset allocation, not chasing speculative cycles.”
+                      “True financial freedom is built through patience and
+                      structured asset allocation, not chasing speculative
+                      cycles.”
                     </p>
                   </div>
                 </div>
@@ -1533,7 +1816,6 @@ export default function Home() {
       {/* FAQ Section */}
       <div id="faq" className="w-full bg-transparent relative z-10 py-32">
         <div className="w-full max-w-5xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-start relative">
-
           {/* Left Column: Title & FAQ List */}
           <div className="lg:col-span-7 flex flex-col gap-12 text-left w-full">
             <ScrollBlurReveal className="flex flex-col gap-4">
@@ -1541,53 +1823,82 @@ export default function Home() {
                 Common Inquiries
               </span>
               <h2 className="text-4xl md:text-[5rem] leading-[1.05] text-primary tracking-tight font-normal">
-                <span className="font-clash">Frequently</span>{" "}
-                <span className="font-clash font-medium tracking-tight">asked</span>
-                <span className="block font-clash font-medium tracking-tight">questions</span>
+                <span className="font-clash">Frequently</span>{' '}
+                <span className="font-clash font-medium tracking-tight">
+                  asked
+                </span>
+                <span className="block font-clash font-medium tracking-tight">
+                  questions
+                </span>
               </h2>
             </ScrollBlurReveal>
 
             {/* Interactive Accordion List */}
             <ScrollBlurReveal className="w-full">
               <div className="flex flex-col w-full border-t border-border mt-6">
-              {faqData.map((faq, idx) => {
-                const isOpen = activeFaq === idx;
-                return (
-                  <div
-                    key={idx}
-                    className="border-b border-border py-6 flex flex-col text-left transition-colors duration-300"
-                  >
-                    <button
-                      onClick={() => setActiveFaq(isOpen ? null : idx)}
-                      className="flex justify-between items-center w-full gap-4 text-left focus:outline-none group py-1"
+                {faqData.map((faq, idx) => {
+                  const isOpen = activeFaq === idx;
+                  return (
+                    <div
+                      key={idx}
+                      className="border-b border-border py-6 flex flex-col text-left transition-colors duration-300"
                     >
-                      <h3 className={`text-base md:text-lg font-medium tracking-wide transition-colors duration-300 font-clash ${isOpen ? "text-primary font-semibold" : "text-foreground group-hover:text-primary"
-                        }`}>
-                        {faq.question}
-                      </h3>
+                      <button
+                        onClick={() => setActiveFaq(isOpen ? null : idx)}
+                        className="flex justify-between items-center w-full gap-4 text-left focus:outline-none group py-1"
+                      >
+                        <h3
+                          className={`text-base md:text-lg font-medium tracking-wide transition-colors duration-300 font-clash ${
+                            isOpen
+                              ? 'text-primary font-semibold'
+                              : 'text-foreground group-hover:text-primary'
+                          }`}
+                        >
+                          {faq.question}
+                        </h3>
 
-                      {/* Expand/Collapse Chevron Indicator */}
-                      <span className={`text-xl md:text-2xl transition-transform duration-500 text-muted-foreground ${isOpen ? "text-primary rotate-180" : "group-hover:text-primary"
-                        }`}>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </span>
-                    </button>
+                        {/* Expand/Collapse Chevron Indicator */}
+                        <span
+                          className={`text-xl md:text-2xl transition-transform duration-500 text-muted-foreground ${
+                            isOpen
+                              ? 'text-primary rotate-180'
+                              : 'group-hover:text-primary'
+                          }`}
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </span>
+                      </button>
 
-                    {/* Accordion description container */}
-                    <div className={`grid transition-all duration-[400ms] ease-in-out ${isOpen ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0"
-                      }`}>
-                      <div className="overflow-hidden">
-                        <p className="text-sm md:text-base text-muted-foreground leading-relaxed font-sans pr-4 pb-4 pt-1">
-                          {faq.answer}
-                        </p>
+                      {/* Accordion description container */}
+                      <div
+                        className={`grid transition-all duration-[400ms] ease-in-out ${
+                          isOpen
+                            ? 'grid-rows-[1fr] opacity-100 mt-2'
+                            : 'grid-rows-[0fr] opacity-0'
+                        }`}
+                      >
+                        <div className="overflow-hidden">
+                          <p className="text-sm md:text-base text-muted-foreground leading-relaxed font-sans pr-4 pb-4 pt-1">
+                            {faq.answer}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
             </ScrollBlurReveal>
           </div>
 
@@ -1608,7 +1919,9 @@ export default function Home() {
 
                 {/* Call-to-action Heading */}
                 <h3 className="text-3xl md:text-4xl font-semibold leading-tight mb-8 font-clash relative z-10 text-primary">
-                  Book a 15-min<br />intro call
+                  Book a 15-min
+                  <br />
+                  intro call
                 </h3>
 
                 {/* Booking Link */}
@@ -1625,7 +1938,9 @@ export default function Home() {
                 {/* Footer section with email and arrow button */}
                 <div className="flex justify-between items-center relative z-10 w-full">
                   <div className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Prefer to email?</span>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                      Prefer to email?
+                    </span>
                     <a
                       href="mailto:arijit1504@gmail.com"
                       className="text-sm font-semibold hover:underline text-primary font-mono"
@@ -1639,23 +1954,37 @@ export default function Home() {
                     className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:scale-110 hover:bg-primary/90 active:scale-95 transition-all duration-300 shadow-md cursor-pointer flex-shrink-0"
                     aria-label="Send email"
                   >
-                    <svg className="w-5 h-5 transform stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    <svg
+                      className="w-5 h-5 transform stroke-[2]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                      />
                     </svg>
                   </a>
                 </div>
               </div>
             </ScrollBlurReveal>
           </div>
-
         </div>
       </div>
 
       {/* Hello Text Section */}
-      <div ref={helloSectionRef} className="w-full relative z-10 bg-transparent select-none">
+      <div
+        ref={helloSectionRef}
+        className="w-full relative z-10 bg-transparent select-none"
+      >
         <div className="w-full flex flex-col items-center justify-center px-6 py-2">
           <ScrollBlurReveal className="w-full max-w-5xl mx-auto text-center flex flex-col items-center justify-center">
-            <div ref={envelopeRef} className="w-32 h-32 sm:w-64 sm:h-64 md:w-72 md:h-72 lg:w-80 lg:h-80 relative z-0 flex items-center justify-center">
+            <div
+              ref={envelopeRef}
+              className="w-32 h-32 sm:w-64 sm:h-64 md:w-72 md:h-72 lg:w-80 lg:h-80 relative z-0 flex items-center justify-center"
+            >
               <DotLottieReact
                 src="/looney-10.json"
                 loop
@@ -1668,7 +1997,10 @@ export default function Home() {
       </div>
 
       {/* Contact Section */}
-      <div id="contact" className="w-full bg-transparent relative z-10 pt-10 pb-24 overflow-hidden">
+      <div
+        id="contact"
+        className="w-full bg-transparent relative z-10 pt-10 pb-24 overflow-hidden"
+      >
         <ScrollBlurReveal className="w-full max-w-xl mx-auto px-6">
           <div className="relative text-left">
             <div className="text-center space-y-3 mb-8">
@@ -1679,15 +2011,29 @@ export default function Home() {
                 Connect With Us
               </h2>
               <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed font-sans max-w-sm mx-auto font-medium">
-                Drop us a message and we will get back to you shortly to analyze your portfolio.
+                Drop us a message and we will get back to you shortly to analyze
+                your portfolio.
               </p>
             </div>
 
-            <form onSubmit={handleContactSubmit} className="space-y-4 text-left">
+            <form
+              onSubmit={handleContactSubmit}
+              className="space-y-4 text-left"
+            >
               {contactError && (
                 <div className="p-3 bg-red-500/10 border border-red-500/25 rounded-xl text-red-600 text-xs font-sans flex items-center gap-2">
-                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  <svg
+                    className="w-4 h-4 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.5}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
                   </svg>
                   <span>{contactError}</span>
                 </div>
@@ -1695,15 +2041,29 @@ export default function Home() {
 
               {contactSuccess && (
                 <div className="p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-600 text-xs font-sans flex items-center gap-2">
-                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-4 h-4 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.5}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
-                  <span>Message sent successfully! Scroll down to see confirmation.</span>
+                  <span>
+                    Message sent successfully! Scroll down to see confirmation.
+                  </span>
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block font-bold">Your Name</label>
+                <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block font-bold">
+                  Your Name
+                </label>
                 <input
                   type="text"
                   required
@@ -1715,7 +2075,9 @@ export default function Home() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block font-bold">Email Address</label>
+                <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block font-bold">
+                  Email Address
+                </label>
                 <input
                   type="email"
                   required
@@ -1727,7 +2089,9 @@ export default function Home() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block font-bold">Message</label>
+                <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider block font-bold">
+                  Message
+                </label>
                 <textarea
                   required
                   rows={4}
@@ -1745,25 +2109,60 @@ export default function Home() {
               >
                 {contactSubmitting ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
                     <span>Sending Message...</span>
                   </>
                 ) : (
                   <>
                     <span>Send Message</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M14 5l7 7m0 0l-7 7m7-7H3"
+                      />
                     </svg>
                   </>
                 )}
               </button>
               {contactSuccess && (
                 <div className="text-center mt-3 text-emerald-600 text-xs font-semibold flex items-center justify-center gap-1.5 animate-in fade-in duration-300">
-                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   <span>Message sent successfully!</span>
                 </div>
@@ -1773,22 +2172,31 @@ export default function Home() {
         </ScrollBlurReveal>
       </div>
 
-      <Footer footerRef={footerRef} onBookCallClick={() => setIsBookingModalOpen(true)} />
+      <Footer
+        footerRef={footerRef}
+        onBookCallClick={() => setIsBookingModalOpen(true)}
+      />
 
-      <BookCallModal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} />
+      <BookCallModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+      />
 
       {/* Preloader Overlay Screen (Slides down smoothly) */}
       {showPreloader && (
         <div
           id="preloader-screen"
-          className={`fixed inset-0 z-50 flex flex-col justify-between bg-[#F2F0EF] p-12 md:p-20 transition-transform duration-[1000ms] ease-[cubic-bezier(0.85,0,0.15,1)] ${isLoaded ? "translate-y-full" : "translate-y-0"
-            }`}
+          className={`fixed inset-0 z-50 flex flex-col justify-between bg-[#F2F0EF] p-12 md:p-20 transition-transform duration-[1000ms] ease-[cubic-bezier(0.85,0,0.15,1)] ${
+            isLoaded ? 'translate-y-full' : 'translate-y-0'
+          }`}
         >
           {/* Top Row: Brand Info */}
           <div className="flex justify-between items-start w-full">
             <div className="flex items-center gap-4">
               <div className="flex flex-col text-left">
-                <span className="text-sm font-bold text-primary tracking-wide">Arijit De ©2026</span>
+                <span className="text-sm font-bold text-primary tracking-wide">
+                  Arijit De ©2026
+                </span>
               </div>
             </div>
           </div>
@@ -1831,16 +2239,26 @@ export default function Home() {
               </svg>
             </div>
             <div>
-              <h4 className="text-sm font-bold text-primary font-clash">Cookie Preferences</h4>
+              <h4 className="text-sm font-bold text-primary font-clash">
+                Cookie Preferences
+              </h4>
               <p className="text-[11px] text-muted-foreground leading-relaxed mt-1 font-sans">
-                We use cookies to analyze traffic, remember preferences, and optimize your portfolio health report. Read our <a href="/cookies" className="underline hover:text-primary transition duration-200">Cookies Policy</a>.
+                We use cookies to analyze traffic, remember preferences, and
+                optimize your portfolio health report. Read our{' '}
+                <a
+                  href="/cookies"
+                  className="underline hover:text-primary transition duration-200"
+                >
+                  Cookies Policy
+                </a>
+                .
               </p>
             </div>
           </div>
           <div className="flex gap-2 mt-1">
             <button
               onClick={() => {
-                localStorage.setItem("cookieConsent", "accepted");
+                localStorage.setItem('cookieConsent', 'accepted');
                 setShowCookieBox(false);
               }}
               className="flex-1 py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-[9px] rounded-lg uppercase tracking-wider transition-all duration-200"
@@ -1849,7 +2267,7 @@ export default function Home() {
             </button>
             <button
               onClick={() => {
-                localStorage.setItem("cookieConsent", "declined");
+                localStorage.setItem('cookieConsent', 'declined');
                 setShowCookieBox(false);
               }}
               className="flex-1 py-2 bg-transparent border border-border hover:bg-black/5 text-slate-500 hover:text-primary font-bold text-[9px] rounded-lg uppercase tracking-wider transition-all duration-200"
@@ -1859,8 +2277,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
     </main>
   );
 }
-
