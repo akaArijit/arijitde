@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import SoftBoxBlurBg from "@/components/SoftBoxBlurBg";
 import GradualBlur from "@/components/GradualBlur";
 import { Coins, Calendar, TrendingUp, ShieldCheck, ArrowLeft } from "lucide-react";
@@ -23,6 +24,7 @@ export default function SIFCalculator() {
   const [totalValue, setTotalValue] = useState(0);
   // Mount animation
   useEffect(() => {
+    window.scrollTo(0, 0);
     setMounted(true);
     document.title = "SIF Calculator | FinAnalysis";
     const timer = setTimeout(() => {
@@ -83,13 +85,25 @@ export default function SIFCalculator() {
 
       {/* Header Title Section */}
       <div className="relative z-10 flex flex-col justify-center items-center px-6 pt-44 pb-6 text-center max-w-5xl mx-auto">
-        <a
-          href="/"
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              if (!sessionStorage.getItem("savedHomeScrollY")) {
+                sessionStorage.setItem("savedHomeScrollY", "6299");
+              }
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                window.location.href = "/";
+              }
+            }
+          }}
           className="group flex items-center gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-primary bg-white/40 border border-border hover:bg-white/60 rounded-xl transition duration-200 shadow-sm mb-4 cursor-pointer animate-in fade-in slide-in-from-top-2 duration-1000"
         >
           <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
           Back to Home
-        </a>
+        </button>
         <h1
           className={`text-4xl md:text-7xl font-normal tracking-tight mt-12 mb-4 leading-none text-primary font-clash transition-all duration-[1200ms] ease-out ${
             isLoaded ? "opacity-100 blur-none scale-100" : "opacity-0 blur-lg scale-95"

@@ -1,153 +1,160 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function SoftBoxBlurBg() {
   const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    
-    const checkDevice = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkDevice();
-    window.addEventListener('resize', checkDevice);
-    return () => window.removeEventListener('resize', checkDevice);
   }, []);
 
-  // Generate 480 cells that will auto-flow into a very high-density grid
-  const cellCount = 480;
-
-  const cells = useMemo(() => {
-    if (isMobile) return []; // Don't compute cells if on mobile
-    
-    const list = [];
-    const maxCols = 36;
-    const maxRows = 14;
-
-    for (let i = 0; i < cellCount; i++) {
-      const col = i % maxCols;
-      const row = Math.floor(i / maxCols);
-
-      const waveOffset = parseFloat((Math.sin(col * 0.9) * 6).toFixed(2));
-      const delay = parseFloat((row * 0.08 + col * 0.04).toFixed(2));
-
-      const rawOpacity = 0.2 + 0.45 * Math.sin((row / maxRows) * Math.PI) * Math.cos((col / maxCols) * Math.PI * 0.85);
-      const opacity = parseFloat(Math.max(0.08, Math.min(0.8, rawOpacity)).toFixed(4));
-
-      const colorSeed = (row * 7 + col * 13) % 4;
-      let cellBg = '';
-      let cellBorder = '';
-      let cellShadow = '';
-
-      if (colorSeed === 0) {
-        cellBg = 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(147, 197, 253, 0.35) 50%, rgba(59, 130, 246, 0.25) 100%)';
-        cellBorder = 'rgba(255, 255, 255, 0.35)';
-        cellShadow = 'rgba(147, 197, 253, 0.2)';
-      } else if (colorSeed === 1) {
-        cellBg = 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.35) 60%, rgba(219, 234, 254, 0.2) 100%)';
-        cellBorder = 'rgba(255, 255, 255, 0.55)';
-        cellShadow = 'rgba(219, 234, 254, 0.15)';
-      } else if (colorSeed === 2) {
-        cellBg = 'linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(186, 230, 253, 0.35) 45%, rgba(147, 197, 253, 0.25) 100%)';
-        cellBorder = 'rgba(255, 255, 255, 0.4)';
-        cellShadow = 'rgba(186, 230, 253, 0.15)';
-      } else {
-        cellBg = 'linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(219, 234, 254, 0.2) 50%, rgba(147, 197, 253, 0.15) 100%)';
-        cellBorder = 'rgba(255, 255, 255, 0.35)';
-        cellShadow = 'rgba(147, 197, 253, 0.1)';
-      }
-
-      list.push({
-        id: i,
-        waveOffset,
-        delay,
-        opacity,
-        cellBg,
-        cellBorder,
-        cellShadow,
-      });
-    }
-    return list;
-  }, [cellCount, isMobile]);
-
-  if (!mounted || isMobile) {
+  if (!mounted) {
     return null;
   }
 
   return (
     <div className="backdrop-inner absolute inset-0 w-full h-full overflow-hidden select-none pointer-events-none">
       <style>{`
-        .pillow-grid-container {
-          display: grid;
-          grid-template-columns: repeat(16, 1fr);
-          gap: 2.5px;
-          will-change: transform;
-        }
-        @media (min-width: 640px) {
-          .pillow-grid-container {
-            grid-template-columns: repeat(24, 1fr);
-            gap: 3px;
-          }
-        }
-        @media (min-width: 768px) {
-          .pillow-grid-container {
-            grid-template-columns: repeat(30, 1fr);
-            gap: 3px;
-          }
-        }
-        @media (min-width: 1024px) {
-          .pillow-grid-container {
-            grid-template-columns: repeat(36, 1fr);
-            gap: 4px;
-          }
-        }
-        @keyframes pillow-float {
+        @keyframes float-orb-1 {
           0%, 100% {
-            transform: translateY(var(--wave-offset));
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(40px, -30px) scale(1.08);
+          }
+          66% {
+            transform: translate(-25px, 20px) scale(0.95);
+          }
+        }
+        @keyframes float-orb-2 {
+          0%, 100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(-35px, 25px) scale(0.96);
+          }
+          66% {
+            transform: translate(30px, -35px) scale(1.06);
+          }
+        }
+        @keyframes float-orb-3 {
+          0%, 100% {
+            transform: translate(0px, 0px) scale(1);
           }
           50% {
-            transform: translateY(calc(var(--wave-offset) - 3px));
+            transform: translate(25px, 35px) scale(1.1);
           }
         }
-        .pillow-grid-mask {
-          mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, rgba(0, 0, 0, 0) 100%);
-          -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 40%, rgba(0, 0, 0, 0) 100%);
+        @keyframes wave-drift {
+          0% {
+            transform: translateX(0) translateZ(0) scaleY(1);
+          }
+          50% {
+            transform: translateX(-25%) translateZ(0) scaleY(1.05);
+          }
+          100% {
+            transform: translateX(-50%) translateZ(0) scaleY(1);
+          }
         }
-        .pillow-cell {
-          will-change: transform;
+        .orb-1 {
+          animation: float-orb-1 18s ease-in-out infinite;
+        }
+        .orb-2 {
+          animation: float-orb-2 22s ease-in-out infinite;
+        }
+        .orb-3 {
+          animation: float-orb-3 16s ease-in-out infinite;
         }
       `}</style>
-      
-      {/* Dense Grid container spanning the bottom and fading as it goes up */}
-      <div className="absolute bottom-[-5%] left-[-2%] right-[-2%] h-[80%] pillow-grid-mask pillow-grid-container p-2">
-        {cells.map((cell) => (
-          <div
-            key={cell.id}
-            className="pillow-cell w-full aspect-square rounded-[4px] sm:rounded-[6px] md:rounded-[8px] border"
-            style={{
-              background: cell.cellBg,
-              borderColor: cell.cellBorder,
-              boxShadow: `
-                inset 1.5px 1.5px 3.5px rgba(255, 255, 255, 0.85),
-                inset -1.5px -1.5px 3.5px ${cell.cellShadow},
-                inset 0 0 3.5px rgba(255, 255, 255, 0.25),
-                0 4px 8px -3px ${cell.cellShadow},
-                0 2px 3px -2px rgba(147, 197, 253, 0.1)
-              `,
-              opacity: cell.opacity,
-              animation: 'pillow-float 4.5s ease-in-out infinite',
-              animationDelay: `${cell.delay}s`,
-              transform: `translateY(${cell.waveOffset}px)`,
-              ['--wave-offset' as any]: `${cell.waveOffset}px`,
-              ['--shadow-color' as any]: cell.cellShadow,
-            }}
-          />
-        ))}
+
+      {/* 1. Base Precision Dot Grid with Radial Falloff */}
+      <div
+        className="absolute inset-0 opacity-[0.45]"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.08) 1px, transparent 0)`,
+          backgroundSize: '32px 32px',
+          maskImage: 'radial-gradient(ellipse 90% 80% at 50% 40%, black 20%, transparent 80%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at 50% 40%, black 20%, transparent 80%)',
+        }}
+      />
+
+      {/* 2. Soft Ambient Fluid Aurora Gradient Orbs */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Sky Blue / Cyan Light Source (Bottom Left) */}
+        <div
+          className="orb-1 absolute bottom-[-10%] left-[-5%] w-[680px] h-[680px] rounded-full blur-[110px] pointer-events-none opacity-70"
+          style={{
+            background: 'radial-gradient(circle, rgba(147, 197, 253, 0.75) 0%, rgba(186, 230, 253, 0.45) 45%, rgba(242, 240, 239, 0) 75%)',
+          }}
+        />
+
+        {/* Ocean Indigo / Azure Bloom (Bottom Right) */}
+        <div
+          className="orb-2 absolute bottom-[-12%] right-[-8%] w-[750px] h-[750px] rounded-full blur-[120px] pointer-events-none opacity-65"
+          style={{
+            background: 'radial-gradient(circle, rgba(191, 219, 254, 0.8) 0%, rgba(224, 242, 254, 0.5) 40%, rgba(242, 240, 239, 0) 75%)',
+          }}
+        />
+
+        {/* Subtle Warm Amber / Gold Wealth Shimmer (Center Top) */}
+        <div
+          className="orb-3 absolute top-[-10%] left-[30%] w-[550px] h-[550px] rounded-full blur-[130px] pointer-events-none opacity-40"
+          style={{
+            background: 'radial-gradient(circle, rgba(253, 230, 138, 0.45) 0%, rgba(254, 243, 199, 0.25) 40%, transparent 70%)',
+          }}
+        />
+
+        {/* Emerald Precision Accent (Center Bottom) */}
+        <div
+          className="orb-1 absolute bottom-[-5%] left-[35%] w-[600px] h-[450px] rounded-full blur-[120px] pointer-events-none opacity-35"
+          style={{
+            background: 'radial-gradient(ellipse, rgba(167, 243, 208, 0.5) 0%, rgba(209, 250, 229, 0.25) 45%, transparent 75%)',
+          }}
+        />
       </div>
+
+
+
+      {/* 4. Elegant Glowing Financial Wave Curves (Bottom Edge) */}
+      <div className="absolute bottom-0 left-0 right-0 h-[280px] overflow-hidden pointer-events-none opacity-40">
+        <svg
+          viewBox="0 0 1440 280"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="absolute bottom-0 w-full h-full preserve-3d"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <linearGradient id="fintechWaveGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgba(147, 197, 253, 0.4)" />
+              <stop offset="50%" stopColor="rgba(186, 230, 253, 0.6)" />
+              <stop offset="100%" stopColor="rgba(147, 197, 253, 0.2)" />
+            </linearGradient>
+            <linearGradient id="fintechWaveGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgba(255, 255, 255, 0.6)" />
+              <stop offset="50%" stopColor="rgba(191, 219, 254, 0.4)" />
+              <stop offset="100%" stopColor="rgba(255, 255, 255, 0.2)" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M0,160 C320,240 420,80 720,150 C1020,220 1180,100 1440,160 L1440,280 L0,280 Z"
+            fill="url(#fintechWaveGrad1)"
+          />
+          <path
+            d="M0,190 C360,110 520,250 860,180 C1140,120 1280,210 1440,170 L1440,280 L0,280 Z"
+            fill="url(#fintechWaveGrad2)"
+          />
+        </svg>
+      </div>
+
+      {/* 5. Subtle Vignette Depth Layer */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle at 50% 35%, transparent 45%, rgba(242, 240, 239, 0.4) 100%)',
+        }}
+      />
     </div>
   );
 }

@@ -96,7 +96,7 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
                 Contact
               </a>
               <a
-                href="#calculators"
+                href="/#calculators"
                 className={`hover:text-primary transition duration-200 ${activePath === '#calculators' ? 'text-primary font-bold' : ''}`}
               >
                 Calculators
@@ -184,9 +184,10 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
                 Contact
               </a>
               <a
-                href="#calculators"
+                href="/#calculators"
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`hover:text-primary transition-all duration-300 transform ${isMobileMenuOpen ? "opacity-100 translate-x-0 font-clash" : "opacity-0 -translate-x-4"
-                  } delay-[300ms]`}
+                  } delay-[400ms]`}
               >
                 Calculators
               </a>

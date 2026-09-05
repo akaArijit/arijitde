@@ -81,18 +81,6 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col overflow-x-hidden">
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if (typeof window !== 'undefined' && window.sessionStorage && window.sessionStorage.getItem('hasSeenPreloader')) {
-                const style = document.createElement('style');
-                style.id = 'hide-preloader-style';
-                style.innerHTML = '#preloader-screen { display: none !important; }';
-                document.head.appendChild(style);
-              }
-            `,
-          }}
-        />
         <SessionSync />
         <Analytics />
         <CursorFollower />

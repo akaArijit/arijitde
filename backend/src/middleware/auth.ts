@@ -93,3 +93,54 @@ export async function authMiddleware(
     });
   }
 }
+
+export async function optionalAuthMiddleware(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.substring(7);
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = verifyToken(token);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        phone: true,
+        pan: true,
+        dob: true,
+        anniversary: true,
+        createdAt: true,
+        referralCode: true,
+        referrerId: true,
+        client: {
+          select: {
+            activePlan: true,
+            advisorNotes: true,
+            activatedAt: true,
+          }
+        }
+      },
+    });
+
+    if (user) {
+      req.user = user;
+    }
+  } catch (error) {
+    // Ignore invalid/expired token for optional auth, allowing public visitor to proceed
+  }
+
+  next();
+}

@@ -115,9 +115,9 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
 
           <img
-            src="/assets/me.jpeg"
+            src="/20260702_171545.webp"
             alt="Arijit De"
-            className="w-24 h-24 md:w-36 md:h-36 rounded-2xl object-cover shrink-0 border border-amber-500/15 shadow-md animate-fade-in relative z-10"
+            className="w-24 h-24 md:w-36 md:h-36 rounded-2xl object-cover object-[center_47%] shrink-0 border border-amber-500/15 shadow-md animate-fade-in relative z-10"
           />
           <div className="flex-1 flex flex-col gap-2.5 relative z-10">
             <h3 className="font-instrument-serif text-xl sm:text-3xl font-bold text-amber-800">New investment?</h3>

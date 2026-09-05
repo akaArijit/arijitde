@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { KnobSlider } from "@/components/ui/knob-slider";
+import CalculatorsCarousel from "@/components/CalculatorsCarousel";
 import SoftBoxBlurBg from "@/components/SoftBoxBlurBg";
+import LightTunnel from "@/components/LightTunnel";
 import GradualBlur from "@/components/GradualBlur";
 import ScrollRevealSection from "@/components/ScrollRevealSection";
 import ScrollBlurReveal from "@/components/ScrollBlurReveal";
@@ -12,14 +15,137 @@ import { GoArrowDownRight } from "react-icons/go";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ChatbotWidget from "@/components/ChatbotWidget";
+import AIOrbFace from "@/components/smoothui/ai-orb-face";
 import BookCallModal from "@/components/BookCallModal";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { 
+  Target, 
+  PieChart, 
+  ShieldCheck, 
+  TrendingUp, 
+  Coins, 
+  Zap, 
+  Clock, 
+  Flame, 
+  Briefcase, 
+  Landmark, 
+  PiggyBank, 
+  CreditCard, 
+  Scale, 
+  Activity,
+  CheckCircle2,
+  ArrowRight,
+  Sparkles,
+  Bot,
+  Percent,
+  Layers,
+  BarChart3,
+  Compass,
+  FileCheck2,
+  BrainCircuit,
+  Quote,
+  RotateCw
+} from "lucide-react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
+
+const archetypesMap: Record<string, {
+  name: string;
+  emoji: string;
+  category: string;
+  score: number;
+  badge: string;
+  needleAngle: number;
+  color: string;
+  gradient: string;
+  breakdown: { label: string; pct: string; active?: boolean }[];
+  description: string;
+}> = {
+  tiger: {
+    name: "Aggressive Tiger",
+    emoji: "🐅",
+    category: "High Conviction Growth",
+    score: 65,
+    badge: "Optimal Fit",
+    needleAngle: 27,
+    color: "#F59E0B",
+    gradient: "from-amber-500 to-orange-500",
+    breakdown: [
+      { label: "🐘 Elephant", pct: "20%" },
+      { label: "🐅 Tiger", pct: "65%", active: true },
+      { label: "🦊 Fox", pct: "15%" }
+    ],
+    description: "Prioritizes high-compounding alpha via disciplined systematic equity, multi-cap funds, and SIF portfolios."
+  },
+  elephant: {
+    name: "Conservative Elephant",
+    emoji: "🐘",
+    category: "Capital Preservation",
+    score: 25,
+    badge: "High Security",
+    needleAngle: -45,
+    color: "#10B981",
+    gradient: "from-emerald-500 to-teal-600",
+    breakdown: [
+      { label: "🐘 Elephant", pct: "70%", active: true },
+      { label: "🦌 Deer", pct: "20%" },
+      { label: "🐅 Tiger", pct: "10%" }
+    ],
+    description: "Prioritizes capital stability and predictable yields through AAA corporate bonds, target-maturity debt, and sovereign instruments."
+  },
+  deer: {
+    name: "Balanced Deer",
+    emoji: "🦌",
+    category: "Steady Dynamic Allocation",
+    score: 45,
+    badge: "Balanced Growth",
+    needleAngle: -10,
+    color: "#0284C7",
+    gradient: "from-sky-500 to-blue-600",
+    breakdown: [
+      { label: "🐘 Elephant", pct: "35%" },
+      { label: "🦌 Deer", pct: "50%", active: true },
+      { label: "🦊 Fox", pct: "15%" }
+    ],
+    description: "Balances steady equity compounding with defensive debt hedges and multi-asset dynamic allocation strategies."
+  },
+  fox: {
+    name: "Strategic Fox",
+    emoji: "🦊",
+    category: "Tactical Opportunist",
+    score: 78,
+    badge: "Tactical Alpha",
+    needleAngle: 50,
+    color: "#EA580C",
+    gradient: "from-orange-500 to-amber-600",
+    breakdown: [
+      { label: "🦊 Fox", pct: "60%", active: true },
+      { label: "🐅 Tiger", pct: "30%" },
+      { label: "🐘 Elephant", pct: "10%" }
+    ],
+    description: "Capitalizes on sector rotation, macroeconomic tailwinds, and dynamic momentum portfolio shifts."
+  },
+  lion: {
+    name: "Visionary Lion",
+    emoji: "🦁",
+    category: "Frontier Equity Leader",
+    score: 90,
+    badge: "Maximum Expansion",
+    needleAngle: 72,
+    color: "#DC2626",
+    gradient: "from-rose-500 to-red-600",
+    breakdown: [
+      { label: "🦁 Lion", pct: "75%", active: true },
+      { label: "🐅 Tiger", pct: "20%" },
+      { label: "🦊 Fox", pct: "5%" }
+    ],
+    description: "Engineered for maximum long-horizon growth utilizing specialized PMS strategies, small-cap innovators, and alternative asset vehicles."
+  }
+};
 
 const servicesData = [
   {
@@ -150,9 +276,9 @@ const servicesList = [
 
 export default function Home() {
   const [count, setCount] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(true);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [preloaderGone, setPreloaderGone] = useState(false);
+  const [showPreloader, setShowPreloader] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scrollVideoContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -217,8 +343,9 @@ export default function Home() {
       setContactName("");
       setContactEmail("");
       setContactMessage("");
-    } catch (err: any) {
-      setContactError(err.message || "An unexpected error occurred.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred.";
+      setContactError(msg);
     } finally {
       setContactSubmitting(false);
     }
@@ -299,7 +426,34 @@ export default function Home() {
   const animationRef = useRef<number | null>(null);
 
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [expandedOption, setExpandedOption] = useState<string | null>(null);
+  const [expandedOption, setExpandedOption] = useState<string>("why-us");
+  const [serviceCategory, setServiceCategory] = useState<"investments" | "insurance">("investments");
+  const [selectedArchetype, setSelectedArchetype] = useState<string>("tiger");
+  const [riskScore, setRiskScore] = useState<number>(65);
+  const lastArchetypeRef = useRef("tiger");
+
+  const handleSelectArchetype = useCallback((id: string) => {
+    setSelectedArchetype(id);
+    lastArchetypeRef.current = id;
+    const targetScore = archetypesMap[id]?.score ?? 65;
+    setRiskScore(targetScore);
+  }, []);
+
+  const handleKnobChange = useCallback((newScore: number) => {
+    setRiskScore(newScore);
+
+    let matched = "tiger";
+    if (newScore <= 35) matched = "elephant";
+    else if (newScore <= 55) matched = "deer";
+    else if (newScore <= 72) matched = "tiger";
+    else if (newScore <= 84) matched = "fox";
+    else matched = "lion";
+
+    if (lastArchetypeRef.current !== matched) {
+      lastArchetypeRef.current = matched;
+      setSelectedArchetype(matched);
+    }
+  }, []);
   const [activeHoverLevel1, setActiveHoverLevel1] = useState<string | null>(null);
   const [activeHoverLevel2, setActiveHoverLevel2] = useState<string | null>(null);
   const [mobileActiveLevel1, setMobileActiveLevel1] = useState<string | null>(null);
@@ -367,26 +521,6 @@ export default function Home() {
 
   const envelopeRef = useRef<HTMLDivElement>(null);
   const helloSectionRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!preloaderGone) return;
-
-    const envelope = envelopeRef.current;
-    if (!envelope) return;
-
-    const ctx = gsap.context(() => {
-      gsap.to(envelope, {
-        y: -15,
-        duration: 2.5,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-      });
-    }, helloSectionRef);
-
-    return () => {
-      ctx.revert();
-    };
-  }, [preloaderGone]);
 
 
   useEffect(() => {
@@ -450,52 +584,45 @@ export default function Home() {
     }
     setCount(100);
     setTimeout(() => {
-      setPreloaderGone(true); // Unmounts preloader
+      setShowPreloader(false); // Unmounts preloader
+      import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
+        ScrollTrigger.refresh();
+      });
     }, 1000); // Match slide duration
   };
 
   useEffect(() => {
-    if (preloaderGone) {
-      import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
-        ScrollTrigger.refresh();
-      });
-    }
-  }, [preloaderGone]);
+    if (typeof window === "undefined") return;
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem("hasSeenPreloader")) {
-      setIsLoaded(true);
-      setPreloaderGone(true);
-      return;
-    }
-
-    if (typeof window !== "undefined") {
+    if (!sessionStorage.getItem("hasSeenPreloader")) {
       sessionStorage.setItem("hasSeenPreloader", "true");
+      setShowPreloader(true);
+      setIsLoaded(false);
+
+      const startTime = Date.now();
+      const duration = 5000; // 5 seconds preloader duration
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(100, Math.floor((elapsed / duration) * 100));
+
+        setCount(progress);
+
+        if (elapsed < duration) {
+          animationRef.current = requestAnimationFrame(animate);
+        } else {
+          triggerEnd();
+        }
+      };
+
+      animationRef.current = requestAnimationFrame(animate);
+
+      return () => {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+      };
     }
-
-    let startTime = Date.now();
-    const duration = 5000; // 5 seconds preloader duration
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(100, Math.floor((elapsed / duration) * 100));
-
-      setCount(progress);
-
-      if (elapsed < duration) {
-        animationRef.current = requestAnimationFrame(animate);
-      } else {
-        triggerEnd();
-      }
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
   }, []);
 
   return (
@@ -509,489 +636,457 @@ export default function Home() {
 
       <SvgScrollWipe
         screen1={
-          <ScrollBlurReveal className="flex flex-col items-center justify-center text-center px-6 max-w-5xl mx-auto space-y-6 pt-28 md:pt-24 lg:pt-32">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-white/20 backdrop-blur-md text-xs font-medium text-primary select-none">
-              <span>35+ Years of Certified Amfi-Registered Mutual Fund Distribution</span>
+          <div className="relative w-full min-h-[90vh] md:min-h-screen flex items-center justify-center -mt-16 md:-mt-24 px-4 overflow-hidden">
+            {/* LightTunnel component strictly attached to the hero section so it stays ONLY in the hero */}
+            <div 
+              className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0"
+              style={{
+                maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 60%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0) 100%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 60%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0) 100%)',
+              }}
+            >
+              <LightTunnel
+                cableColor="#3b82f6"
+                pulseColor="#1d4ed8"
+                tunnelColor="#4338ca"
+                tunnelOpacity={0.05}
+                speed={0.1}
+                flowDirection="outward"
+                pulseSpeed={2}
+                pulseLength={0.28}
+                pulseBlend={1}
+                pulseWidth={1}
+                cableCount={20}
+                thickness={0.42}
+                rimWidth={0.22}
+                waviness={0.3}
+                sway={0.5}
+                size={1.0}
+                centerX={0.0}
+                centerY={0.0}
+                glow={1.6}
+                fadeNear={0.5}
+                fadeFar={2}
+                brightness={1.3}
+                colorVariance={true}
+                grain={true}
+                grainIntensity={0.05}
+                opacity={1.0}
+                mouseInteraction={true}
+                mouseStrength={0.1}
+                lightMode={true}
+              />
             </div>
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold text-primary font-chillax leading-tight tracking-tight uppercase">
-              Built on the legacy<br />
-              <span className="text-primary">of Mr. Arindam De</span>
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto font-sans leading-relaxed font-normal">
-              Combining 35+ years of generation-spanning trust with systematic portfolio optimization and machine learning diagnostics to accelerate your growth.
-            </p>
-            <div className="pt-2">
-              <a
-                href="/onboarding"
-                className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs rounded-2xl transition duration-200 shadow-md uppercase tracking-wider group cursor-pointer"
-              >
-                <span className="font-bold text-xs">Get My Free Portfolio Report</span>
-                <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200 stroke-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </a>
-            </div>
-          </ScrollBlurReveal>
+
+            <ScrollBlurReveal 
+              delay={700}
+              duration={1.8}
+              className="relative z-10 flex flex-col items-center justify-center text-center px-6 max-w-5xl mx-auto space-y-6 pt-24 md:pt-20"
+            >
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-white/40 bg-white/30 backdrop-blur-md text-xs font-semibold text-primary select-none shadow-sm">
+                <span>35+ Years of Certified Amfi-Registered Mutual Fund Distribution</span>
+              </div>
+              <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold text-primary font-chillax leading-tight tracking-tight uppercase">
+                Built on the legacy<br />
+                <span className="text-primary">of Mr. Arindam De</span>
+              </h1>
+              <p className="text-slate-800 text-xs sm:text-sm md:text-sm max-w-xl mx-auto font-sans leading-relaxed font-medium">
+                Combining 35+ years of generation-spanning trust with systematic portfolio optimization and machine learning diagnostics to accelerate your growth.
+              </p>
+              <div className="pt-2">
+                <a
+                  href="/onboarding"
+                  className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs rounded-2xl transition duration-200 shadow-xl uppercase tracking-wider group cursor-pointer"
+                >
+                  <span className="font-bold text-xs">Get My Free Portfolio Report</span>
+                  <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200 stroke-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </a>
+              </div>
+            </ScrollBlurReveal>
+          </div>
         }
         screen2={
-          <ScrollBlurReveal className="w-full max-w-6xl mx-auto flex flex-col items-center justify-center gap-10 md:gap-14 px-6 text-center">
-            {/* Profile Image */}
-            <div className="shrink-0 flex justify-center">
-              <div className="w-64 h-64 md:w-80 md:h-80 rounded-[24px] border border-border shadow-lg overflow-hidden bg-card flex items-center justify-center">
-                <img
-                  src="/assets/me.jpeg"
-                  alt="Arijit De"
-                  className="w-full h-full object-cover pointer-events-none select-none"
-                />
+          <ScrollBlurReveal className="w-full max-w-6xl mx-auto flex flex-col items-center justify-center gap-8 md:gap-12 px-4 sm:px-6 text-center">
+            {/* Section Badge & Header */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-primary/10 bg-white/50 backdrop-blur-md text-xs font-semibold text-primary select-none shadow-sm">
+                <span>✦ HERITAGE & EXPERTISE</span>
               </div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary font-chillax tracking-tight">
+                The Certified Human Touch Behind Data Precision
+              </h2>
             </div>
 
-            {/* Expanding Options */}
-            <div className="w-full grid grid-cols-1 xl:grid-cols-3 gap-8 xl:gap-10 text-left select-text relative z-10">
-              {/* 01: About Us */}
-              <div className="flex flex-col">
+            {/* Interactive Segmented Pill Tabs */}
+            <div className="inline-flex p-1.5 rounded-full border border-white/60 bg-white/40 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.04)] gap-1.5 max-w-full overflow-x-auto">
+              {[
+                { id: "why-us", label: "01 • Why We Exist" },
+                { id: "services", label: "02 • What We Provide" },
+                { id: "about", label: "03 • About & Legacy" }
+              ].map((tab) => (
                 <button
-                  onClick={() => setExpandedOption(expandedOption === "about" ? null : "about")}
-                  className="group flex items-baseline gap-3 focus:outline-none cursor-pointer text-left"
+                  key={tab.id}
+                  onClick={() => setExpandedOption(tab.id)}
+                  className={`px-5 sm:px-7 py-2.5 rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 cursor-pointer select-none whitespace-nowrap ${
+                    expandedOption === tab.id
+                      ? "bg-primary text-primary-foreground shadow-md scale-[1.02]"
+                      : "text-muted-foreground hover:text-primary hover:bg-white/60"
+                  }`}
                 >
-                  <span className={`text-xs xl:text-sm font-mono transition duration-200 ${expandedOption === "about" ? "text-primary" : "text-muted-foreground group-hover:text-primary"}`}>01</span>
-                  <span className={`font-instrument-serif text-2xl xl:text-4xl font-bold tracking-tight transition duration-200 ${expandedOption === "about" ? "text-primary" : "text-foreground group-hover:text-primary"}`}>
-                    About Us
-                    <GoArrowDownRight className="inline-block ml-2 align-middle transition-transform duration-300 group-hover:translate-x-1 group-hover:translate-y-1" />
-                  </span>
+                  {tab.label}
                 </button>
-                <div className={`grid xl:hidden transition-all duration-350 ease-in-out overflow-hidden text-sm text-foreground font-bold ${expandedOption === "about" ? "grid-rows-[1fr] mt-2.5 opacity-100" : "grid-rows-[0fr] opacity-0"
-                  }`}>
-                  <div className="overflow-hidden space-y-2.5 font-sans pr-4 leading-relaxed font-bold text-foreground text-sm">
+              ))}
+            </div>
+
+            {/* Main Bento Stage Grid */}
+            <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 text-left items-stretch mt-2">
+              {/* Left Column: Founder Glassmorphic Card (5 cols on lg) */}
+              <div className="lg:col-span-5 rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-6 sm:p-8 flex flex-col justify-between items-center text-center relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
+                
+                <div className="flex flex-col items-center w-full">
+                  {/* Portrait with Crisp Framing & Soft Ambient Depth */}
+                  <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-[28px] border-2 border-white/90 shadow-[0_12px_30px_rgba(0,0,0,0.08)] overflow-hidden bg-card mb-4">
                     <img
-                      src="/assets/about.svg"
-                      alt="About Us"
-                      className="w-56 h-auto rounded-2xl object-contain select-none pointer-events-none mt-2 mx-auto block"
+                      src="/20260702_171545.webp"
+                      alt="Arijit De"
+                      className="w-full h-full object-cover object-[center_47%] select-none pointer-events-none"
                     />
-                    <p>
-                      FinAnalysis blends over 35 years of trusted AMFI-registered Mutual Fund distribution with modern technology and data science. Founded on a legacy started by <strong className="text-primary font-extrabold">Arindam De</strong> in 1989, we have transitioned across multiple market cycles to safeguard and grow client wealth. Today, <strong className="text-primary font-extrabold">Arijit De</strong> (SEBI-certified Mutual Fund Distributor ARN-273396 and SIF distributor) integrates computer science analytics, systematic portfolio optimization, and structured asset allocation, delivering a modern, data-backed approach to wealth management that prior generations never had access to.
-                    </p>
+                  </div>
+
+                  {/* ARN Registration Badge Placed Under the Image */}
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/70 border border-border/60 shadow-xs mb-3 select-none backdrop-blur-md">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[11px] font-mono font-bold text-primary tracking-wider uppercase">
+                      ARN-273396
+                    </span>
+                    <span className="text-[10px] font-mono text-muted-foreground">• VERIFIED</span>
+                  </div>
+
+                  <h3 className="text-2xl sm:text-3xl font-bold text-primary font-chillax">
+                    Arijit De
+                  </h3>
+                  <p className="text-xs font-semibold text-primary/70 mt-1 uppercase tracking-wider font-mono">
+                    SEBI-Certified MFD & SIF Distributor
+                  </p>
+                  <p className="text-xs sm:text-sm text-muted-foreground font-sans mt-2.5 leading-relaxed max-w-xs">
+                    Carrying forward 35+ years of family distribution legacy started by <strong>Mr. Arindam De</strong> in 1989 with modern computational portfolio intelligence.
+                  </p>
+                </div>
+
+                {/* Stats & Credential Pills */}
+                <div className="w-full grid grid-cols-3 gap-2 mt-6 pt-5 border-t border-border/50">
+                  <div className="flex flex-col items-center p-2 rounded-xl bg-white/50 border border-white/60">
+                    <span className="text-xs sm:text-sm font-bold text-primary font-chillax">35+ Yrs</span>
+                    <span className="text-[9px] text-muted-foreground font-mono uppercase">Heritage</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2 rounded-xl bg-white/50 border border-white/60">
+                    <span className="text-xs sm:text-sm font-bold text-primary font-chillax">AMFI</span>
+                    <span className="text-[9px] text-muted-foreground font-mono uppercase">Registered</span>
+                  </div>
+                  <div className="flex flex-col items-center p-2 rounded-xl bg-white/50 border border-white/60">
+                    <span className="text-xs sm:text-sm font-bold text-primary font-chillax">1-on-1</span>
+                    <span className="text-[9px] text-muted-foreground font-mono uppercase">Guidance</span>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => setIsBookingModalOpen(true)}
+                  className="w-full mt-5 py-3 px-5 rounded-2xl bg-primary/5 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer"
+                >
+                  Book 1-on-1 Discussion ↗
+                </button>
               </div>
 
-              {/* 02: What we provide */}
-              <div className="flex flex-col">
-                <button
-                  onClick={() => setExpandedOption(expandedOption === "services" ? null : "services")}
-                  className="group flex items-baseline gap-3 focus:outline-none cursor-pointer text-left"
-                >
-                  <span className={`text-xs xl:text-sm font-mono transition duration-200 ${expandedOption === "services" ? "text-primary" : "text-muted-foreground group-hover:text-primary"}`}>02</span>
-                  <span className={`font-instrument-serif text-2xl xl:text-4xl font-bold tracking-tight transition duration-200 ${expandedOption === "services" ? "text-primary" : "text-foreground group-hover:text-primary"}`}>
-                    What we provide
-                    <GoArrowDownRight className="inline-block ml-2 align-middle transition-transform duration-300 group-hover:translate-x-1 group-hover:translate-y-1" />
-                  </span>
-                </button>
-                <div className={`grid xl:hidden transition-all duration-350 ease-in-out overflow-hidden text-sm text-foreground font-bold ${expandedOption === "services" ? "grid-rows-[1fr] mt-2.5 opacity-100" : "grid-rows-[0fr] opacity-0"
-                  }`}>
-                  <div className="overflow-hidden space-y-4 font-sans pr-4 leading-relaxed font-bold text-foreground text-sm">
-                    <div className="flex flex-col gap-4 mt-2 w-full">
-                      
-                      {/* Level 1: Investments (Tap to expand) */}
-                      <div className="flex flex-col w-full">
-                        <button
-                          onClick={() => {
-                            setMobileActiveLevel1(mobileActiveLevel1 === "investments" ? null : "investments");
-                            setMobileActiveLevel2(null);
-                          }}
-                          className={`w-full p-5 rounded-2xl border text-left flex flex-col justify-between transition-all duration-300 relative overflow-hidden cursor-pointer ${
-                            mobileActiveLevel1 === "investments"
-                              ? "bg-amber-500/10 border-amber-500/40 shadow-md"
-                              : "border-amber-500/20 bg-gradient-to-br from-white/50 via-white/35 to-amber-500/5 shadow-[0_10px_25px_rgba(245,158,11,0.04)]"
-                          }`}
-                        >
-                          <div className="absolute top-0 right-0 w-12 h-12 bg-amber-400/5 rounded-full blur-lg pointer-events-none" />
-                          <div className="flex justify-between items-center w-full">
-                            <span className="text-[8px] font-mono text-amber-700 tracking-wider uppercase font-bold bg-amber-500/10 px-2 py-0.5 rounded-full">
-                              Wealth & Growth
-                            </span>
-                            <span className="text-xs font-mono text-amber-600 font-bold uppercase tracking-wider">
-                              {mobileActiveLevel1 === "investments" ? "Tap to Collapse ▲" : "Tap to Expand ▼"}
-                            </span>
-                          </div>
-                          <h4 className="text-sm font-bold text-primary font-clash mt-2.5 mb-1 text-left">
+              {/* Right Column: Dynamic Stage Content (7 cols on lg) */}
+              <div className="lg:col-span-7 flex flex-col justify-between gap-4">
+                {/* 03. About Us Panel */}
+                {expandedOption === "about" && (
+                  <div className="h-full flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="p-6 sm:p-8 rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] flex flex-col justify-between h-full relative overflow-hidden">
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                            Heritage & Roots
+                          </span>
+                        </div>
+                        <h4 className="text-xl sm:text-2xl font-bold text-primary font-chillax mb-3">
+                          Generation-Spanning Trust Meets Modern Data Science
+                        </h4>
+                        <p className="text-xs sm:text-sm text-foreground/80 font-sans leading-relaxed font-medium mb-3">
+                          FinAnalysis blends over 35 years of trusted AMFI-registered Mutual Fund distribution with modern technology and algorithmic portfolio modeling. Founded on a legacy started by <strong className="text-primary font-extrabold">Arindam De</strong> in 1989, we have navigated through multiple market cycles, recessions, and structural reforms to safeguard client wealth.
+                        </p>
+                        <p className="text-xs sm:text-sm text-foreground/80 font-sans leading-relaxed font-medium">
+                          Today, <strong className="text-primary font-extrabold">Arijit De</strong> incorporates computer science diagnostics, factor weighting, and structured asset allocation, delivering a rigorous, data-backed approach to wealth management that prior generations never had access to.
+                        </p>
+                      </div>
+
+                      {/* Animated Handshake GIF in the center space */}
+                      <div className="my-3 flex items-center justify-center py-2">
+                        <img
+                          src="/hand-drawn-animation-simple-hand-drawn-handshake.gif"
+                          alt="Trust and Legacy Handshake"
+                          className="h-28 sm:h-32 object-contain select-none pointer-events-none mix-blend-multiply opacity-90"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-border/50">
+                        <div className="p-4 rounded-2xl bg-white/40 border border-white/60">
+                          <h5 className="text-xs font-bold text-primary uppercase tracking-wider font-mono">1989 Foundations</h5>
+                          <p className="text-xs text-muted-foreground font-sans mt-1">Decade-spanning trust built through personal client stewardship.</p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/40 border border-white/60">
+                          <h5 className="text-xs font-bold text-primary uppercase tracking-wider font-mono">Modern Analytics</h5>
+                          <p className="text-xs text-muted-foreground font-sans mt-1">Rule-based portfolio scoring across 5 distinct risk & growth dimensions.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 01. What We Provide Panel (Segmented Button Tabs with Downward Tree) */}
+                {expandedOption === "services" && (
+                  <div className="h-full flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="p-5 sm:p-7 rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] flex flex-col justify-between h-full relative overflow-hidden">
+                      <div className="w-full flex flex-col">
+                        {/* Top Segmented Button Bar inside the Card */}
+                        <div className="w-full flex items-center justify-between p-1.5 rounded-full border border-white/70 bg-white/60 backdrop-blur-xl shadow-xs">
+                          <button
+                            onClick={() => setServiceCategory("investments")}
+                            className={`flex-1 py-2.5 px-4 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 cursor-pointer select-none text-center ${
+                              serviceCategory === "investments"
+                                ? "bg-primary text-primary-foreground shadow-md scale-[1.01]"
+                                : "text-muted-foreground hover:text-primary hover:bg-white/60"
+                            }`}
+                          >
                             Investments
-                          </h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed font-sans font-medium text-left">
-                            Systematic wealth creation & capital protection.
-                          </p>
-                        </button>
+                          </button>
+                          <button
+                            onClick={() => setServiceCategory("insurance")}
+                            className={`flex-1 py-2.5 px-4 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 cursor-pointer select-none text-center ${
+                              serviceCategory === "insurance"
+                                ? "bg-primary text-primary-foreground shadow-md scale-[1.01]"
+                                : "text-muted-foreground hover:text-primary hover:bg-white/60"
+                            }`}
+                          >
+                            Life Insurance
+                          </button>
+                        </div>
 
-                        {/* Level 2: Under Investments (FD & MF) */}
-                        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${
-                          mobileActiveLevel1 === "investments" ? "max-h-[1500px] opacity-100 mt-3" : "max-h-0 opacity-0 pointer-events-none"
-                        }`}>
-                          <div className="pl-4 border-l border-amber-500/20 flex flex-col gap-4">
-                            
-                            {/* FD */}
-                            <div className="flex flex-col w-full">
-                              <button
-                                onClick={() => setMobileActiveLevel2(mobileActiveLevel2 === "fd" ? null : "fd")}
-                                className={`w-full p-4 rounded-xl border text-left flex flex-col justify-between transition-all duration-300 cursor-pointer ${
-                                  mobileActiveLevel2 === "fd"
-                                    ? "bg-amber-500/10 border-amber-500/40"
-                                    : "border-amber-500/20 bg-gradient-to-br from-white/50 via-white/35 to-amber-500/5"
-                                }`}
-                              >
-                                <div className="flex justify-between items-center w-full">
-                                  <span className="text-[8px] font-mono text-amber-700 tracking-wider uppercase font-bold bg-amber-500/10 px-2 py-0.5 rounded-full">
-                                    Capital Protection
-                                  </span>
-                                  <span className="text-[9px] font-mono text-amber-600 font-bold">
-                                    {mobileActiveLevel2 === "fd" ? "▲" : "▼"}
-                                  </span>
-                                </div>
-                                <h4 className="text-xs font-bold text-primary font-clash mt-2 mb-1">
-                                  Fixed Deposits
-                                </h4>
-                                <p className="text-[11px] text-muted-foreground leading-tight font-sans font-medium">
-                                  Secure, stable high-yield options.
-                                </p>
-                              </button>
-
-                              {/* Level 3: Under FD */}
-                              <div className={`transition-all duration-350 ease-in-out overflow-hidden ${
-                                mobileActiveLevel2 === "fd" ? "max-h-[200px] opacity-100 mt-2" : "max-h-0 opacity-0 pointer-events-none"
-                              }`}>
-                                <div className="pl-4 border-l-2 border-amber-500/30">
-                                  <div 
-                                    className="p-3.5 rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-white/45 to-amber-500/5 text-left cursor-pointer active:scale-[0.98] transition-all duration-200 select-none"
-                                    onClick={scrollToFaq}
-                                  >
-                                    <span className="text-[7px] font-mono text-amber-800 tracking-wider uppercase font-bold bg-amber-500/20 px-1.5 py-0.5 rounded-full">
-                                      Fixed Return
-                                    </span>
-                                    <h5 className="text-xs font-bold text-primary font-clash mt-1.5 mb-0.5">
-                                      Company Deposit
-                                    </h5>
-                                    <p className="text-[10px] text-muted-foreground font-sans leading-tight">
-                                      Corporate deposits with secure, verified high yields.
-                                    </p>
-                                  </div>
-                                </div>
+                        {/* Dynamic Stage Content based on Selected Category */}
+                        {serviceCategory === "investments" ? (
+                          <div className="flex flex-col w-full animate-in fade-in duration-300 mt-1">
+                            {/* Downward Connector Line / Arrow Aligned to Investments Tab (Left Half Center) */}
+                            <div className="w-full grid grid-cols-2">
+                              <div className="flex flex-col items-center justify-center">
+                                <div className="w-0.5 h-4 bg-gradient-to-b from-primary/60 to-primary/20" />
+                                <div className="w-1.5 h-1.5 border-b-2 border-r-2 border-primary/60 transform rotate-45 -mt-1" />
                               </div>
+                              <div />
                             </div>
 
-                            {/* MF */}
-                            <div className="flex flex-col w-full">
-                              <button
-                                onClick={() => setMobileActiveLevel2(mobileActiveLevel2 === "mf" ? null : "mf")}
-                                className={`w-full p-4 rounded-xl border text-left flex flex-col justify-between transition-all duration-300 cursor-pointer ${
-                                  mobileActiveLevel2 === "mf"
-                                    ? "bg-amber-500/10 border-amber-500/40"
-                                    : "border-amber-500/20 bg-gradient-to-br from-white/50 via-white/35 to-amber-500/5"
-                                }`}
-                              >
-                                <div className="flex justify-between items-center w-full">
-                                  <span className="text-[8px] font-mono text-amber-700 tracking-wider uppercase font-bold bg-amber-500/10 px-2 py-0.5 rounded-full">
-                                    Active Growth
+                            {/* Level 2 Sub-Branches (Fixed Deposits & Mutual Funds) */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full items-stretch mt-1">
+                              {/* Branch 1: Fixed Deposits */}
+                              <div className="flex flex-col items-center justify-between w-full h-full gap-2">
+                                <div className="p-4 sm:p-5 w-full flex-1 rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-white/75 to-white/40 backdrop-blur-xl shadow-xs text-left flex flex-col justify-center">
+                                  <span className="text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 w-fit">
+                                    CAPITAL PROTECTION
                                   </span>
-                                  <span className="text-[9px] font-mono text-amber-600 font-bold">
-                                    {mobileActiveLevel2 === "mf" ? "▲" : "▼"}
-                                  </span>
+                                  <h5 className="text-base font-bold text-primary font-chillax mt-2 mb-1">
+                                    Fixed Deposits
+                                  </h5>
+                                  <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                                    Secure, stable high-yield options designed for capital preservation and guaranteed returns.
+                                  </p>
                                 </div>
-                                <h4 className="text-xs font-bold text-primary font-clash mt-2 mb-1">
-                                  Mutual Funds
-                                </h4>
-                                <p className="text-[11px] text-muted-foreground leading-tight font-sans font-medium">
-                                  Market-linked growth with diversification.
-                                </p>
-                              </button>
 
-                              {/* Level 3: Under MF */}
-                              <div className={`transition-all duration-500 ease-in-out overflow-hidden ${
-                                mobileActiveLevel2 === "mf" ? "max-h-[800px] opacity-100 mt-2" : "max-h-0 opacity-0 pointer-events-none"
-                              }`}>
-                                <div className="pl-4 border-l-2 border-amber-500/30 grid grid-cols-1 gap-2.5">
+                                {/* Connector to Company Deposit */}
+                                <div className="flex flex-col items-center my-0.5">
+                                  <div className="w-0.5 h-4 bg-gradient-to-b from-amber-500/50 to-amber-500/20" />
+                                  <div className="w-1.5 h-1.5 border-b-2 border-r-2 border-amber-500/50 transform rotate-45 -mt-1" />
+                                </div>
+
+                                {/* Level 3: Company Deposit */}
+                                <div 
+                                  onClick={scrollToFaq}
+                                  className="p-4 sm:p-5 w-full flex-1 rounded-2xl border border-amber-500/25 bg-white/85 backdrop-blur-md shadow-xs text-left cursor-pointer hover:bg-white hover:border-amber-500/50 hover:shadow-sm transition-all flex flex-col justify-center"
+                                >
+                                  <span className="text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/15 text-amber-800 w-fit">
+                                    FIXED RETURN
+                                  </span>
+                                  <h6 className="text-sm sm:text-base font-bold text-primary font-chillax mt-1.5 mb-1">
+                                    Company Deposit
+                                  </h6>
+                                  <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                                    Corporate deposits with CRISIL AAA verified ratings, reliable payouts, and safety.
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Branch 2: Mutual Funds */}
+                              <div className="flex flex-col items-center justify-between w-full h-full gap-2">
+                                <div className="p-4 sm:p-5 w-full rounded-2xl border border-blue-500/25 bg-gradient-to-br from-blue-500/10 via-white/75 to-white/40 backdrop-blur-xl shadow-xs text-left">
+                                  <span className="text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-800 w-fit">
+                                    ACTIVE GROWTH
+                                  </span>
+                                  <h5 className="text-base font-bold text-primary font-chillax mt-2 mb-1">
+                                    Mutual Funds
+                                  </h5>
+                                  <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+                                    Market-linked wealth acceleration with algorithmic diversification and factor scoring.
+                                  </p>
+                                </div>
+
+                                {/* Connector to Level 3 Products */}
+                                <div className="flex flex-col items-center my-0.5">
+                                  <div className="w-0.5 h-4 bg-gradient-to-b from-blue-500/50 to-blue-500/20" />
+                                  <div className="w-1.5 h-1.5 border-b-2 border-r-2 border-blue-500/50 transform rotate-45 -mt-1" />
+                                </div>
+
+                                {/* Level 3: 2x2 Grid of Growth Products (SIP, Lumpsum, SIF, PMS) */}
+                                <div className="grid grid-cols-2 gap-2 w-full flex-1">
                                   {[
-                                    { title: "SIP", desc: "Systematic investments for long-term compound growth." },
-                                    { title: "Lumpsum", desc: "Compounding one-time principal investments over any tenure." },
-                                    { title: "SIF", desc: "Specialized Investment Funds with hurdle targets." },
-                                    { title: "PMS", desc: "Portfolio Management Services for customized asset allocation." }
-                                  ].map((sub, i) => (
+                                    { title: "SIP", desc: "Systematic monthly compounding." },
+                                    { title: "Lumpsum", desc: "Tactical one-time deployment." },
+                                    { title: "SIF", desc: "Specialized alternative funds." },
+                                    { title: "PMS", desc: "Direct active asset allocation." }
+                                  ].map((item, i) => (
                                     <div 
                                       key={i} 
-                                      className="p-4 rounded-xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-white/45 to-amber-500/5 text-left cursor-pointer active:scale-[0.98] transition-all duration-200 select-none"
                                       onClick={scrollToFaq}
+                                      className="p-3 rounded-2xl border border-blue-500/20 bg-white/85 backdrop-blur-md shadow-xs text-left cursor-pointer hover:bg-white hover:border-blue-500/50 hover:shadow-sm transition-all flex flex-col justify-between"
                                     >
-                                      <span className="text-[7px] font-mono text-amber-800 tracking-wider uppercase font-bold bg-amber-500/20 px-1.5 py-0.5 rounded-full">
-                                        Growth
-                                      </span>
-                                      <h5 className="text-sm font-bold text-primary font-clash mt-2 mb-1">{sub.title}</h5>
-                                      <p className="text-xs text-muted-foreground leading-normal font-sans font-medium">{sub.desc}</p>
+                                      <div>
+                                        <span className="text-[7px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700 w-fit inline-block">
+                                          GROWTH
+                                        </span>
+                                        <h6 className="text-xs font-bold text-primary font-chillax mt-1 mb-0.5">
+                                          {item.title}
+                                        </h6>
+                                      </div>
+                                      <p className="text-[10px] text-muted-foreground font-sans leading-tight">
+                                        {item.desc}
+                                      </p>
                                     </div>
                                   ))}
                                 </div>
                               </div>
                             </div>
-
                           </div>
-                        </div>
+                        ) : (
+                          /* Life Insurance Panel */
+                          <div className="flex flex-col w-full animate-in fade-in duration-300 mt-1">
+                            {/* Downward Connector Line / Arrow Aligned to Life Insurance Tab (Right Half Center) */}
+                            <div className="w-full grid grid-cols-2">
+                              <div />
+                              <div className="flex flex-col items-center justify-center">
+                                <div className="w-0.5 h-4 bg-gradient-to-b from-primary/60 to-primary/20" />
+                                <div className="w-1.5 h-1.5 border-b-2 border-r-2 border-primary/60 transform rotate-45 -mt-1" />
+                              </div>
+                            </div>
+
+                            <div className="w-full p-5 sm:p-6 rounded-[24px] border border-white/70 bg-gradient-to-br from-white/75 via-white/55 to-white/35 backdrop-blur-xl shadow-xs text-left flex flex-col gap-4 mt-1">
+                              <div>
+                                <span className="text-[9px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                                  RISK MITIGATION & PROTECTION
+                                </span>
+                                <h4 className="text-xl sm:text-2xl font-bold text-primary font-chillax mt-2 mb-1">
+                                  Life Insurance & Capital Shield
+                                </h4>
+                                <p className="text-xs sm:text-sm text-muted-foreground font-sans leading-relaxed">
+                                  Shielding your family&apos;s future, safeguarding physical assets, and providing health emergency liquidity across generations.
+                                </p>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-border/50">
+                                <div className="p-3.5 rounded-2xl bg-white/75 border border-white/80">
+                                  <span className="text-[9px] font-mono font-bold uppercase text-primary font-mono block mb-1">LIC Life Insurance</span>
+                                  <p className="text-xs text-muted-foreground font-sans">Guaranteed term protection & endowment plans.</p>
+                                </div>
+                                <div className="p-3.5 rounded-2xl bg-white/75 border border-white/80">
+                                  <span className="text-[9px] font-mono font-bold uppercase text-primary font-mono block mb-1">Mediclaim Health</span>
+                                  <p className="text-xs text-muted-foreground font-sans">Complete medical inflation & hospitalization cover.</p>
+                                </div>
+                                <div className="p-3.5 rounded-2xl bg-white/75 border border-white/80">
+                                  <span className="text-[9px] font-mono font-bold uppercase text-primary font-mono block mb-1">PNB Housing</span>
+                                  <p className="text-xs text-muted-foreground font-sans">Structured home construction & loan solutions.</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Level 1: Life Insurance */}
-                      <div 
-                        className="w-full p-5 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-white/50 via-white/35 to-amber-500/5 shadow-[0_10px_25px_rgba(245,158,11,0.04)] text-left relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all duration-200 select-none"
-                        onClick={scrollToFaq}
-                      >
-                        <div className="absolute top-0 right-0 w-12 h-12 bg-amber-400/5 rounded-full blur-lg pointer-events-none" />
-                        <span className="text-[8px] font-mono text-amber-700 tracking-wider uppercase font-bold bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
-                          Risk Mitigation
+                      {/* Bottom Institutional Assurance Strip */}
+                      <div className="w-full mt-5 pt-3.5 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="text-xs text-muted-foreground font-sans font-medium">
+                            Personalized allocation based on SEBI-certified risk profiling & factor scoring.
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setIsBookingModalOpen(true)}
+                          className="text-xs font-bold text-primary hover:text-primary/80 font-mono uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                        >
+                          Book 1-on-1 Discussion ↗
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 01. Why We Exist Panel */}
+                {expandedOption === "why-us" && (
+                  <div className="h-full flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="p-6 sm:p-8 rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] flex flex-col justify-between h-full relative overflow-hidden">
+                      <div>
+                        <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                          Our Philosophy
                         </span>
-                        <h4 className="text-sm font-bold text-primary font-clash mt-2.5 mb-1 text-left">
-                          Life Insurance
+                        <h4 className="text-xl sm:text-2xl font-bold text-primary font-chillax mt-3 mb-2">
+                          Why Relationship-Driven Distribution Matters
                         </h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed font-sans font-medium text-left">
-                          Protecting your family's future, health, and properties.
+                        <p className="text-xs sm:text-sm text-foreground/80 font-sans leading-relaxed font-medium mb-2.5">
+                          In an era dominated by cold robo-distribution apps and generic automated suggestions, your hard-earned wealth deserves personalized, <strong className="text-primary font-extrabold">relationship-driven human stewardship</strong>.
+                        </p>
+                        <p className="text-xs sm:text-sm text-foreground/80 font-sans leading-relaxed font-medium">
+                          We bridge the gap between human empathy and data precision. By standing by our clients through decades of market turbulence, recessions, and regulatory shifts, we prioritize multi-generational trust and structured planning over short-term transactions.
                         </p>
                       </div>
 
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 03: Why we exist */}
-              <div className="flex flex-col">
-                <button
-                  onClick={() => setExpandedOption(expandedOption === "why-us" ? null : "why-us")}
-                  className="group flex items-baseline gap-3 focus:outline-none cursor-pointer text-left"
-                >
-                  <span className={`text-xs xl:text-sm font-mono transition duration-200 ${expandedOption === "why-us" ? "text-primary" : "text-muted-foreground group-hover:text-primary"}`}>03</span>
-                  <span className={`font-instrument-serif text-2xl xl:text-4xl font-bold tracking-tight transition duration-200 ${expandedOption === "why-us" ? "text-primary" : "text-foreground group-hover:text-primary"}`}>
-                    Why we exist
-                    <GoArrowDownRight className="inline-block ml-2 align-middle transition-transform duration-300 group-hover:translate-x-1 group-hover:translate-y-1" />
-                  </span>
-                </button>
-                <div className={`grid xl:hidden transition-all duration-350 ease-in-out overflow-hidden text-sm text-foreground font-bold ${expandedOption === "why-us" ? "grid-rows-[1fr] mt-2.5 opacity-100" : "grid-rows-[0fr] opacity-0"
-                  }`}>
-                  <div className="overflow-hidden space-y-2.5 font-sans pr-4 leading-relaxed font-bold text-foreground text-sm">
-                    <img
-                      src="/assets/exist.png"
-                      alt="Why We Exist"
-                      className="w-56 h-auto rounded-2xl object-contain select-none pointer-events-none mt-2 mx-auto block"
-                    />
-                    <p>
-                      In an era dominated by cold robo-distribution representatives and static investment apps, your hard-earned wealth deserves personalized, <span className="font-extrabold text-primary">relationship-driven human distribution</span>. We exist to bridge the gap between human empathy and data precision. By standing by our clients through decades of market turbulence, recessions, and regulatory shifts, we prioritize multi-generational trust and structured planning. We don't just measure relationships in transactions; we measure them in decades of successful outcomes and financial security.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Desktop Full-Width Expanded Content */}
-            <div className={`hidden xl:grid transition-all duration-350 ease-in-out w-full ${expandedOption ? "grid-rows-[1fr] mt-10 opacity-100 overflow-visible" : "grid-rows-[0fr] opacity-0 overflow-hidden"}`}>
-              <div className={`w-full grid grid-cols-1 grid-rows-1 ${expandedOption ? "overflow-visible" : "overflow-hidden"}`}>
-                {/* 01: About Us */}
-                <div className={`col-start-1 row-start-1 transition-all duration-500 ease-in-out ${expandedOption === "about" ? "opacity-100 pointer-events-auto scale-100 translate-y-0" : "opacity-0 pointer-events-none scale-95 -translate-y-2"}`}>
-                  <div className="flex flex-col items-center justify-center gap-8 max-w-5xl mx-auto text-center">
-                    <img
-                      src="/assets/about.svg"
-                      alt="About Us"
-                      className="w-76 h-auto rounded-2xl object-contain select-none pointer-events-none"
-                    />
-                    <p className="font-sans leading-relaxed font-bold text-foreground text-base md:text-lg max-w-4xl mx-auto">
-                      FinAnalysis blends over 35 years of trusted AMFI-registered Mutual Fund distribution with modern technology and data science. Founded on a legacy started by <strong className="text-primary font-extrabold">Arindam De</strong> in 1989, we have transitioned across multiple market cycles to safeguard and grow client wealth. Today, <strong className="text-primary font-extrabold">Arijit De</strong> (SEBI-certified Mutual Fund Distributor ARN-273396 and SIF distributor) integrates computer science analytics, systematic portfolio optimization, and structured asset allocation, delivering a modern, data-backed approach to wealth management that prior generations never had access to.
-                    </p>
-                  </div>
-                </div>
-
-                {/* 02: Services */}
-                <div className={`col-start-1 row-start-1 transition-all duration-500 ease-in-out ${expandedOption === "services" ? "opacity-100 pointer-events-auto scale-100 translate-y-0" : "opacity-0 pointer-events-none scale-95 -translate-y-2"}`}>
-                  <div className="flex flex-col items-center justify-start gap-8 max-w-5xl mx-auto text-center w-full min-h-[520px]">
-                    <div className="grid grid-cols-2 gap-16 lg:gap-28 w-full mt-4 justify-items-center items-start">
-                      
-                      {/* Investments Branch container (wraps Level 1, 2, and 3) */}
-                      <div
-                        className="flex flex-col items-center animate-in fade-in duration-300 w-max xl:pl-16"
-                        onMouseEnter={() => setActiveHoverLevel1("investments")}
-                        onMouseLeave={() => {
-                          setActiveHoverLevel1(null);
-                          setActiveHoverLevel2(null);
-                        }}
-                      >
-                        {/* Level 1 Investments Box */}
-                        <div className={`p-6 w-80 min-w-[320px] max-w-[320px] min-h-[170px] rounded-3xl border transition-all duration-300 text-left relative overflow-hidden select-none cursor-pointer ${
-                          activeHoverLevel1 === "investments"
-                            ? "bg-amber-500/10 border-amber-500/40 shadow-lg scale-[1.02]"
-                            : "border-amber-500/20 bg-gradient-to-br from-white/50 via-white/35 to-amber-500/5 shadow-[0_20px_50px_rgba(245,158,11,0.08)] hover:scale-[1.01]"
-                        }`}>
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-amber-400/5 rounded-full blur-xl pointer-events-none" />
-                          <span className="text-[9px] font-mono text-amber-700 tracking-wider uppercase font-bold bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
-                            Wealth & Growth
-                          </span>
-                          <h4 className="text-lg font-bold text-primary font-clash mt-3 mb-1.5">
-                            Investments
-                          </h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed font-sans font-medium">
-                            Systematic wealth creation & capital protection.
-                          </p>
-                        </div>
-
-                        {/* Level 2 Connector line (drawn under parent card) */}
-                        <div className={`w-0.5 transition-all duration-500 ease-in-out bg-gradient-to-b from-amber-500/30 to-amber-500/10 ${
-                          activeHoverLevel1 === "investments" ? "h-8 opacity-100" : "h-0 opacity-0 pointer-events-none"
-                        }`} />
-
-                        {/* Level 2 Grid Container */}
-                        <div className={`grid grid-cols-2 gap-8 transition-all duration-500 ease-in-out transform origin-top ${
-                          activeHoverLevel1 === "investments"
-                            ? "opacity-100 scale-100 max-h-[1000px] translate-y-0"
-                            : "opacity-0 scale-95 max-h-0 -translate-y-4 overflow-hidden pointer-events-none"
-                        }`}>
-                          
-                          {/* Fixed Deposits child branch */}
-                          <div
-                            className="flex flex-col items-center"
-                            onMouseEnter={() => setActiveHoverLevel2("fd")}
-                            onMouseLeave={() => setActiveHoverLevel2(null)}
-                          >
-                            {/* FD Box */}
-                            <div className={`p-6 w-72 min-w-[288px] max-w-[288px] rounded-3xl border transition-all duration-300 text-left relative overflow-hidden select-none cursor-pointer ${
-                              activeHoverLevel2 === "fd"
-                                ? "bg-amber-500/10 border-amber-500/40 shadow-md scale-[1.02]"
-                                : "border-amber-500/20 bg-gradient-to-br from-white/50 via-white/35 to-amber-500/5 shadow-[0_15px_35px_rgba(245,158,11,0.06)] hover:scale-[1.01]"
-                            }`}>
-                              <span className="text-[9px] font-mono text-amber-700 tracking-wider uppercase font-bold bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
-                                Capital Protection
-                              </span>
-                              <h4 className="text-base font-bold text-primary font-clash mt-3 mb-1.5">
-                                Fixed Deposits
-                              </h4>
-                              <p className="text-xs text-muted-foreground leading-relaxed font-sans font-medium">
-                                Secure, stable high-yield options.
-                              </p>
-                            </div>
-
-                            {/* Level 3 Connector (FD) */}
-                            <div className={`w-0.5 transition-all duration-500 ease-in-out bg-gradient-to-b from-amber-500/30 to-amber-500/10 ${
-                              activeHoverLevel2 === "fd" ? "h-8 opacity-100" : "h-0 opacity-0 pointer-events-none"
-                            }`} />
-
-                            {/* Level 3 Content (FD) */}
-                            <div className={`transition-all duration-500 ease-in-out transform origin-top ${
-                              activeHoverLevel2 === "fd"
-                                ? "opacity-100 scale-100 max-h-[300px] translate-y-0"
-                                : "opacity-0 scale-95 max-h-0 -translate-y-4 overflow-hidden pointer-events-none"
-                            }`}>
-                              <div 
-                                className="p-5 w-64 rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-white/45 to-amber-500/5 shadow-[0_15px_30px_rgba(245,158,11,0.1)] backdrop-blur-2xl text-left relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 select-none"
-                                onClick={scrollToFaq}
-                              >
-                                <span className="text-[8px] font-mono text-amber-800 tracking-wider uppercase font-bold bg-amber-500/20 px-2 py-0.5 rounded-full w-fit">
-                                  Fixed Return
-                                </span>
-                                <h5 className="text-sm font-bold text-primary font-clash mt-2.5 mb-1">
-                                  Company Deposit
-                                </h5>
-                                <p className="text-xs text-muted-foreground leading-normal font-sans font-medium">
-                                  Corporate deposits with secure, verified high yields.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Mutual Funds child branch */}
-                          <div
-                            className="flex flex-col items-center relative"
-                            onMouseEnter={() => setActiveHoverLevel2("mf")}
-                            onMouseLeave={() => setActiveHoverLevel2(null)}
-                          >
-                            {/* MF Box */}
-                            <div className={`p-6 w-72 min-w-[288px] max-w-[288px] rounded-3xl border transition-all duration-300 text-left relative overflow-hidden select-none cursor-pointer ${
-                              activeHoverLevel2 === "mf"
-                                ? "bg-amber-500/10 border-amber-500/40 shadow-md scale-[1.02]"
-                                : "border-amber-500/20 bg-gradient-to-br from-white/50 via-white/35 to-amber-500/5 shadow-[0_15px_35px_rgba(245,158,11,0.06)] hover:scale-[1.01]"
-                            }`}>
-                              <span className="text-[9px] font-mono text-amber-700 tracking-wider uppercase font-bold bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
-                                Active Growth
-                              </span>
-                              <h4 className="text-base font-bold text-primary font-clash mt-3 mb-1.5">
-                                Mutual Funds
-                              </h4>
-                              <p className="text-xs text-muted-foreground leading-relaxed font-sans font-medium">
-                                Market-linked growth with diversification.
-                              </p>
-                            </div>
-
-                            {/* Level 3 Connector (MF) */}
-                            <div className={`w-0.5 transition-all duration-500 ease-in-out bg-gradient-to-b from-amber-500/30 to-amber-500/10 ${
-                              activeHoverLevel2 === "mf" ? "h-8 opacity-100" : "h-0 opacity-0 pointer-events-none"
-                            }`} />
-
-                            {/* Level 3 Content (MF - 4 boxes) */}
-                            <div className={`absolute top-full left-1/2 -translate-x-1/2 z-20 transition-all duration-500 ease-in-out transform origin-top ${
-                              activeHoverLevel2 === "mf"
-                                ? "opacity-100 scale-100 max-h-[500px] translate-y-0"
-                                : "opacity-0 scale-95 max-h-0 -translate-y-4 overflow-hidden pointer-events-none"
-                            }`}>
-                              <div className="grid grid-cols-4 gap-3 w-[900px]">
-                                {[
-                                  { title: "SIP", desc: "Systematic investments for long-term compound growth." },
-                                  { title: "Lumpsum", desc: "Compounding one-time principal investments over any tenure." },
-                                  { title: "SIF", desc: "Specialized Investment Funds with hurdle targets." },
-                                  { title: "PMS", desc: "Portfolio Management Services for customized asset allocation." }
-                                ].map((sub, i) => (
-                                  <div 
-                                    key={i} 
-                                    className="p-5 min-h-[150px] rounded-3xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-white/45 to-amber-500/5 shadow-[0_15px_30px_rgba(245,158,11,0.08)] backdrop-blur-2xl text-left relative overflow-hidden select-none cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
-                                    onClick={scrollToFaq}
-                                  >
-                                    <span className="text-[8px] font-mono text-amber-800 tracking-wider uppercase font-bold bg-amber-500/20 px-2 py-0.5 rounded-full w-fit">
-                                      Growth
-                                    </span>
-                                    <h5 className="text-base font-bold text-primary font-clash mt-3 mb-1">{sub.title}</h5>
-                                    <p className="text-xs text-muted-foreground leading-normal font-sans font-medium">{sub.desc}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
+                      {/* Animated Cryptocurrency & Analytics Lottie in center space */}
+                      <div className="my-2 flex items-center justify-center py-1">
+                        <div className="w-52 h-36 sm:w-64 sm:h-44 flex items-center justify-center">
+                          <DotLottieReact
+                            src="/beam-cryptocurrency-analytics-and-trading-on-laptop-screen.json"
+                            loop
+                            autoplay
+                            className="w-full h-full object-contain pointer-events-none select-none"
+                          />
                         </div>
                       </div>
 
-                      {/* Life Insurance Box Branch (Level 1 only) */}
-                      <div className="flex flex-col items-center">
-                        <div 
-                          className="p-6 w-80 min-w-[320px] max-w-[320px] min-h-[170px] rounded-3xl border border-amber-500/20 bg-gradient-to-br from-white/50 via-white/35 to-amber-500/5 shadow-[0_20px_50px_rgba(245,158,11,0.08)] backdrop-blur-2xl text-left relative overflow-hidden select-none cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
-                          onClick={scrollToFaq}
-                        >
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-amber-400/5 rounded-full blur-xl pointer-events-none" />
-                          <span className="text-[9px] font-mono text-amber-700 tracking-wider uppercase font-bold bg-amber-500/10 px-2 py-0.5 rounded-full w-fit">
-                            Risk Mitigation
-                          </span>
-                          <h4 className="text-lg font-bold text-primary font-clash mt-3 mb-1.5">
-                            Life Insurance
-                          </h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed font-sans font-medium">
-                            Protecting your family's future, health, and properties.
-                          </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-border/50">
+                        <div className="p-3.5 rounded-2xl bg-white/40 border border-white/60">
+                          <span className="text-xs font-bold text-primary font-mono block">Zero Bots</span>
+                          <span className="text-[11px] text-muted-foreground font-sans mt-0.5 block">Direct certified human advisory.</span>
+                        </div>
+                        <div className="p-3.5 rounded-2xl bg-white/40 border border-white/60">
+                          <span className="text-xs font-bold text-primary font-mono block">Decades Long</span>
+                          <span className="text-[11px] text-muted-foreground font-sans mt-0.5 block">Stewardship across full market cycles.</span>
+                        </div>
+                        <div className="p-3.5 rounded-2xl bg-white/40 border border-white/60">
+                          <span className="text-xs font-bold text-primary font-mono block">SEBI Regulated</span>
+                          <span className="text-[11px] text-muted-foreground font-sans mt-0.5 block">100% compliant ARN distribution.</span>
                         </div>
                       </div>
-
                     </div>
                   </div>
-                </div>
-
-                {/* 03: Why Us */}
-                <div className={`col-start-1 row-start-1 transition-all duration-500 ease-in-out ${expandedOption === "why-us" ? "opacity-100 pointer-events-auto scale-100 translate-y-0" : "opacity-0 pointer-events-none scale-95 -translate-y-2"}`}>
-                  <div className="flex flex-col items-center justify-center gap-8 max-w-5xl mx-auto text-center">
-                    <img
-                      src="/assets/exist.png"
-                      alt="Why We Exist"
-                      className="w-76 h-auto rounded-2xl object-contain select-none pointer-events-none"
-                    />
-                    <p className="font-sans leading-relaxed font-bold text-foreground text-base md:text-lg max-w-4xl mx-auto">
-                      In an era dominated by cold robo-distribution representatives and static investment apps, your hard-earned wealth deserves personalized, <span className="font-extrabold text-primary">relationship-driven human distribution</span>. We exist to bridge the gap between human empathy and data precision. By standing by our clients through decades of market turbulence, recessions, and regulatory shifts, we prioritize multi-generational trust and structured planning. We don't just measure relationships in transactions; we measure them in decades of successful outcomes and financial security.
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </ScrollBlurReveal>
@@ -1003,77 +1098,96 @@ export default function Home() {
       {/* Interactive Chatbot Promo Section */}
       <div className="w-full relative z-10 pt-4 pb-16 px-6 overflow-hidden">
         {/* Ambient backing glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-[radial-gradient(circle,rgba(46,125,50,0.03)_0%,transparent_70%)] pointer-events-none select-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.06)_0%,transparent_70%)] pointer-events-none select-none" />
 
         <ScrollBlurReveal className="w-full max-w-5xl mx-auto">
-          <div className="w-full p-8 md:p-12 bg-white/20 backdrop-blur-2xl border border-border rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-12 relative z-10">
-          <div className="space-y-4 max-w-xl text-left">
-            <span className="text-[10px] text-primary border border-primary/25 bg-primary/5 px-3 py-1 rounded-full uppercase tracking-wider font-semibold">
-              Instant Support
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-primary font-instrument-serif">
-              Meet Virtual Arijit : Real-Time Insights, Zero Waiting.
-            </h2>
-            <p className="text-[#64748B] text-sm leading-relaxed font-sans">
-              Have questions about how we check anomalies, calculate fee efficiency, or structure systematic portfolios? It leverages insights from our 35-year distribution experience to answer your questions instantly.
-            </p>
-          </div>
+          <div className="w-full p-8 md:p-12 bg-white/45 backdrop-blur-2xl border border-white/70 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.04)] flex flex-col md:flex-row justify-between items-start md:items-center gap-10 relative z-10">
+            <div className="space-y-4 max-w-xl text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/15 bg-primary/5 text-xs font-semibold text-primary font-mono select-none">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>INSTANT INTELLIGENCE</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-primary font-chillax leading-snug">
+                Meet Virtual Arijit : Real-Time Insights, Zero Waiting.
+              </h2>
+              <p className="text-muted-foreground text-sm leading-relaxed font-sans font-medium">
+                Have questions regarding portfolio diagnostics, asset rebalancing, expense ratio optimization, or structured distribution? Ask Virtual Arijit for immediate institutional guidance.
+              </p>
+            </div>
 
-          <div className="w-full md:w-auto shrink-0 flex flex-col items-center justify-center p-6 bg-white/45 backdrop-blur-2xl border border-border rounded-2xl md:min-w-[280px] shadow-sm text-center relative group">
-            <span className="text-lg font-semibold text-primary font-instrument-serif">Try Virtual Arijit Now</span>
+            <div className="w-full md:w-auto shrink-0 flex flex-col items-center justify-center p-6 bg-white/60 backdrop-blur-2xl border border-white/80 rounded-2xl md:min-w-[280px] shadow-sm text-center relative">
+              <div className="mb-3 relative flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full bg-[#3A8293]/15 blur-xl pointer-events-none" />
+                <AIOrbFace
+                  size={76}
+                  state="idle"
+                  gaze={true}
+                  aria-label="Virtual Arijit Assistant Preview"
+                />
+              </div>
+              <span className="text-base font-bold text-primary font-chillax">Try Virtual Arijit Now</span>
 
-            <button
-              onClick={() => setIsChatOpen(true)}
-              className="w-full mt-5 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-sm"
-            >
-              <span>Launch AI Assistant</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-            </button>
-
-            {/* Bouncing Pointer Arrow towards Bottom-Right Chatbot Widget (visible on hover) */}
-            <div className="mt-4 flex items-center gap-1.5 text-[10px] font-semibold select-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-              <span className="text-[#64748B] font-mono text-[9px] uppercase tracking-wider">Look at the bottom right</span>
-              <svg
-                className="w-3.5 h-3.5 text-[#C9A54C] animate-diagonal-bounce"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                viewBox="0 0 24 24"
+              <button
+                onClick={() => setIsChatOpen(true)}
+                className="w-full mt-4 py-3.5 px-6 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition duration-200 cursor-pointer shadow-md uppercase tracking-wider"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 19H9m10 0V9m0 10L5 5" />
-              </svg>
+                <Bot className="w-4 h-4" />
+                <span>Launch Assistant</span>
+              </button>
             </div>
           </div>
-        </div>
-      </ScrollBlurReveal>
-    </div>
-      {/* Investor Quiz Section */}
+        </ScrollBlurReveal>
+      </div>
+
+      {/* Investor Archetype Diagnostic Quiz Section */}
       <div className="w-full relative z-10 py-16 px-6">
         <ScrollBlurReveal className="w-full max-w-5xl mx-auto">
-          <div className="relative overflow-hidden p-8 md:p-12 bg-gradient-to-br from-[#F5EFE6] via-[#EAE1D4] to-[#DFD3C3] border border-[#8D6E63]/30 rounded-3xl shadow-[0_20px_50px_rgba(139,90,43,0.12)] flex flex-col lg:flex-row gap-12 text-left items-stretch">
+          <div className="relative overflow-hidden p-8 md:p-12 bg-white/45 backdrop-blur-2xl border border-white/70 rounded-[36px] shadow-[0_20px_50px_rgba(0,0,0,0.04)] flex flex-col lg:flex-row gap-12 text-left items-stretch">
             {/* Background decorative glows */}
-            <div className="absolute -left-12 -top-12 w-48 h-48 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-orange-400/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -left-12 -top-12 w-64 h-64 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Left Column: Details */}
-            <div className="flex-1 flex flex-col justify-between space-y-8 relative z-10">
+            <div className="flex-1 flex flex-col justify-between space-y-6 relative z-10">
               <div className="space-y-4">
-                <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground font-instrument-serif leading-tight">
-                  Know what kind of investor you are!
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-primary/10 bg-white/60 text-xs font-semibold text-primary font-mono select-none shadow-xs">
+                  <Compass className="w-3.5 h-3.5 text-primary" />
+                  <span>BEHAVIORAL RISK PROFILING</span>
+                </div>
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-primary font-chillax leading-tight">
+                  Know What Kind of Investor You Are
                 </h2>
-                <p className="text-foreground/80 text-sm md:text-base leading-relaxed font-sans max-w-md">
-                  Are you a Conservative Protector, a Strategic Compounder, or an Aggressive Visionary? Take our quick 2-minute diagnostic to analyze your risk preference and discover the asset mix that fits your lifestyle.
+                <p className="text-muted-foreground text-sm md:text-base leading-relaxed font-sans font-medium max-w-md">
+                  Are you a Conservative Protector, a Strategic Compounder, or an Aggressive Visionary? Take our 2-minute diagnostic to analyze your risk preference and uncover the asset allocation engineered for your lifecycle.
                 </p>
 
-                {/* Animal Badges */}
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {["🐅 Tiger", "🐘 Elephant", "🦌 Deer", "🦊 Fox", "🦁 Lion"].map((animal, idx) => (
-                    <span key={idx} className="text-xs font-semibold font-instrument-serif text-foreground bg-[#FAF6F0] border border-[#C4A484]/40 px-2.5 py-1 rounded-lg select-none hover:scale-105 hover:bg-[#EAE1D4] hover:border-[#8D6E63]/60 transition duration-200">
-                      {animal}
-                    </span>
-                  ))}
+                {/* Interactive Animal Archetype Selector Badges */}
+                <div className="space-y-2 pt-2">
+                  <span className="text-[11px] font-mono font-bold text-primary/70 uppercase tracking-wider block">
+                    Interactive Archetypes Preview:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: "tiger", label: "🐅 Tiger", desc: "Aggressive Growth" },
+                      { id: "elephant", label: "🐘 Elephant", desc: "Capital Preservation" },
+                      { id: "deer", label: "🦌 Deer", desc: "Balanced" },
+                      { id: "fox", label: "🦊 Fox", desc: "Tactical" },
+                      { id: "lion", label: "🦁 Lion", desc: "Frontier Alpha" }
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSelectArchetype(item.id)}
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all duration-200 cursor-pointer select-none flex items-center gap-1.5 ${
+                          selectedArchetype === item.id
+                            ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
+                            : "bg-white/60 text-foreground/80 border-white/80 hover:bg-white hover:border-primary/30"
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1082,139 +1196,69 @@ export default function Home() {
                   href="/quiz"
                   className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-xs rounded-2xl transition duration-200 shadow-md uppercase tracking-wider group cursor-pointer"
                 >
-                  <span className="font-bold font-instrument-serif">Start Quiz</span>
-                  <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200 stroke-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
+                  <span className="font-mono font-bold">Start Full Diagnostic Quiz</span>
+                  <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" />
                 </a>
               </div>
             </div>
 
-            {/* Right Column: Interactive Mock Profile Card */}
-            <div className="flex-1 min-h-[300px] flex items-center justify-center relative">
-              <div className="w-full h-full min-h-[300px] p-6 bg-white/70 backdrop-blur-2xl rounded-3xl border border-[#C4A484]/35 flex flex-col justify-between gap-6 shadow-xl relative group overflow-hidden transition-all duration-350 hover:scale-[1.015] hover:shadow-[0_25px_50px_rgba(139,90,43,0.18)]">
-                {/* Sheen animation scanner */}
-                <div className="absolute top-0 -left-[100%] h-full w-1/2 transform -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent transition-all duration-[1000ms] ease-out group-hover:left-[150%] pointer-events-none z-20" />
-
-                {/* Background decorative glows */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none opacity-50 z-0" />
-
-                {/* Header */}
-                <div className="flex justify-between items-center border-b border-[#C4A484]/30 pb-3.5 relative z-10">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-[#E65100] animate-ping" />
-                  </div>
-                  <span className="text-[9px] font-mono font-bold text-[#8D6E63]/60 uppercase tracking-wider">ARCHETYPE</span>
-                </div>
-
-                {/* Gauge SVG Speedometer */}
-                <div className="relative w-48 h-28 mx-auto mt-2 flex items-center justify-center select-none z-10">
-                  <svg className="w-full h-full" viewBox="0 0 200 120">
-                    <defs>
-                      <linearGradient id="riskGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#10B981" />
-                        <stop offset="55%" stopColor="#EAB308" />
-                        <stop offset="100%" stopColor="#EF4444" />
-                      </linearGradient>
-                      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feGaussianBlur stdDeviation="3" result="blur" />
-                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                      </filter>
-                    </defs>
-
-                    {/* Mechanical Ticks */}
-                    <path
-                      d="M 32,98 A 68,68 0 0 1 168,98"
-                      fill="transparent"
-                      stroke="#8D6E63"
-                      strokeOpacity="0.2"
-                      strokeWidth="2"
-                      strokeDasharray="2, 5"
+            {/* Right Column: Live Interactive Archetype Preview Card */}
+            {(() => {
+              const current = archetypesMap[selectedArchetype] || archetypesMap.tiger;
+              return (
+                <div className="flex-1 flex items-center justify-center relative">
+                  <div className="w-full max-w-[380px] h-[370px] p-6 bg-gradient-to-br from-white/95 via-white/85 to-white/70 backdrop-blur-2xl rounded-3xl border border-white shadow-[0_20px_45px_rgba(0,0,0,0.06)] flex flex-col justify-between relative group overflow-hidden transition-all duration-300">
+                    {/* Dynamic Ambient Background Glow */}
+                    <div
+                      className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl opacity-25 transition-all duration-700 pointer-events-none"
+                      style={{ backgroundColor: current.color }}
+                    />
+                    <div
+                      className="absolute -bottom-12 -left-12 w-40 h-40 rounded-full blur-2xl opacity-15 transition-all duration-700 pointer-events-none"
+                      style={{ backgroundColor: current.color }}
                     />
 
-                    {/* Background track */}
-                    <path
-                      d="M 30,100 A 70,70 0 0 1 170,100"
-                      fill="transparent"
-                      stroke="#EFEBE9"
-                      strokeWidth="12"
-                      strokeLinecap="round"
-                    />
-
-                    {/* Active colored path (65% fill) with glow */}
-                    <path
-                      d="M 30,100 A 70,70 0 0 1 170,100"
-                      fill="transparent"
-                      stroke="url(#riskGradient)"
-                      strokeWidth="12"
-                      strokeLinecap="round"
-                      strokeDasharray="220"
-                      strokeDashoffset={220 * (1 - 0.65)}
-                      filter="url(#glow)"
-                    />
-
-                    {/* Needle pivot */}
-                    <circle cx="100" cy="100" r="8" fill="#FF8F00" />
-
-                    {/* Needle Pointer */}
-                    <line
-                      x1="100"
-                      y1="100"
-                      x2="100"
-                      y2="42"
-                      stroke="#FF8F00"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      transform={`rotate(${(0.65 * 180) - 90}, 100, 100)`}
-                      className="transition-transform duration-[1200ms] ease-out"
-                    />
-
-                    {/* Score display inside the arch */}
-                    <text x="100" y="86" textAnchor="middle" className="fill-foreground font-clash text-base font-bold">
-                      Match: <tspan className="fill-foreground">Tiger</tspan>
-                    </text>
-                    <text x="100" y="102" textAnchor="middle" className="fill-foreground/80 font-mono text-[8px] uppercase tracking-wider font-bold">
-                      Steady Compounding
-                    </text>
-                  </svg>
-                </div>
-
-                {/* Profile Breakdown Badges */}
-                <div className="grid grid-cols-3 gap-2.5 mt-2 relative z-10">
-                  <div className="p-3 bg-[#FAF6F0] border border-[#C4A484]/30 rounded-2xl flex flex-col items-center gap-1 text-center hover:-translate-y-0.5 hover:shadow-md hover:bg-[#EAE1D4]/60 hover:border-[#8D6E63]/40 transition-all duration-300 cursor-default select-none text-foreground">
-                    <span className="text-[9px] font-mono text-foreground/70 tracking-wider block">🐘 Elephant</span>
-                    <span className="text-xs font-bold text-foreground font-clash">20%</span>
-                  </div>
-
-                  <div className="p-3 bg-gradient-to-b from-foreground/10 to-foreground/5 border border-foreground/30 rounded-2xl flex flex-col items-center gap-1 text-center shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:border-foreground/50 transition-all duration-300 relative overflow-hidden cursor-default select-none text-foreground">
-                    <div className="absolute top-0 inset-x-0 h-1 bg-foreground" />
-                    <span className="text-[9px] font-mono text-foreground tracking-wider font-bold block">🐅 Tiger</span>
-                    <span className="text-xs font-bold text-foreground font-clash">65%</span>
-                  </div>
-
-                  <div className="p-3 bg-[#FAF6F0] border border-[#C4A484]/30 rounded-2xl flex flex-col items-center gap-1 text-center hover:-translate-y-0.5 hover:shadow-md hover:bg-[#EAE1D4]/60 hover:border-[#8D6E63]/40 transition-all duration-300 cursor-default select-none text-foreground">
-                    <span className="text-[9px] font-mono text-foreground/70 tracking-wider block">🦊 Fox</span>
-                    <span className="text-xs font-bold text-foreground font-clash">15%</span>
-                  </div>
-                </div>
-
-                {/* Footer / Active Category Display */}
-                <div className="bg-[#FAF6F0]/85 border border-[#C4A484]/30 rounded-2xl p-3.5 flex items-center justify-between gap-4 mt-2 relative z-10 shadow-inner hover:bg-[#FAF6F0] transition duration-200">
-                  <div className="text-left flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-foreground/10 border border-foreground/20 flex items-center justify-center text-base shadow-inner select-none">
-                      🐅
+                    {/* Clean Fixed Header: Archetype Identity & Category */}
+                    <div className="flex justify-between items-center border-b border-border/40 pb-2.5 min-h-[46px] relative z-10">
+                      <div className="flex items-center gap-2 min-w-0 pr-2">
+                        <span className="text-xl shrink-0">{current.emoji}</span>
+                        <div className="min-w-0">
+                          <h4 className="text-sm sm:text-base font-bold text-primary font-chillax leading-tight whitespace-nowrap truncate">
+                            {current.name}
+                          </h4>
+                          <span className="text-[10px] font-mono text-muted-foreground block font-medium whitespace-nowrap truncate">
+                            {current.badge}
+                          </span>
+                        </div>
+                      </div>
+                      <span
+                        className="shrink-0 text-[9px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full border shadow-2xs whitespace-nowrap"
+                        style={{
+                          backgroundColor: `${current.color}15`,
+                          color: current.color,
+                          borderColor: `${current.color}35`
+                        }}
+                      >
+                        {current.category}
+                      </span>
                     </div>
-                    <div>
-                      <span className="text-[9px] font-mono text-foreground/70 uppercase block tracking-wider">Primary Archetype</span>
-                      <span className="text-sm font-bold text-foreground font-clash leading-tight">Aggressive Tiger</span>
+
+                    {/* Center: Larger, Highly-Visualized Futuristic Knob */}
+                    <div className="flex-1 flex flex-col items-center justify-center relative z-10 py-1">
+                      <KnobSlider
+                        value={riskScore}
+                        onChange={handleKnobChange}
+                        min={0}
+                        max={100}
+                        size={240}
+                        color={current.color}
+                        label="RISK INDEX"
+                      />
                     </div>
                   </div>
-                  <span className="text-[9px] bg-foreground/10 text-foreground border border-foreground/25 px-3 py-1 rounded-xl font-bold uppercase tracking-wider shadow-sm select-none">
-                    Optimal Fit
-                  </span>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
         </ScrollBlurReveal>
       </div>
@@ -1222,80 +1266,93 @@ export default function Home() {
       {/* Portfolio Health Report Section */}
       <div className="w-full relative z-10 py-16 px-6">
         <ScrollBlurReveal className="w-full max-w-5xl mx-auto">
-          <div className="relative overflow-hidden p-8 md:p-12 bg-white/20 backdrop-blur-2xl border border-border rounded-3xl shadow-sm flex flex-col lg:flex-row gap-12 text-left items-stretch">
+          <div className="relative overflow-hidden p-8 md:p-12 bg-white/45 backdrop-blur-2xl border border-white/70 rounded-[36px] shadow-[0_20px_50px_rgba(0,0,0,0.04)] flex flex-col lg:flex-row gap-12 text-left items-stretch">
             {/* Background decorative glows */}
-            <div className="absolute -right-12 -top-12 w-48 h-48 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -right-12 -top-12 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -left-12 -bottom-12 w-64 h-64 bg-sky-400/10 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Left Column: Details */}
-            <div className="flex-1 flex flex-col justify-between space-y-8 relative z-10">
+            {/* Left Column: Details & 5 Pillars */}
+            <div className="flex-1 flex flex-col justify-between space-y-6 relative z-10">
               <div className="space-y-4">
-                <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-primary font-instrument-serif leading-tight">
-                  Analyze your portfolio in real-time
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-primary/10 bg-white/60 text-xs font-semibold text-primary font-mono select-none shadow-xs">
+                  <Activity className="w-3.5 h-3.5 text-primary" />
+                  <span>INSTITUTIONAL DIAGNOSTICS</span>
+                </div>
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-primary font-chillax leading-tight">
+                  Analyze Your Portfolio in Real-Time
                 </h2>
-                <p className="text-[#64748B] text-sm leading-relaxed font-sans max-w-md">
-                  Get a comprehensive overview of your investment health. We measure your portfolio across 5 core regulatory and performance dimensions to optimize your yields.
+                <p className="text-muted-foreground text-sm md:text-base leading-relaxed font-sans font-medium max-w-md">
+                  Get a comprehensive overview of your investment health. We measure your portfolio across 5 core regulatory and performance dimensions to systematically eliminate leakages and optimize returns.
                 </p>
               </div>
 
-              {/* Pillars List */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* 5 Pillar Bento Chips */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { name: "Goal Alignment", desc: "Matching assets to timeline" },
-                  { name: "Asset Allocation", desc: "Optimal equity/debt splits" },
-                  { name: "Diversification", desc: "Risk dispersion balance" },
-                  { name: "SIP Discipline", desc: "Consistency efficiency" },
-                  { name: "Fee Efficiency", desc: "Minimizing expense ratios" }
-                ].map((pillar, idx) => (
-                  <div key={idx} className="flex gap-3 items-start p-3 bg-white/30 rounded-2xl border border-border/50">
-                    <span className="text-xs font-mono font-bold text-primary bg-primary/5 w-6 h-6 rounded-full flex items-center justify-center shrink-0">
-                      0{idx + 1}
-                    </span>
-                    <div>
-                      <h4 className="text-xs font-bold text-primary font-clash">{pillar.name}</h4>
-                      <p className="text-[10px] text-muted-foreground">{pillar.desc}</p>
+                  { icon: Target, name: "Goal Alignment", desc: "Matching assets to lifespan horizon" },
+                  { icon: PieChart, name: "Asset Allocation", desc: "Optimal equity, debt & gold balance" },
+                  { icon: ShieldCheck, name: "Diversification", desc: "Multi-cap risk dispersion index" },
+                  { icon: TrendingUp, name: "SIP Discipline", desc: "Compounding consistency tracker" },
+                  { icon: Coins, name: "Fee Efficiency", desc: "Minimizing expense ratios" }
+                ].map((pillar, idx) => {
+                  const Icon = pillar.icon;
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`flex gap-3 items-center p-3 rounded-2xl bg-white/60 border border-white/80 shadow-xs hover:bg-white hover:border-primary/20 transition-all duration-200 ${
+                        idx === 4 ? "sm:col-span-2" : ""
+                      }`}
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0 text-primary">
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-primary font-chillax">{pillar.name}</h4>
+                        <p className="text-[10px] text-muted-foreground font-sans">{pillar.desc}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="pt-2">
                 <a
                   href="/onboarding"
-                  className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary hover:bg-primary/95 text-primary-foreground font-instrument-serif font-bold text-xs rounded-2xl transition duration-200 shadow-md uppercase tracking-wider group"
+                  className="inline-flex items-center gap-2.5 px-8 py-4 bg-primary hover:bg-primary/95 text-primary-foreground font-mono font-bold text-xs rounded-2xl transition duration-200 shadow-md uppercase tracking-wider group"
                 >
                   <span>Evaluate My Portfolio</span>
-                  <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
+                  <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" />
                 </a>
               </div>
             </div>
 
-            {/* Right Column: Interactive Mock Scorecard */}
-            <div className="flex-1 min-h-[300px] flex items-center justify-center relative">
-              <div className="w-full h-full min-h-[300px] p-6 bg-white/30 rounded-2xl border border-border/50 flex flex-col justify-between gap-6 shadow-sm relative group overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl pointer-events-none" />
-
+            {/* Right Column: Institutional Scorecard Dashboard Mockup */}
+            <div className="flex-1 min-h-[320px] flex items-center justify-center relative">
+              <div className="w-full h-full min-h-[320px] p-6 bg-white/70 backdrop-blur-2xl rounded-3xl border border-white/90 flex flex-col justify-between gap-5 shadow-[0_20px_40px_rgba(0,0,0,0.06)] relative group overflow-hidden">
                 {/* Header */}
-                <div className="flex justify-between items-center border-b border-border/30 pb-3">
+                <div className="flex justify-between items-center border-b border-border/40 pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    <span className="text-xs font-bold text-primary font-clash tracking-wide uppercase">Scorecard Active</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-bold text-primary font-chillax tracking-wide uppercase">
+                      DIAGNOSTIC PROTOCOL
+                    </span>
                   </div>
-                  <span className="text-[10px] font-mono text-muted-foreground">DEMO PORTFOLIO</span>
+                  <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase px-2 py-0.5 rounded-md bg-white/60 border border-border/40">
+                    LIVE DEMO
+                  </span>
                 </div>
 
-                {/* Score Circle & Metrics */}
-                <div className="flex flex-col sm:flex-row items-center justify-around gap-6 py-2">
+                {/* Score Ring & Performance Metrics */}
+                <div className="flex flex-col sm:flex-row items-center justify-around gap-6 py-1">
                   {/* Radial Progress Circle */}
-                  <div className="relative w-36 h-36 flex items-center justify-center select-none">
+                  <div className="relative w-32 h-32 flex items-center justify-center select-none shrink-0">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" r="40" stroke="rgba(147, 197, 253, 0.15)" strokeWidth="8" fill="transparent" />
+                      <circle cx="50" cy="50" r="40" stroke="rgba(0, 0, 0, 0.05)" strokeWidth="8" fill="transparent" />
                       <circle
                         cx="50"
                         cy="50"
                         r="40"
-                        stroke="#2E7D32"
+                        stroke="#10B981"
                         strokeWidth="8"
                         fill="transparent"
                         strokeDasharray={251.2}
@@ -1305,22 +1362,23 @@ export default function Home() {
                       />
                     </svg>
                     <div className="absolute flex flex-col items-center justify-center">
-                      <span className="text-3xl font-bold font-clash text-primary leading-none">78</span>
+                      <span className="text-3xl font-bold font-chillax text-primary leading-none">78</span>
                       <span className="text-[9px] font-mono text-muted-foreground uppercase mt-1">Health Score</span>
                     </div>
                   </div>
 
-                  {/* Vertical Progress Bars */}
-                  <div className="flex-1 w-full space-y-3">
+                  {/* Diagnostic Metric Progress Bars */}
+                  <div className="flex-1 w-full space-y-2.5">
                     {[
-                      { name: "Goal Match", score: 85, color: "bg-emerald-600" },
-                      { name: "Allocation", score: 65, color: "bg-amber-500" },
-                      { name: "Fee Efficiency", score: 92, color: "bg-emerald-600" }
+                      { name: "Goal Match Horizon", score: 85, color: "bg-emerald-500" },
+                      { name: "Asset Diversification", score: 74, color: "bg-sky-500" },
+                      { name: "Expense Fee Efficiency", score: 92, color: "bg-emerald-500" },
+                      { name: "SIP Compounding Index", score: 88, color: "bg-amber-500" }
                     ].map((metric, i) => (
                       <div key={i} className="space-y-1">
-                        <div className="flex justify-between text-[10px] font-semibold text-primary">
-                          <span>{metric.name}</span>
-                          <span className="font-mono">{metric.score}%</span>
+                        <div className="flex justify-between text-[11px] font-semibold text-primary">
+                          <span className="font-sans text-[11px]">{metric.name}</span>
+                          <span className="font-mono text-[10px] font-bold">{metric.score}%</span>
                         </div>
                         <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div
@@ -1332,130 +1390,46 @@ export default function Home() {
                     ))}
                   </div>
                 </div>
+
+                {/* Bottom Live Diagnostic Insight */}
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 flex items-center gap-2.5 text-left">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <p className="text-[11px] text-foreground/80 font-sans leading-tight">
+                    <strong className="text-emerald-700 font-semibold">Portfolio Status:</strong> Well-calibrated. Fee drag is in the bottom 8th percentile of peers.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </ScrollBlurReveal>
       </div>
 
-      {/* Calculators Hub Section */}
-      <div id="calculators" className="w-full relative z-10 py-16 px-6 bg-transparent">
+      {/* Calculators Hub Section (Compact Glassmorphic Carousel) */}
+      <div id="calculators" className="w-full relative z-10 py-12 px-6 bg-transparent">
         <ScrollBlurReveal className="w-full max-w-5xl mx-auto">
-          <div className="text-left mb-12">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-primary font-instrument-serif leading-tight mt-3">
-              Premium Financial Calculators
-            </h2>
-            <p className="text-[#64748B] text-sm leading-relaxed font-sans mt-3 max-w-2xl">
-              Use our suite of interactive financial calculators to project systematic investments, model recurring deposits, optimize fees, and visualize prepayment schedules.
-            </p>
-          </div>
-
-          {/* Calculator Grid */}
-          <div id="calculators" className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                title: "SIP Calculator",
-                desc: "Model your systematic investments and project future returns based on compounding growth.",
-                href: "/sip-calculator"
-              },
-              {
-                title: "Step-up SIP Calculator",
-                desc: "Calculate how stepping up your monthly contributions annually can exponentially accelerate wealth creation.",
-                href: "/step-up-sip-calculator"
-              },
-              {
-                title: "Lumpsum Calculator",
-                desc: "Project the compounding growth of a one-time principal investment over any tenure.",
-                href: "/lumpsum-calculator"
-              },
-              {
-                title: "SWP Calculator",
-                desc: "Calculate how long your retirement corpus will last or find out what corpus is required for your desired monthly income.",
-                href: "/swp-calculator"
-              },
-              {
-                title: "Inflation Calculator",
-                desc: "Visualize the future cost of your goals adjusted for inflation and determine the monthly SIP needed to reach them.",
-                href: "/inflation-calculator"
-              },
-              {
-                title: "SIF Calculator",
-                desc: "Model Specialized Investment Fund compounding returns using target hurdle rates and top-ups.",
-                href: "/sif-calculator"
-              },
-              {
-                title: "Fixed Deposit (FD)",
-                desc: "Compute fixed deposit returns with quarterly compounding interest.",
-                href: "/fd-calculator"
-              },
-              {
-                title: "Recurring Deposit (RD)",
-                desc: "Estimate recurring deposit maturity values based on quarterly compounded interest.",
-                href: "/rd-calculator"
-              },
-              {
-                title: "EMI Calculator",
-                desc: "Calculate monthly payments and total interest outgo for any home, car, or personal loan.",
-                href: "/emi-calculator"
-              },
-              {
-                title: "Loan Calculator",
-                desc: "Visualize prepayment schedules to see how much interest and tenure you can save.",
-                href: "/loan-calculator"
-              }
-            ].map((calc, i) => (
-              <a
-                key={i}
-                href={calc.href}
-                className="group flex flex-col justify-between p-6 bg-white/35 backdrop-blur-2xl border border-border rounded-3xl transition-all duration-300 hover:scale-[1.02] hover:shadow-md text-left"
-              >
-                <div>
-                  <div className="w-10 h-10 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-4 text-primary font-mono text-sm font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                    {(i + 1) < 10 ? '0' : ''}{i + 1}
-                  </div>
-                  <h3 className="text-lg font-bold text-primary font-clash mb-2 group-hover:text-[#3A8293] transition-colors duration-300">
-                    {calc.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed font-sans mb-6">
-                    {calc.desc}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-bold text-primary tracking-wider uppercase font-sans">
-                  <span>Calculate Now</span>
-                  <svg className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </div>
-              </a>
-            ))}
-          </div>
+          <CalculatorsCarousel />
         </ScrollBlurReveal>
       </div>
 
       {/* Daily Rewards Quotes Section */}
       <div id="daily-rewards" className="w-full relative z-10 py-16 px-6 bg-transparent">
         <ScrollBlurReveal className="w-full max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center gap-3">
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-primary font-instrument-serif leading-tight mt-3">
-                Daily Wisdom
-              </h2>
-              <div className="w-20 h-20 md:w-28 md:h-28 shrink-0 mt-3">
-                <DotLottieReact
-                  src="https://lottie.host/8866dfb7-4cf0-4918-88c1-8b34b9434bd7/qZLurleDmZ.lottie"
-                  loop
-                  autoplay
-                />
-              </div>
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-primary/10 bg-white/60 text-xs font-semibold text-primary font-mono select-none shadow-xs mb-3">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span>TIMELESS PERSPECTIVE</span>
             </div>
-            <p className="text-[#64748B] text-sm leading-relaxed font-sans mt-3 max-w-xl mx-auto">
-              Get a new financial quote every 24 hours.
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-primary font-chillax leading-tight">
+              Daily Market Wisdom
+            </h2>
+            <p className="text-muted-foreground text-sm leading-relaxed font-sans mt-2 max-w-xl mx-auto font-medium">
+              Curated timeless investment principles to keep you grounded across market cycles.
             </p>
           </div>
 
           {/* Flippable Card Container */}
           <div
-            className="w-full max-w-xl mx-auto h-[320px] [perspective:1000px] cursor-pointer"
+            className="w-full max-w-xl mx-auto h-[340px] [perspective:1200px] cursor-pointer group select-none"
             onClick={handleCardFlip}
           >
             <div
@@ -1467,66 +1441,88 @@ export default function Home() {
             >
               {/* Front Side of Card */}
               <div
-                className="absolute inset-0 w-full h-full p-8 md:p-12 rounded-3xl bg-gradient-to-br from-white/50 via-white/35 to-amber-500/5 backdrop-blur-2xl border border-amber-500/20 shadow-[0_20px_50px_rgba(245,158,11,0.08)] flex flex-col justify-between items-center text-center overflow-hidden hover:border-amber-500/35 transition-colors duration-300"
+                className="absolute inset-0 w-full h-full p-7 sm:p-9 rounded-[32px] bg-white/50 backdrop-blur-2xl border border-white/80 shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.08)] flex flex-col justify-between items-center text-center overflow-hidden transition-all duration-300"
                 style={{ backfaceVisibility: 'hidden' }}
               >
-                {/* Decorative glowing background gradients */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
+                {/* Decorative background glows */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
 
-                {/* Floating typographic quotes */}
-                <span className="absolute left-6 top-16 text-8xl font-serif text-amber-500/10 leading-none pointer-events-none select-none">“</span>
-                <span className="absolute right-6 bottom-16 text-8xl font-serif text-amber-500/10 leading-none pointer-events-none select-none">”</span>
-
-                <div className="w-full flex justify-between items-center pb-3.5 relative z-10">
-                  <span className="text-[10px] font-mono text-amber-700 tracking-widest uppercase font-bold">Daily Quote</span>
-                  <span className="text-[9px] font-mono text-amber-600/60 uppercase font-bold">ACTIVE FOR 24H</span>
-                </div>
-
-                <div className="my-auto py-6 relative z-10">
-                  <p className="text-xl md:text-2xl font-medium font-clash italic leading-relaxed text-primary drop-shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                    "{dailyQuote.text}"
-                  </p>
-                  <span className="block text-right text-[11px] md:text-xs text-amber-700 font-mono mt-4 font-bold tracking-wider">
-                    — {dailyQuote.author}
+                {/* Top Status Row */}
+                <div className="w-full flex justify-between items-center pb-2 relative z-10 border-b border-border/30">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/5 text-primary text-[10px] font-mono font-bold uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>DAILY THOUGHT</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-muted-foreground uppercase font-bold">
+                    REFRESHES EVERY 24H
                   </span>
                 </div>
 
+                {/* Quote Core */}
+                <div className="my-auto py-3 relative z-10 max-w-md">
+                  <Quote className="w-6 h-6 text-primary/20 mx-auto mb-2" />
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold font-chillax leading-relaxed text-primary">
+                    “{dailyQuote.text}”
+                  </p>
+                  <div className="inline-block mt-3 px-3 py-1 rounded-full bg-white/70 border border-white/80 shadow-2xs">
+                    <span className="text-xs text-primary font-mono font-bold tracking-wider">
+                      — {dailyQuote.author}
+                    </span>
+                  </div>
+                </div>
 
+                {/* Bottom Interactive Flip Cue */}
+                <div className="w-full flex items-center justify-center gap-1.5 pt-2 text-[11px] font-mono font-bold text-muted-foreground group-hover:text-primary transition-colors relative z-10">
+                  <RotateCw className="w-3.5 h-3.5 transform group-hover:rotate-180 transition-transform duration-500" />
+                  <span>Click card to view advisor note</span>
+                </div>
               </div>
 
               {/* Back Side of Card */}
               <div
-                className="absolute inset-0 w-full h-full p-8 md:p-12 rounded-3xl bg-gradient-to-br from-white/50 via-white/35 to-amber-500/5 backdrop-blur-2xl border border-amber-500/20 shadow-[0_20px_50px_rgba(245,158,11,0.08)] flex flex-col justify-between items-center text-center overflow-hidden"
+                className="absolute inset-0 w-full h-full p-7 sm:p-9 rounded-[32px] bg-white/60 backdrop-blur-2xl border border-white/80 shadow-[0_20px_50px_rgba(0,0,0,0.06)] flex flex-col justify-between items-center text-center overflow-hidden"
                 style={{
                   backfaceVisibility: 'hidden',
                   transform: 'rotateY(180deg)'
                 }}
               >
-                {/* Decorative glowing background gradients */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
+                {/* Decorative glows */}
+                <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-400/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute bottom-0 right-0 w-32 h-32 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
 
-                <div className="w-full flex justify-between items-center pb-3.5 relative z-10">
-                  <span className="text-[10px] font-mono text-amber-700 tracking-widest uppercase font-bold">Advisor Profile</span>
-                  <span className="text-[9px] font-mono text-amber-600/60 uppercase font-bold">SEBI REGISTERED</span>
+                {/* Top Status */}
+                <div className="w-full flex justify-between items-center pb-2 relative z-10 border-b border-border/30">
+                  <span className="text-[10px] font-mono text-primary tracking-widest uppercase font-bold px-2.5 py-0.5 rounded-full bg-primary/5">
+                    Advisor Note
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-700 font-bold uppercase">
+                    ARN-273396 • AMFI REGISTERED
+                  </span>
                 </div>
 
-                <div className="w-full my-auto space-y-4 relative z-10">
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <div className="w-16 h-16 rounded-full border border-primary/20 overflow-hidden shrink-0 flex items-center justify-center bg-primary/5">
+                {/* Advisor Info */}
+                <div className="w-full my-auto space-y-3 relative z-10 max-w-sm">
+                  <div className="flex flex-col items-center justify-center space-y-1.5">
+                    <div className="w-14 h-14 rounded-full border-2 border-white shadow-md overflow-hidden shrink-0 bg-card">
                       <img
-                        src="/assets/me.jpeg"
+                        src="/20260702_171545.webp"
                         alt="Arijit De"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover object-[center_42%]"
                       />
                     </div>
-                    <h3 className="text-lg font-bold font-clash text-neutral-900 mt-1">Arijit De</h3>
-                    <p className="text-xs text-neutral-500 font-mono">SEBI Mutual Fund Distributor</p>
-                    <p className="text-xs text-neutral-600 leading-relaxed font-sans max-w-sm mx-auto">
-                      Helping retail and corporate investors optimize their mutual fund distribution portfolios, restructure tax impact, and execute active rebalancing.
+                    <h3 className="text-base font-bold font-chillax text-primary">Arijit De</h3>
+                    <p className="text-[11px] text-muted-foreground font-mono font-semibold">Certified MFD & Portfolio Distributor</p>
+                    <p className="text-xs text-foreground/80 leading-relaxed font-sans font-medium">
+                      “True financial freedom is built through patience and structured asset allocation, not chasing speculative cycles.”
                     </p>
                   </div>
+                </div>
+
+                {/* Bottom Flip Cue */}
+                <div className="w-full flex items-center justify-center gap-1.5 pt-2 text-[11px] font-mono font-bold text-muted-foreground group-hover:text-primary transition-colors relative z-10">
+                  <RotateCw className="w-3.5 h-3.5 transform group-hover:rotate-180 transition-transform duration-500" />
+                  <span>Click card to flip back</span>
                 </div>
               </div>
             </div>
@@ -1659,10 +1655,11 @@ export default function Home() {
       <div ref={helloSectionRef} className="w-full relative z-10 bg-transparent select-none">
         <div className="w-full flex flex-col items-center justify-center px-6 py-2">
           <ScrollBlurReveal className="w-full max-w-5xl mx-auto text-center flex flex-col items-center justify-center">
-            <div ref={envelopeRef} className="w-64 h-64 sm:w-96 sm:h-96 md:w-[28rem] md:h-[28rem] lg:w-[32rem] lg:h-[32rem] relative z-0 flex items-center justify-center">
-              <img
-                src="/assets/envelope.png"
-                alt="Envelope"
+            <div ref={envelopeRef} className="w-32 h-32 sm:w-64 sm:h-64 md:w-72 md:h-72 lg:w-80 lg:h-80 relative z-0 flex items-center justify-center">
+              <DotLottieReact
+                src="/looney-10.json"
+                loop
+                autoplay
                 className="w-full h-full object-contain pointer-events-none select-none"
               />
             </div>
@@ -1675,10 +1672,13 @@ export default function Home() {
         <ScrollBlurReveal className="w-full max-w-xl mx-auto px-6">
           <div className="relative text-left">
             <div className="text-center space-y-3 mb-8">
-              <h2 className="text-3xl lg:text-5xl tracking-tight text-primary font-instrument-serif">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-primary/10 bg-white/60 text-xs font-semibold text-primary font-mono select-none shadow-xs">
+                <span>✦ DIRECT CONSULTATION</span>
+              </div>
+              <h2 className="text-3xl lg:text-5xl font-bold tracking-tight text-primary font-chillax leading-tight">
                 Connect With Us
               </h2>
-              <p className="text-muted-foreground text-xs leading-relaxed font-sans max-w-sm mx-auto">
+              <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed font-sans max-w-sm mx-auto font-medium">
                 Drop us a message and we will get back to you shortly to analyze your portfolio.
               </p>
             </div>
@@ -1778,7 +1778,7 @@ export default function Home() {
       <BookCallModal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} />
 
       {/* Preloader Overlay Screen (Slides down smoothly) */}
-      {!preloaderGone && (
+      {showPreloader && (
         <div
           id="preloader-screen"
           className={`fixed inset-0 z-50 flex flex-col justify-between bg-[#F2F0EF] p-12 md:p-20 transition-transform duration-[1000ms] ease-[cubic-bezier(0.85,0,0.15,1)] ${isLoaded ? "translate-y-full" : "translate-y-0"
@@ -1863,3 +1863,4 @@ export default function Home() {
     </main>
   );
 }
+

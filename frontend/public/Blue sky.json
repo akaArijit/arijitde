@@ -1,0 +1,123 @@
+{
+  "name": "Blue sky",
+  "type": "sky",
+  "profile": "sRGB",
+  "dividers": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "soften": 0,
+  "noise": 4,
+  "speed": 22,
+  "texts": [
+    {
+      "id": "feral-brand",
+      "content": "Luminescence",
+      "ink": "auto",
+      "color": "#2A2622",
+      "family": "'Instrument Serif', Georgia, serif",
+      "sizePct": 9,
+      "x": 50,
+      "y": 50,
+      "align": "center",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "letter": 0,
+      "line": 1.2,
+      "shadow": 10,
+      "blur": 30,
+      "textBlur": 0,
+      "skew": 0,
+      "rotate": 0,
+      "curve": 0
+    }
+  ],
+  "stops": [
+    {
+      "name": "MISTED SKY",
+      "hex": "#E6F2FF",
+      "rgb": [
+        230,
+        242,
+        255
+      ],
+      "oklch": [
+        0.956,
+        0.0217,
+        250.2
+      ],
+      "cmyk": [
+        10,
+        5,
+        0,
+        0
+      ],
+      "position": 0.125
+    },
+    {
+      "name": "MISTED SKY",
+      "hex": "#B3D9FF",
+      "rgb": [
+        179,
+        217,
+        255
+      ],
+      "oklch": [
+        0.8708,
+        0.0665,
+        248.6
+      ],
+      "cmyk": [
+        30,
+        15,
+        0,
+        0
+      ],
+      "position": 0.375
+    },
+    {
+      "name": "SKY HAZE",
+      "hex": "#80B3FF",
+      "rgb": [
+        128,
+        179,
+        255
+      ],
+      "oklch": [
+        0.7616,
+        0.1227,
+        258.2
+      ],
+      "cmyk": [
+        50,
+        30,
+        0,
+        0
+      ],
+      "position": 0.625
+    },
+    {
+      "name": "RIVER INDIGO",
+      "hex": "#6699E6",
+      "rgb": [
+        102,
+        153,
+        230
+      ],
+      "oklch": [
+        0.6804,
+        0.1271,
+        258.4
+      ],
+      "cmyk": [
+        56,
+        33,
+        0,
+        10
+      ],
+      "position": 0.875
+    }
+  ]
+}
