@@ -1,0 +1,23 @@
+node_modules
+package-lock.json
+
+# Build output
+.next
+out
+build
+dist
+backend/dist
+frontend/.next
+frontend/out
+
+# Generated
+frontend/next-env.d.ts
+backend/prisma/migrations
+
+# Data & binary assets
+*.xlsx
+*.csv
+*.heic
+*.webp
+*.gif
+frontend/public/*.json
