@@ -218,6 +218,8 @@ Folio ◄──── ExistingClient (CRM import data)
 | POST | `/users/:id/role` | Update user role |
 | GET | `/clients` | Activated clients |
 | POST | `/clients/:id/notes` | Advisor notes |
+| GET | `/benchmark?portfolioId=...&timeframe=1Y` | Benchmark user portfolio |
+| GET | `/benchmark?clientId=...&timeframe=1Y` | Benchmark CRM client |
 
 ### Chat (`/api/chat`)
 | Method | Endpoint | Auth | Description |
@@ -443,7 +445,130 @@ npx prisma migrate deploy   # Production
 
 ---
 
-## 12. Future Enhancements
+## 12. Portfolio Benchmarking Addon (Admin Dashboard)
+
+> **New Module** — Institutional-grade portfolio benchmarking against Indian market indices with risk-adjusted metrics.
+
+### 12.1 Overview
+
+The Benchmarking module is an **Admin Dashboard only** feature that compares both user-uploaded portfolios and CRM-imported existing clients against Indian market benchmarks (Nifty 50 TRI, Nifty 500 TRI, Nifty Midcap 150 TRI, Nifty Smallcap 250 TRI) and category averages.
+
+**Key Features:**
+- **Dual-mode data support**: Full SIP reconstruction (user portfolios) + reported metrics (CRM imports)
+- **Risk metrics**: True XIRR, Alpha, Beta, Sharpe Ratio, Information Ratio, Max Drawdown
+- **Interactive charts**: Recharts LineChart with multi-series comparison
+- **Timeframes**: 1Y, 3Y, 5Y, All
+- **CSV Export**: Complete benchmark report download
+
+### 12.2 Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         BENCHMARKING DATA FLOW                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ADMIN UI (BenchmarkTab)                                                    │
+│       │                                                                     │
+│       ▼ GET /api/admin/benchmark?clientId=...|portfolioId=...&timeframe=1Y  │
+│                                                                             │
+│  BACKEND (admin.ts + benchmarking.ts)                                       │
+│       │                                                                     │
+│       ├──► PortfolioRow[] (User Upload) ──► Full Reconstruction             │
+│       │         fundName, type, startDate, sipAmount, invested,            │
+│       │         currentValue                                               │
+│       │         → True XIRR, Monthly time-series, All metrics              │
+│       │                                                                     │
+│       └──► ExistingClient + Folio[] (CRM Import) ──► Reported Metrics      │
+│                  xirr, cagr, currentValue, purchaseValue, folios           │
+│                  → Reported XIRR, Approximate series from CAGR             │
+│                                                                             │
+│  EXTERNAL APIs (Free)                                                       │
+│       ├── AMFI (api.mfapi.in) ──► Fund NAV History, Category Detection     │
+│       └── Yahoo Finance (query1.finance.yahoo.com) ──► TRI Index History   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 12.3 Data Source Compatibility
+
+| Data Source | Schema | XIRR | Time-Series | Metrics |
+|-------------|--------|------|-------------|---------|
+| **User Portfolio** | `Portfolio` + `PortfolioRow` | ✅ True XIRR (Newton-Raphson) | ✅ Monthly reconstruction | ✅ All 6 metrics |
+| **CRM Import** | `ExistingClient` + `Folio` | ⚠️ Reported XIRR | ⚠️ CAGR-based approximation | ⚠️ Limited (no Alpha/Beta precision) |
+
+### 12.4 Benchmarks & Metrics
+
+| Benchmark | Yahoo Symbol | Category Mapping |
+|-----------|--------------|------------------|
+| Nifty 50 TRI | `^NSEI` | Large Cap, Flexi Cap, Index, ELSS |
+| Nifty 500 TRI | `^NSE500` | Multi Cap, Balanced |
+| Nifty Midcap 150 TRI | `^CNXMIDCAP` | Mid Cap |
+| Nifty Smallcap 250 TRI | `^CNXSMALLCAP` | Small Cap |
+
+**Risk Metrics (vs Nifty 50 TRI primary):**
+- **Alpha** = Portfolio_Return - [RF + Beta × (Benchmark_Return - RF)]
+- **Beta** = Cov(portfolio, benchmark) / Var(benchmark)
+- **Sharpe** = (Portfolio_Return - RF) / σ_portfolio
+- **Information Ratio** = (Portfolio_Return - Benchmark_Return) / σ_excess
+- **Max Drawdown** = Peak-to-trough on portfolio value series
+- **Risk-Free Rate** = 7% (10Y G-Sec approx)
+
+### 12.5 API Endpoint
+
+### Admin (`/api/admin`) — *Requires ADMIN role*
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/benchmark?portfolioId=...&timeframe=1Y` | Benchmark user portfolio |
+| GET | `/benchmark?clientId=...&timeframe=1Y` | Benchmark CRM client |
+
+**Query Parameters:**
+- `portfolioId` (UUID, exclusive with clientId) — User portfolio to benchmark
+- `clientId` (UUID, exclusive with portfolioId) — ExistingClient to benchmark
+- `timeframe` (enum: 1Y, 3Y, 5Y, ALL) — Default: 1Y
+
+**Response:** `AdminBenchmarkResponse` with timeSeries[], metrics{}, meta{}
+
+### 12.6 Frontend Component
+
+**Location:** `frontend/components/admin/BenchmarkTab.tsx`
+
+**UI Features:**
+- Source selector: Existing Clients ↔ User Portfolios (tab pills)
+- Searchable dropdown with client/portfolio details
+- Data quality badge: "Full Reconstruction" (green) / "Reported Metrics Only" (amber)
+- Timeframe pills: 1Y / 3Y / 5Y / All
+- Recharts LineChart: Portfolio (solid), Nifty 50 TRI (dashed), Category Avg (dotted)
+- 6-card Metric Grid: XIRR, Alpha, Beta, Sharpe, Info Ratio, Max Drawdown
+- Color-coded: Green (positive) / Red (negative) per metric direction
+- CSV Export button
+- Matches admin dashboard design system (neutral-900, font-clash, rounded-2xl)
+
+### 12.7 Caching Strategy
+
+| Layer | Key | TTL |
+|-------|-----|-----|
+| AMFI NAV | `nav:{schemeCode}` | 24hr |
+| Yahoo Finance | `yahoo:{symbol}:{from}:{to}` | 1hr |
+| Category Average | `catavg:{category}:{timeframe}` | 24hr |
+| Benchmark Report | `benchmark:{clientId|portfolioId}:{timeframe}` | 1hr |
+
+All in-memory `Map` with expiry (consistent with `amfiService.ts` pattern).
+
+### 12.8 New Files
+
+| File | Purpose |
+|------|---------|
+| `shared/src/types/benchmarking.ts` | Shared interfaces (BenchmarkTimePoint, BenchmarkMetrics, etc.) |
+| `shared/src/constants/benchmarks.ts` | Index symbols, risk-free rate, category mapping |
+| `backend/src/services/yahooFinance.ts` | TRI index fetcher with 1hr cache |
+| `backend/src/services/categoryAverage.ts` | Category average return computer (AMFI top N) |
+| `backend/src/services/benchmarking.ts` | Dual-mode engine (reconstruction + reported metrics) |
+| `frontend/components/admin/BenchmarkTab.tsx` | Admin tab component with chart + metrics + export |
+
+---
+
+## 13. Future Enhancements
 
 | Area | Planned |
 |------|---------|
@@ -454,6 +579,7 @@ npx prisma migrate deploy   # Production
 | **Notifications** | WhatsApp Business API for OTP/alerts |
 | **Analytics** | Mixpanel/PostHog for funnel tracking |
 | **Multi-tenancy** | Advisor white-label subdomains |
+| **Benchmarking** | Custom benchmark blends, rolling returns, factor analysis |
 
 ---
 
@@ -475,7 +601,7 @@ src/
 │   ├── assess.ts           # Assessment CRUD
 │   ├── portfolio.ts        # Upload + CRM matching
 │   ├── score.ts            # Scoring trigger + fetch
-│   ├── admin.ts            # Admin panel APIs
+│   ├── admin.ts            # Admin panel APIs (incl. /benchmark)
 │   ├── chat.ts             # Grok AI chat
 │   ├── leads.ts            # Lead capture
 │   ├── contact.ts          # Contact form
@@ -488,6 +614,9 @@ src/
     │   ├── diversification.ts
     │   ├── discipline.ts
     │   └── efficiency.ts
+    ├── benchmarking.ts     # Portfolio benchmarking engine
+    ├── yahooFinance.ts     # TRI index fetcher (Yahoo Finance)
+    ├── categoryAverage.ts  # Category average return computer
     ├── amfiService.ts      # Fund category/AMC detection + NAV/expense
     ├── otp.ts              # OTP gen/verify/store
     └── email.ts            # Nodemailer templates
@@ -502,10 +631,12 @@ src/
 │   ├── assessment.ts
 │   ├── portfolio.ts
 │   ├── scoring.ts
-│   └── payment.ts
+│   ├── payment.ts
+│   └── benchmarking.ts     # BenchmarkTimePoint, BenchmarkMetrics, AdminBenchmarkResponse
 └── constants/
     ├── goals.ts            # Labels, horizons, options
-    └── scoring.ts          # Thresholds, weights, benchmarks
+    ├── scoring.ts          # Thresholds, weights, benchmarks
+    └── benchmarks.ts       # Index symbols, risk-free rate, category mapping
 ```
 
 ### Frontend
@@ -518,7 +649,7 @@ app/
 ├── dashboard/
 │   ├── user/page.tsx       # User dashboard
 │   ├── client/page.tsx     # Client dashboard
-│   └── admin/page.tsx      # Admin dashboard
+│   └── admin/page.tsx      # Admin dashboard (includes Benchmarking tab)
 └── */page.tsx              # Calculator pages
 
 components/
@@ -531,7 +662,9 @@ components/
 ├── LightTunnel.tsx / Prism.tsx / ColorBends.tsx
 ├   Scroll* components
 ├── ui/ (KnobSlider, AdisyonShader)
-└── smoothui/ (AI orb, messages)
+├── smoothui/ (AI orb, messages)
+└── admin/
+    └── BenchmarkTab.tsx    # Admin benchmarking tab (chart + metrics + export)
 
 lib/
 └── utils.ts                # cn() className helper
@@ -552,7 +685,13 @@ lib/
 | **SWP** | Systematic Withdrawal Plan |
 | **XIRR** | Extended Internal Rate of Return (for irregular cashflows) |
 | **Archetype** | Behavioral investor profile (Tiger/Elephant/Deer/Fox/Lion) |
+| **Alpha** | Excess return vs benchmark adjusted for risk (Jensen's Alpha) |
+| **Beta** | Portfolio sensitivity to benchmark movements |
+| **Sharpe Ratio** | Risk-adjusted return per unit of total risk |
+| **Information Ratio** | Active return per unit of tracking error |
+| **Max Drawdown** | Maximum peak-to-trough portfolio decline |
+| **TRI** | Total Return Index (includes dividends reinvested) |
 
 ---
 
-*Document version: 1.0 | Last updated: 2026-09-11*
+*Document version: 1.1 | Last updated: 2026-09-11*
