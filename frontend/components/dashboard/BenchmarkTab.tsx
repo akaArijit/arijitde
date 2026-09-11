@@ -113,110 +113,43 @@ function EmptyState({ message, action }: { message: string; action?: React.React
   );
 }
 
-export function BenchmarkTab() {
-  const [source, setSource] = useState<'portfolio' | 'client'>('client');
-  const [selectedId, setSelectedId] = useState<string>('');
-  const [timeframe, setTimeframe] = useState<Timeframe>('1Y');
-  const [report, setReport] = useState<AdminBenchmarkResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [clients, setClients] = useState<ExistingClientSummary[]>([]);
-  const [portfolios, setPortfolios] = useState<PortfolioSummary[]>([]);
-  const [showClientDropdown, setShowClientDropdown] = useState(false);
+interface BenchmarkTabProps {
+  userPortfolios: PortfolioSummary[];
+  clientData: ExistingClientSummary | null;
+  report: AdminBenchmarkResponse | null;
+  loading: boolean;
+  error: string | null;
+  timeframe: Timeframe;
+  onFetchBenchmark: (params: { portfolioId?: string; clientId?: string; timeframe: Timeframe }) => Promise<void>;
+  onTimeframeChange: (tf: Timeframe) => void;
+}
+
+export function BenchmarkTab({
+  userPortfolios,
+  clientData,
+  report,
+  loading,
+  error,
+  timeframe,
+  onFetchBenchmark,
+  onTimeframeChange,
+}: BenchmarkTabProps) {
+  const [source, setSource] = useState<'portfolio' | 'client'>('portfolio');
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
   const [showPortfolioDropdown, setShowPortfolioDropdown] = useState(false);
-  const [clientSearch, setClientSearch] = useState('');
   const [portfolioSearch, setPortfolioSearch] = useState('');
 
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-  const fetchClients = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${backendUrl}/api/admin/existing-clients?limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) setClients(data.data.clients);
-    } catch (e) {
-      console.error('Failed to fetch clients:', e);
-    }
-  }, [backendUrl]);
-
-  const fetchPortfolios = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${backendUrl}/api/portfolio`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) {
-        const summaries = data.data.map((p: any) => ({
-          id: p.id,
-          createdAt: p.createdAt,
-          rowCount: p.rows?.length || 0,
-          totalInvested: p.rows?.reduce((s: number, r: any) => s + r.invested, 0) || 0,
-          totalCurrentValue: p.rows?.reduce((s: number, r: any) => s + r.currentValue, 0) || 0,
-          assessment: p.assessment,
-        }));
-        setPortfolios(summaries);
-      }
-    } catch (e) {
-      console.error('Failed to fetch portfolios:', e);
-    }
-  }, [backendUrl]);
-
-  useEffect(() => {
-    fetchClients();
-    fetchPortfolios();
-  }, [fetchClients, fetchPortfolios]);
-
-  const fetchBenchmark = useCallback(async () => {
-    if (!selectedId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      const param = source === 'client' ? `clientId=${selectedId}` : `portfolioId=${selectedId}`;
-      const res = await fetch(`${backendUrl}/api/admin/benchmark?${param}&timeframe=${timeframe}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setReport(data.data);
-      } else {
-        setError(data.error || 'Failed to load benchmark');
-      }
-    } catch (e) {
-      setError('Network error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [backendUrl, selectedId, source, timeframe]);
-
-  useEffect(() => {
-    fetchBenchmark();
-  }, [fetchBenchmark]);
-
-  const filteredClients = useMemo(() => {
-    if (!clientSearch) return clients;
-    const search = clientSearch.toLowerCase();
-    return clients.filter(c =>
-      (c.name?.toLowerCase().includes(search)) ||
-      (c.pan?.toLowerCase().includes(search)) ||
-      (c.email?.toLowerCase().includes(search)) ||
-      (c.mobile?.includes(search))
-    );
-  }, [clients, clientSearch]);
-
   const filteredPortfolios = useMemo(() => {
-    if (!portfolioSearch) return portfolios;
+    if (!portfolioSearch) return userPortfolios;
     const search = portfolioSearch.toLowerCase();
-    return portfolios.filter(p =>
+    return userPortfolios.filter(p =>
       p.id.toLowerCase().includes(search) ||
       p.assessment?.goal?.toLowerCase().includes(search) ||
       new Date(p.createdAt).toLocaleDateString('en-IN').includes(search)
     );
-  }, [portfolios, portfolioSearch]);
+  }, [userPortfolios, portfolioSearch]);
 
   const chartData = useMemo(() => {
     if (!report?.timeSeries) return [];
@@ -282,6 +215,29 @@ export function BenchmarkTab() {
     link.click();
   };
 
+  const handleSourceChange = (newSource: 'portfolio' | 'client') => {
+    setSource(newSource);
+    setSelectedPortfolioId('');
+    setPortfolioSearch('');
+    setShowPortfolioDropdown(false);
+    if (newSource === 'portfolio' && userPortfolios.length > 0) {
+      onFetchBenchmark({ portfolioId: userPortfolios[0].id, timeframe });
+    } else if (newSource === 'client' && clientData) {
+      onFetchBenchmark({ clientId: clientData.id, timeframe });
+    }
+  };
+
+  const handlePortfolioSelect = (portfolioId: string) => {
+    setSelectedPortfolioId(portfolioId);
+    const portfolio = userPortfolios.find(p => p.id === portfolioId);
+    if (portfolio) {
+      const date = new Date(portfolio.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' });
+      setPortfolioSearch(`${portfolio.rowCount} funds · ₹${portfolio.totalCurrentValue.toLocaleString('en-IN')} · ${date}`);
+    }
+    setShowPortfolioDropdown(false);
+    onFetchBenchmark({ portfolioId, timeframe });
+  };
+
   if (loading && !report) return <SkeletonLoader />;
 
   return (
@@ -308,130 +264,128 @@ export function BenchmarkTab() {
         </div>
       </div>
 
-      {/* Source Selector & Search */}
+      {/* Source Selector */}
       <div className="bg-white border border-neutral-200 rounded-2xl p-4 sm:p-6 shadow-sm">
-        {/* Source Tabs */}
-        <div className="flex gap-2 mb-4 border-b border-neutral-200">
-          {['client', 'portfolio'].map((s) => (
-            <button
-              key={s}
-              onClick={() => {
-                setSource(s as 'client' | 'portfolio');
-                setSelectedId('');
-                setReport(null);
-              }}
-              className={cn(
-                'py-2 px-4 text-sm font-bold font-clash uppercase tracking-wider rounded-t-xl transition duration-200',
-                source === s
-                  ? 'bg-neutral-900 text-white'
-                  : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+          <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">Data Source:</span>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="benchmark-source"
+                checked={source === 'portfolio'}
+                onChange={() => handleSourceChange('portfolio')}
+                className="w-4 h-4 text-primary border-primary focus:ring-primary accent-primary"
+              />
+              <span className="text-sm font-medium text-neutral-900">My Portfolio</span>
+              {userPortfolios.length > 0 && (
+                <span className="px-2 py-0.5 text-[10px] font-mono bg-neutral-100 text-neutral-600 rounded-full">
+                  {userPortfolios.length}
+                </span>
               )}
-            >
-              {s === 'client' ? 'Existing Clients' : 'User Portfolios'}
-            </button>
-          ))}
+            </label>
+            {clientData && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="benchmark-source"
+                  checked={source === 'client'}
+                  onChange={() => handleSourceChange('client')}
+                  className="w-4 h-4 text-primary border-primary focus:ring-primary accent-primary"
+                />
+                <span className="text-sm font-medium text-neutral-900">Certified Valuation</span>
+                <span className="px-2 py-0.5 text-[10px] font-mono bg-emerald-100 text-emerald-700 rounded-full">
+                  CRM Matched
+                </span>
+              </label>
+            )}
+          </div>
         </div>
 
-        {/* Searchable Dropdown */}
-        <div className="relative">
-          <div className="flex items-center gap-2 border border-neutral-200 rounded-xl bg-white">
-            <Search className="w-4 h-4 text-neutral-400 ml-3" />
-            <input
-              type="text"
-              placeholder={source === 'client'
-                ? 'Search clients by name, PAN, email, mobile...'
-                : 'Search portfolios by ID, goal, date...'}
-              value={source === 'client' ? clientSearch : portfolioSearch}
-              onChange={(e) => (source === 'client' ? setClientSearch(e.target.value) : setPortfolioSearch(e.target.value))}
-              className="flex-1 pl-10 pr-10 py-3 text-sm border-0 bg-transparent focus:outline-none text-neutral-900 placeholder-neutral-400"
-            />
-            {(source === 'client' ? clientSearch : portfolioSearch) && (
+        {/* Portfolio Dropdown */}
+        {source === 'portfolio' && userPortfolios.length > 0 && (
+          <div className="relative">
+            <div className="flex items-center gap-2 border border-neutral-200 rounded-xl bg-white">
+              <Search className="w-4 h-4 text-neutral-400 ml-3" />
+              <input
+                type="text"
+                placeholder="Search portfolios by ID, goal, date..."
+                value={portfolioSearch}
+                onChange={(e) => setPortfolioSearch(e.target.value)}
+                className="flex-1 pl-10 pr-10 py-3 text-sm border-0 bg-transparent focus:outline-none text-neutral-900 placeholder-neutral-400"
+                readOnly
+              />
+              {portfolioSearch && (
+                <button
+                  onClick={() => setPortfolioSearch('')}
+                  className="mr-3 text-neutral-400 hover:text-neutral-900"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
               <button
-                onClick={() => (source === 'client' ? setClientSearch('') : setPortfolioSearch(''))}
+                onClick={() => setShowPortfolioDropdown(!showPortfolioDropdown)}
                 className="mr-3 text-neutral-400 hover:text-neutral-900"
               >
-                <X className="w-4 h-4" />
+                {showPortfolioDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
+            </div>
+
+            {showPortfolioDropdown && filteredPortfolios.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden z-10 max-h-60 overflow-y-auto">
+                {filteredPortfolios.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => handlePortfolioSelect(p.id)}
+                    className={cn(
+                      'w-full px-4 py-3 text-left text-sm border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition',
+                      selectedPortfolioId === p.id && 'bg-primary/5'
+                    )}
+                  >
+                    <div className="font-semibold text-neutral-900">
+                      {p.assessment?.goal ? `Goal: ${p.assessment.goal}` : 'Portfolio'}
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-1 text-[10px] font-mono text-neutral-500">
+                      <span>{p.rowCount} funds</span>
+                      <span>Invested: ₹{p.totalInvested.toLocaleString('en-IN')}</span>
+                      <span>Current: ₹{p.totalCurrentValue.toLocaleString('en-IN')}</span>
+                      <span>{new Date(p.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             )}
-            <button
-              onClick={() => source === 'client' ? setShowClientDropdown(!showClientDropdown) : setShowPortfolioDropdown(!showPortfolioDropdown)}
-              className="mr-3 text-neutral-400 hover:text-neutral-900"
-            >
-              {source === 'client' ? (showClientDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)
-                : (showPortfolioDropdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
-            </button>
+
+            {showPortfolioDropdown && filteredPortfolios.length === 0 && userPortfolios.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg p-4 text-center text-neutral-500 text-sm">
+                No portfolios match your search
+              </div>
+            )}
           </div>
+        )}
 
-          {/* Dropdown List */}
-          {(source === 'client' && showClientDropdown && filteredClients.length > 0) && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden z-10 max-h-60 overflow-y-auto">
-              {filteredClients.map((client) => (
-                <button
-                  key={client.id}
-                  onClick={() => {
-                    setSelectedId(client.id);
-                    setClientSearch(client.name || client.pan || client.id);
-                    setShowClientDropdown(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-3 text-left text-sm border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition',
-                    selectedId === client.id && 'bg-primary/5'
-                  )}
-                >
-                  <div className="font-semibold text-neutral-900">{client.name || 'Unnamed Client'}</div>
-                  <div className="flex flex-wrap gap-3 mt-1 text-[10px] font-mono text-neutral-500">
-                    {client.pan && <span>PAN: {client.pan}</span>}
-                    {client.email && <span>{client.email}</span>}
-                    {client.mobile && <span>{client.mobile}</span>}
-                    {client.aum && <span>AUM: ₹{client.aum.toLocaleString('en-IN')}</span>}
-                  </div>
-                </button>
-              ))}
+        {/* Certified Valuation Info */}
+        {source === 'client' && clientData && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <span className="font-medium text-emerald-800">Using certified CRM valuation data</span>
             </div>
-          )}
-
-          {(source === 'portfolio' && showPortfolioDropdown && filteredPortfolios.length > 0) && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden z-10 max-h-60 overflow-y-auto">
-              {filteredPortfolios.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    setSelectedId(p.id);
-                    const date = new Date(p.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' });
-                    setPortfolioSearch(`${p.rowCount} funds · ₹${p.totalCurrentValue.toLocaleString('en-IN')} · ${date}`);
-                    setShowPortfolioDropdown(false);
-                  }}
-                  className={cn(
-                    'w-full px-4 py-3 text-left text-sm border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition',
-                    selectedId === p.id && 'bg-primary/5'
-                  )}
-                >
-                  <div className="font-semibold text-neutral-900">
-                    {p.assessment?.goal ? `Goal: ${p.assessment.goal}` : 'Portfolio'}
-                  </div>
-                  <div className="flex flex-wrap gap-3 mt-1 text-[10px] font-mono text-neutral-500">
-                    <span>{p.rowCount} funds</span>
-                    <span>Invested: ₹{p.totalInvested.toLocaleString('en-IN')}</span>
-                    <span>Current: ₹{p.totalCurrentValue.toLocaleString('en-IN')}</span>
-                    <span>{new Date(p.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</span>
-                  </div>
-                </button>
-              ))}
+            <div className="mt-2 text-xs text-emerald-700 font-sans">
+              Client: <span className="font-mono">{clientData.name || 'Unknown'}</span>
+              {clientData.pan && (
+                <>
+                  <span className="mx-2">|</span> <span className="font-mono">PAN: {clientData.pan}</span>
+                </>
+              )}
+              {clientData.aum && (
+                <>
+                  <span className="mx-2">|</span> <span className="font-mono">AUM: ₹{clientData.aum.toLocaleString('en-IN')}</span>
+                </>
+              )}
             </div>
-          )}
-
-          {(source === 'client' && showClientDropdown && filteredClients.length === 0 && clients.length > 0) && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg p-4 text-center text-neutral-500 text-sm">
-              No clients match your search
-            </div>
-          )}
-
-          {(source === 'portfolio' && showPortfolioDropdown && filteredPortfolios.length === 0 && portfolios.length > 0) && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg p-4 text-center text-neutral-500 text-sm">
-              No portfolios match your search
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Data Quality Badge */}
         {report && (
@@ -454,7 +408,7 @@ export function BenchmarkTab() {
       {error && !report && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" /> {error}
-          <button onClick={fetchBenchmark} className="ml-auto text-xs underline">Retry</button>
+          <button onClick={() => onFetchBenchmark({ portfolioId: selectedPortfolioId || undefined, clientId: source === 'client' && clientData ? clientData.id : undefined, timeframe })} className="ml-auto text-xs underline">Retry</button>
         </div>
       )}
 
@@ -465,7 +419,7 @@ export function BenchmarkTab() {
           {TIMEFRAMES.map(({ value, label }) => (
             <button
               key={value}
-              onClick={() => setTimeframe(value)}
+              onClick={() => onTimeframeChange(value)}
               className={cn(
                 'px-3 py-1.5 text-xs font-mono font-medium rounded-xl transition-all',
                 timeframe === value
@@ -601,23 +555,27 @@ export function BenchmarkTab() {
       {/* Empty State */}
       {!loading && !report && !error && (
         <EmptyState
-          message={source === 'client'
-            ? 'Select an existing client to view benchmark analysis'
-            : 'Select a user portfolio to view benchmark analysis'}
+          message={source === 'portfolio'
+            ? userPortfolios.length === 0
+              ? 'No portfolios uploaded yet. Upload a portfolio to see benchmark analysis.'
+              : 'Select a portfolio to view benchmark analysis'
+            : 'No certified valuation data available. Ensure CRM data is imported.'}
           action={
             <p className="text-[10px] font-mono text-neutral-400">
-              Use the dropdown above to choose a client or portfolio
+              {source === 'portfolio' && userPortfolios.length === 0
+                ? 'Use the Upload Portfolio tab to add your holdings'
+                : 'Use the dropdown above to choose a portfolio'}
             </p>
           }
         />
       )}
 
-      {!loading && !report && !error && selectedId && (
+      {!loading && !report && !error && selectedPortfolioId && (
         <EmptyState
           message="No benchmark data available for this selection"
           action={
             <button
-              onClick={fetchBenchmark}
+              onClick={() => onFetchBenchmark({ portfolioId: selectedPortfolioId, timeframe })}
               className="px-4 py-2 text-xs font-bold bg-primary text-white rounded-xl hover:bg-primary/90 transition"
             >
               <RefreshCw className="w-3.5 h-3.5 mr-1.5" />

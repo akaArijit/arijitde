@@ -515,34 +515,37 @@ The Benchmarking module is an **Admin Dashboard only** feature that compares bot
 
 ### 12.5 API Endpoint
 
-### Admin (`/api/admin`) — *Requires ADMIN role*
+### Portfolio (`/api/portfolio`) — *Requires Authentication (Bearer token)*
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/benchmark?portfolioId=...&timeframe=1Y` | Benchmark user portfolio |
-| GET | `/benchmark?clientId=...&timeframe=1Y` | Benchmark CRM client |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/benchmark?portfolioId=...&timeframe=1Y` | Bearer | Benchmark user's uploaded portfolio |
+| GET | `/benchmark?timeframe=1Y` | Bearer | Benchmark matched CRM certified valuation |
 
 **Query Parameters:**
-- `portfolioId` (UUID, exclusive with clientId) — User portfolio to benchmark
-- `clientId` (UUID, exclusive with portfolioId) — ExistingClient to benchmark
+- `portfolioId` (UUID, optional) — User portfolio to benchmark (must own)
 - `timeframe` (enum: 1Y, 3Y, 5Y, ALL) — Default: 1Y
+
+**Behavior:**
+- If `portfolioId` provided: Verifies ownership, then benchmarks the uploaded portfolio with full SIP reconstruction
+- If no `portfolioId`: Attempts to match user's PAN/email/name against CRM `ExistingClient` data; if found, benchmarks using reported metrics (CAGR/XIRR approximation)
 
 **Response:** `AdminBenchmarkResponse` with timeSeries[], metrics{}, meta{}
 
 ### 12.6 Frontend Component
 
-**Location:** `frontend/components/admin/BenchmarkTab.tsx`
+**Location:** `frontend/components/dashboard/BenchmarkTab.tsx`
 
 **UI Features:**
-- Source selector: Existing Clients ↔ User Portfolios (tab pills)
-- Searchable dropdown with client/portfolio details
+- Source selector: Radio buttons "My Portfolio" | "Certified Valuation" (latter only if CRM match exists)
+- Portfolio dropdown: Searchable list of user's uploaded portfolios (name, goal, date, AUM)
 - Data quality badge: "Full Reconstruction" (green) / "Reported Metrics Only" (amber)
 - Timeframe pills: 1Y / 3Y / 5Y / All
 - Recharts LineChart: Portfolio (solid), Nifty 50 TRI (dashed), Category Avg (dotted)
 - 6-card Metric Grid: XIRR, Alpha, Beta, Sharpe, Info Ratio, Max Drawdown
 - Color-coded: Green (positive) / Red (negative) per metric direction
 - CSV Export button
-- Matches admin dashboard design system (neutral-900, font-clash, rounded-2xl)
+- Matches dashboard design system (neutral-900, font-clash, rounded-2xl)
 
 ### 12.7 Caching Strategy
 
@@ -564,7 +567,7 @@ All in-memory `Map` with expiry (consistent with `amfiService.ts` pattern).
 | `backend/src/services/yahooFinance.ts` | TRI index fetcher with 1hr cache |
 | `backend/src/services/categoryAverage.ts` | Category average return computer (AMFI top N) |
 | `backend/src/services/benchmarking.ts` | Dual-mode engine (reconstruction + reported metrics) |
-| `frontend/components/admin/BenchmarkTab.tsx` | Admin tab component with chart + metrics + export |
+| `frontend/components/dashboard/BenchmarkTab.tsx` | Client dashboard tab with chart + metrics + export |
 
 ---
 
@@ -599,9 +602,9 @@ src/
 ├── routes/
 │   ├── auth.ts             # Auth endpoints
 │   ├── assess.ts           # Assessment CRUD
-│   ├── portfolio.ts        # Upload + CRM matching
+│   ├── portfolio.ts        # Upload + CRM matching + Benchmarking (/benchmark)
 │   ├── score.ts            # Scoring trigger + fetch
-│   ├── admin.ts            # Admin panel APIs (incl. /benchmark)
+│   ├── admin.ts            # Admin panel APIs
 │   ├── chat.ts             # Grok AI chat
 │   ├── leads.ts            # Lead capture
 │   ├── contact.ts          # Contact form
@@ -648,8 +651,8 @@ app/
 ├── quiz/page.tsx           # Archetype quiz
 ├── dashboard/
 │   ├── user/page.tsx       # User dashboard
-│   ├── client/page.tsx     # Client dashboard
-│   └── admin/page.tsx      # Admin dashboard (includes Benchmarking tab)
+│   ├── client/page.tsx     # Client dashboard (includes Benchmarking tab)
+│   └── admin/page.tsx      # Admin dashboard
 └── */page.tsx              # Calculator pages
 
 components/
@@ -663,8 +666,10 @@ components/
 ├   Scroll* components
 ├── ui/ (KnobSlider, AdisyonShader)
 ├── smoothui/ (AI orb, messages)
-└── admin/
-    └── BenchmarkTab.tsx    # Admin benchmarking tab (chart + metrics + export)
+├── dashboard/
+│   └── BenchmarkTab.tsx    # Client benchmarking tab (chart + metrics + export)
+├── admin/
+│   └── (admin-only components)
 
 lib/
 └── utils.ts                # cn() className helper
@@ -694,4 +699,4 @@ lib/
 
 ---
 
-*Document version: 1.1 | Last updated: 2026-09-11*
+*Document version: 1.2 | Last updated: 2026-09-11*

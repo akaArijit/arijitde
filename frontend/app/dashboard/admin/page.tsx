@@ -35,9 +35,8 @@ import {
   HelpCircle,
   Bell,
   LayoutGrid,
-  BarChart2,
 } from 'lucide-react';
-import { BenchmarkTab } from '@/components/admin/BenchmarkTab';
+
 
 // Goal Mapping helper
 const GOAL_LABELS: Record<string, { label: string; desc: string; icon: any }> =
@@ -208,7 +207,6 @@ export default function AdminDashboard() {
     | 'aum'
     | 'liveSessions'
     | 'queries'
-    | 'benchmarking'
   >('users');
 
   // Support queries states
@@ -1797,18 +1795,6 @@ export default function AdminDashboard() {
               </span>
             )}
           </button>
-
-          <button
-            onClick={() => setActiveTab('benchmarking')}
-            className={`py-3 text-sm font-bold font-clash tracking-wide border-b-2 cursor-pointer transition duration-200 flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'benchmarking'
-                ? 'border-neutral-900 text-neutral-900'
-                : 'border-transparent text-neutral-500 hover:text-neutral-900'
-            }`}
-          >
-            <BarChart2 className="w-4 h-4" />
-            Benchmarking
-          </button>
         </div>
 
         {/* Tab Viewport */}
@@ -3376,10 +3362,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-          )}
-
-          {activeTab === 'benchmarking' && (
-            <BenchmarkTab />
           )}
         </div>
       </main>

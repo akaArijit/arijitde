@@ -11,7 +11,6 @@ import type { AuthenticatedRequest } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import { Role, Prisma, LeadStatus } from '@prisma/client';
 import { generateAdminBenchmarkReport } from '../services/benchmarking';
-import { Timeframe } from '@finanalysis/shared';
 
 const router = Router();
 
@@ -2205,51 +2204,6 @@ router.delete(
         success: true,
         message: `Successfully deleted query.`,
         data: deletedQuery,
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
-);
-
-// 21. GET /api/admin/benchmark
-router.get(
-  '/benchmark',
-  async (req: AuthenticatedRequest, res: Response, next) => {
-    try {
-      const querySchema = z.object({
-        portfolioId: z.string().uuid().optional(),
-        clientId: z.string().uuid().optional(),
-        timeframe: z.enum(['1Y', '3Y', '5Y', 'ALL']).default('1Y'),
-      });
-
-      const parsed = querySchema.parse(req.query);
-
-      if (!parsed.portfolioId && !parsed.clientId) {
-        res.status(400).json({
-          success: false,
-          error: 'Either portfolioId or clientId must be provided',
-        });
-        return;
-      }
-
-      if (parsed.portfolioId && parsed.clientId) {
-        res.status(400).json({
-          success: false,
-          error: 'Provide only one of portfolioId or clientId',
-        });
-        return;
-      }
-
-      const report = await generateAdminBenchmarkReport({
-        portfolioId: parsed.portfolioId,
-        clientId: parsed.clientId,
-        timeframe: parsed.timeframe as Timeframe,
-      });
-
-      res.json({
-        success: true,
-        data: report,
       });
     } catch (error) {
       next(error);
