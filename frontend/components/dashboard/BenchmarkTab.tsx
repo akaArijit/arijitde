@@ -11,8 +11,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
-  AdminBenchmarkResponse,
-  AdminBenchmarkMeta,
+  BenchmarkResponse,
+  BenchmarkMeta,
   Timeframe,
   BenchmarkTimePoint,
   BenchmarkMetrics,
@@ -68,7 +68,7 @@ function getMetricColor(value: number, higherBetter: boolean | null, ideal?: num
   return higherBetter ? (value > 0 ? 'text-emerald-600' : 'text-red-600') : (value < 0 ? 'text-emerald-600' : 'text-red-600');
 }
 
-function getQualityBadge(dataQuality: AdminBenchmarkMeta['dataQuality']) {
+function getQualityBadge(dataQuality: BenchmarkMeta['dataQuality']) {
   if (dataQuality === 'FULL_RECONSTRUCTION') {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700 rounded-full">
@@ -116,11 +116,11 @@ function EmptyState({ message, action }: { message: string; action?: React.React
 interface BenchmarkTabProps {
   userPortfolios: PortfolioSummary[];
   clientData: ExistingClientSummary | null;
-  report: AdminBenchmarkResponse | null;
+  report: BenchmarkResponse | null;
   loading: boolean;
   error: string | null;
   timeframe: Timeframe;
-  onFetchBenchmark: (params: { portfolioId?: string; clientId?: string; timeframe: Timeframe }) => Promise<void>;
+  onFetchBenchmark: (params: { portfolioId?: string; timeframe: Timeframe }) => Promise<void>;
   onTimeframeChange: (tf: Timeframe) => void;
 }
 
@@ -222,8 +222,8 @@ export function BenchmarkTab({
     setShowPortfolioDropdown(false);
     if (newSource === 'portfolio' && userPortfolios.length > 0) {
       onFetchBenchmark({ portfolioId: userPortfolios[0].id, timeframe });
-    } else if (newSource === 'client' && clientData) {
-      onFetchBenchmark({ clientId: clientData.id, timeframe });
+    } else if (newSource === 'client') {
+      onFetchBenchmark({ timeframe });
     }
   };
 
@@ -408,7 +408,7 @@ export function BenchmarkTab({
       {error && !report && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" /> {error}
-          <button onClick={() => onFetchBenchmark({ portfolioId: selectedPortfolioId || undefined, clientId: source === 'client' && clientData ? clientData.id : undefined, timeframe })} className="ml-auto text-xs underline">Retry</button>
+          <button onClick={() => onFetchBenchmark({ portfolioId: selectedPortfolioId || undefined, timeframe })} className="ml-auto text-xs underline">Retry</button>
         </div>
       )}
 

@@ -6,24 +6,16 @@ import {
   MonthlyPoint,
   BenchmarkTimePoint,
   BenchmarkMetrics,
-  AdminBenchmarkResponse,
-  AdminBenchmarkMeta,
+  BenchmarkResponse,
+  BenchmarkMeta,
   Cashflow,
   PortfolioRowForBenchmark,
-  ExistingClientForBenchmark,
   FolioForBenchmark,
   Timeframe,
 } from '@finanalysis/shared';
-import { CATEGORY_BENCHMARK_MAP } from '@finanalysis/shared';
+import { CATEGORY_BENCHMARK_MAP, TIMEFRAME_DAYS } from '@finanalysis/shared';
 
 const prisma = new PrismaClient();
-
-const TIMEFRAME_DAYS: Record<Timeframe, number> = {
-  '1Y': 365,
-  '3Y': 1095,
-  '5Y': 1825,
-  'ALL': 7300,
-};
 
 function calculateXIRR(cashflows: Cashflow[]): number {
   if (cashflows.length < 2) return 0;
@@ -290,7 +282,7 @@ async function benchmarkUploadedPortfolio(
   rows: PortfolioRow[],
   assessment: Assessment,
   timeframe: Timeframe
-): Promise<AdminBenchmarkResponse> {
+): Promise<BenchmarkResponse> {
   const startTime = Date.now();
   const timeframeDays = TIMEFRAME_DAYS[timeframe];
 
@@ -362,7 +354,7 @@ async function benchmarkUploadedPortfolio(
     categoryAverage: categoryAvgSeries[i]?.value || 0,
   }));
 
-  const meta: AdminBenchmarkMeta = {
+  const meta: BenchmarkMeta = {
     fundCount: rows.length,
     dominantCategory,
     benchmarkUsed: CATEGORY_BENCHMARK_MAP[dominantCategory] || CATEGORY_BENCHMARK_MAP.default,
@@ -395,7 +387,7 @@ async function benchmarkCRMImport(
   client: ExistingClient,
   folios: Folio[],
   timeframe: Timeframe
-): Promise<AdminBenchmarkResponse> {
+): Promise<BenchmarkResponse> {
   const startTime = Date.now();
   const timeframeDays = TIMEFRAME_DAYS[timeframe];
 
@@ -444,7 +436,7 @@ async function benchmarkCRMImport(
     warnings.push('No reported XIRR/CAGR; metrics may be inaccurate');
   }
 
-  const meta: AdminBenchmarkMeta = {
+  const meta: BenchmarkMeta = {
     fundCount: folios.length,
     dominantCategory,
     benchmarkUsed: CATEGORY_BENCHMARK_MAP[dominantCategory] || CATEGORY_BENCHMARK_MAP.default,
@@ -473,11 +465,11 @@ async function benchmarkCRMImport(
   };
 }
 
-export async function generateAdminBenchmarkReport(params: {
+export async function generateBenchmarkReport(params: {
   portfolioId?: string;
   clientId?: string;
   timeframe: Timeframe;
-}): Promise<AdminBenchmarkResponse> {
+}): Promise<BenchmarkResponse> {
   const { portfolioId, clientId, timeframe } = params;
 
   if (portfolioId) {

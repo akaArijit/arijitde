@@ -10,7 +10,6 @@ import { authMiddleware } from '../middleware/auth';
 import type { AuthenticatedRequest } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
 import { Role, Prisma, LeadStatus } from '@prisma/client';
-import { generateAdminBenchmarkReport } from '../services/benchmarking';
 
 const router = Router();
 

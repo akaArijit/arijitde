@@ -7,7 +7,7 @@ import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
 import type { AuthenticatedRequest } from '../middleware/auth';
 import { UploadType, FundType } from '@prisma/client';
-import { generateAdminBenchmarkReport } from '../services/benchmarking';
+import { generateBenchmarkReport } from '../services/benchmarking';
 import { Timeframe } from '@finanalysis/shared';
 
 const router = Router();
@@ -648,6 +648,125 @@ router.get(
   },
 );
 
+// GET /api/portfolio/benchmark
+const benchmarkQuerySchema = z.object({
+  portfolioId: z.string().uuid('Invalid portfolio ID format').optional(),
+  timeframe: z.enum(['1Y', '3Y', '5Y', 'ALL']).default('1Y'),
+});
+
+router.get(
+  '/benchmark',
+  authMiddleware,
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const parsed = benchmarkQuerySchema.parse(req.query);
+      const { portfolioId, timeframe } = parsed;
+
+      const userId = req.user!.id;
+
+      // If portfolioId provided, verify ownership
+      if (portfolioId) {
+        const portfolio = await prisma.portfolio.findUnique({
+          where: { id: portfolioId },
+          select: { userId: true },
+        });
+
+        if (!portfolio) {
+          res.status(404).json({
+            success: false,
+            error: 'Portfolio not found',
+          });
+          return;
+        }
+
+        if (portfolio.userId !== userId) {
+          res.status(403).json({
+            success: false,
+            error: 'Forbidden: You do not own this portfolio',
+          });
+          return;
+        }
+
+        const report = await generateBenchmarkReport({
+          portfolioId,
+          timeframe: timeframe as Timeframe,
+        });
+
+        res.json({
+          success: true,
+          data: report,
+        });
+        return;
+      }
+
+      // No portfolioId provided - try to match CRM client data
+      let clientMatch = null;
+
+      // 1. Match by PAN first
+      if (req.user!.pan) {
+        clientMatch = await prisma.existingClient.findFirst({
+          where: {
+            pan: { equals: req.user!.pan.trim(), mode: 'insensitive' },
+          },
+          include: {
+            folios: {
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        });
+      }
+
+      // 2. Fallback: match by email
+      if (!clientMatch && req.user!.email) {
+        clientMatch = await prisma.existingClient.findFirst({
+          where: {
+            email: { equals: req.user!.email.trim(), mode: 'insensitive' },
+          },
+          include: {
+            folios: {
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        });
+      }
+
+      // 3. Fallback: match by name
+      if (!clientMatch && req.user!.name) {
+        clientMatch = await prisma.existingClient.findFirst({
+          where: {
+            name: { equals: req.user!.name.trim(), mode: 'insensitive' },
+          },
+          include: {
+            folios: {
+              orderBy: { createdAt: 'desc' },
+            },
+          },
+        });
+      }
+
+      if (!clientMatch) {
+        res.status(404).json({
+          success: false,
+          error: 'No portfolio or certified valuation data available. Please upload a portfolio or ensure your CRM data is imported.',
+        });
+        return;
+      }
+
+      const report = await generateBenchmarkReport({
+        clientId: clientMatch.id,
+        timeframe: timeframe as Timeframe,
+      });
+
+      res.json({
+        success: true,
+        data: report,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
 // 3. GET /api/portfolio/:id
 const getPortfolioParamsSchema = z.object({
   id: z.string().uuid('Invalid portfolio ID format'),
@@ -713,125 +832,6 @@ router.get(
       res.json({
         success: true,
         data: portfolios,
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
-);
-
-// GET /api/portfolio/benchmark
-const benchmarkQuerySchema = z.object({
-  portfolioId: z.string().uuid('Invalid portfolio ID format').optional(),
-  timeframe: z.enum(['1Y', '3Y', '5Y', 'ALL']).default('1Y'),
-});
-
-router.get(
-  '/benchmark',
-  authMiddleware,
-  async (req: AuthenticatedRequest, res: Response, next) => {
-    try {
-      const parsed = benchmarkQuerySchema.parse(req.query);
-      const { portfolioId, timeframe } = parsed;
-
-      const userId = req.user!.id;
-
-      // If portfolioId provided, verify ownership
-      if (portfolioId) {
-        const portfolio = await prisma.portfolio.findUnique({
-          where: { id: portfolioId },
-          select: { userId: true },
-        });
-
-        if (!portfolio) {
-          res.status(404).json({
-            success: false,
-            error: 'Portfolio not found',
-          });
-          return;
-        }
-
-        if (portfolio.userId !== userId) {
-          res.status(403).json({
-            success: false,
-            error: 'Forbidden: You do not own this portfolio',
-          });
-          return;
-        }
-
-        const report = await generateAdminBenchmarkReport({
-          portfolioId,
-          timeframe: timeframe as Timeframe,
-        });
-
-        res.json({
-          success: true,
-          data: report,
-        });
-        return;
-      }
-
-      // No portfolioId provided - try to match CRM client data
-      let clientMatch = null;
-
-      // 1. Match by PAN first
-      if (req.user!.pan) {
-        clientMatch = await prisma.existingClient.findFirst({
-          where: {
-            pan: { equals: req.user!.pan.trim(), mode: 'insensitive' },
-          },
-          include: {
-            folios: {
-              orderBy: { createdAt: 'desc' },
-            },
-          },
-        });
-      }
-
-      // 2. Fallback: match by email
-      if (!clientMatch && req.user!.email) {
-        clientMatch = await prisma.existingClient.findFirst({
-          where: {
-            email: { equals: req.user!.email.trim(), mode: 'insensitive' },
-          },
-          include: {
-            folios: {
-              orderBy: { createdAt: 'desc' },
-            },
-          },
-        });
-      }
-
-      // 3. Fallback: match by name
-      if (!clientMatch && req.user!.name) {
-        clientMatch = await prisma.existingClient.findFirst({
-          where: {
-            name: { equals: req.user!.name.trim(), mode: 'insensitive' },
-          },
-          include: {
-            folios: {
-              orderBy: { createdAt: 'desc' },
-            },
-          },
-        });
-      }
-
-      if (!clientMatch) {
-        res.status(404).json({
-          success: false,
-          error: 'No portfolio or certified valuation data available. Please upload a portfolio or ensure your CRM data is imported.',
-        });
-        return;
-      }
-
-      const report = await generateAdminBenchmarkReport({
-        clientId: clientMatch.id,
-        timeframe: timeframe as Timeframe,
-      });
-
-      res.json({
-        success: true,
-        data: report,
       });
     } catch (error) {
       next(error);

@@ -3,6 +3,8 @@ interface CacheEntry<T> {
   expiry: number;
 }
 
+import type { MonthlyPoint } from '@finanalysis/shared';
+
 const cache = new Map<string, CacheEntry<any>>();
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
@@ -36,11 +38,6 @@ interface YahooChartResponse {
     }>;
     error: null | any;
   };
-}
-
-export interface MonthlyPoint {
-  date: string;
-  value: number;
 }
 
 async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {

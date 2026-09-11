@@ -55,8 +55,8 @@ import {
 import Footer from '@/components/Footer';
 import { BenchmarkTab } from '@/components/dashboard/BenchmarkTab';
 import {
-  AdminBenchmarkResponse,
-  AdminBenchmarkMeta,
+  BenchmarkResponse,
+  BenchmarkMeta,
   Timeframe,
   BenchmarkTimePoint,
   BenchmarkMetrics,
@@ -664,7 +664,7 @@ export default function ClientDashboard() {
   const [currentTime, setCurrentTime] = useState('');
 
   // Benchmarking States
-  const [benchmarkReport, setBenchmarkReport] = useState<AdminBenchmarkResponse | null>(null);
+  const [benchmarkReport, setBenchmarkReport] = useState<BenchmarkResponse | null>(null);
   const [benchmarkLoading, setBenchmarkLoading] = useState(false);
   const [benchmarkError, setBenchmarkError] = useState<string | null>(null);
   const [benchmarkTimeframe, setBenchmarkTimeframe] = useState<Timeframe>('1Y');
@@ -1024,7 +1024,7 @@ export default function ClientDashboard() {
     }
   };
 
-  const handleFetchBenchmark = async (params: { portfolioId?: string; clientId?: string; timeframe: Timeframe }) => {
+  const handleFetchBenchmark = async (params: { portfolioId?: string; timeframe: Timeframe }) => {
     setBenchmarkLoading(true);
     setBenchmarkError(null);
     try {

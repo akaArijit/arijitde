@@ -36,7 +36,7 @@ export interface BenchmarkMetrics {
   computationTimeMs: number;
 }
 
-export interface AdminBenchmarkMeta {
+export interface BenchmarkMeta {
   fundCount: number;
   dominantCategory: string;
   benchmarkUsed: string;
@@ -44,13 +44,13 @@ export interface AdminBenchmarkMeta {
   warnings?: string[];
 }
 
-export interface AdminBenchmarkResponse {
+export interface BenchmarkResponse {
   source: DataSource;
   clientName?: string;
   portfolioId?: string;
   timeSeries: BenchmarkTimePoint[];
   metrics: BenchmarkMetrics;
-  meta: AdminBenchmarkMeta;
+  meta: BenchmarkMeta;
 }
 
 export interface Cashflow {

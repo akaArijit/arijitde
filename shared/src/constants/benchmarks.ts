@@ -1,3 +1,5 @@
+import type { Timeframe } from '../types/benchmarking';
+
 export const BENCHMARK_INDICES = {
   NIFTY_50_TRI: '^NSEI',
   NIFTY_500_TRI: '^NSE500',
@@ -26,7 +28,7 @@ export const CATEGORY_BENCHMARK_MAP: Record<string, string> = {
 
 export const RISK_FREE_RATE = 0.07;
 
-export const TIMEFRAME_DAYS: Record<string, number> = {
+export const TIMEFRAME_DAYS: Record<Timeframe, number> = {
   '1Y': 365,
   '3Y': 1095,
   '5Y': 1825,

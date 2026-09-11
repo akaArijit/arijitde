@@ -530,7 +530,7 @@ The Benchmarking module is an **Admin Dashboard only** feature that compares bot
 - If `portfolioId` provided: Verifies ownership, then benchmarks the uploaded portfolio with full SIP reconstruction
 - If no `portfolioId`: Attempts to match user's PAN/email/name against CRM `ExistingClient` data; if found, benchmarks using reported metrics (CAGR/XIRR approximation)
 
-**Response:** `AdminBenchmarkResponse` with timeSeries[], metrics{}, meta{}
+**Response:** `BenchmarkResponse` with timeSeries[], metrics{}, meta{}
 
 ### 12.6 Frontend Component
 
@@ -635,7 +635,7 @@ src/
 │   ├── portfolio.ts
 │   ├── scoring.ts
 │   ├── payment.ts
-│   └── benchmarking.ts     # BenchmarkTimePoint, BenchmarkMetrics, AdminBenchmarkResponse
+│   └── benchmarking.ts     # BenchmarkTimePoint, BenchmarkMetrics, BenchmarkResponse
 └── constants/
     ├── goals.ts            # Labels, horizons, options
     ├── scoring.ts          # Thresholds, weights, benchmarks
