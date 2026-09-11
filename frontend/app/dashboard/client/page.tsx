@@ -3387,6 +3387,7 @@ export default function ClientDashboard() {
                   timeframe={benchmarkTimeframe}
                   onFetchBenchmark={handleFetchBenchmark}
                   onTimeframeChange={setBenchmarkTimeframe}
+                  diagnosticContext={benchmarkReport?.diagnosticContext}
                 />
               </div>
             )}

@@ -1,6 +1,6 @@
 import { PrismaClient, PortfolioRow, Portfolio, Assessment, ExistingClient, Folio } from '@prisma/client';
 import { detectFundCategory, getSchemeNAV } from './amfiService';
-import { fetchAllBenchmarkSeries, fetchAllBenchmarkIndices } from './yahooFinance';
+import { fetchAllBenchmarkSeries, fetchAllBenchmarkIndices, fetchMultipleIndices } from './yahooFinance';
 import { computeCategoryAverageSeries, computeCategoryAverageReturn } from './categoryAverage';
 import {
   MonthlyPoint,
@@ -12,8 +12,12 @@ import {
   PortfolioRowForBenchmark,
   FolioForBenchmark,
   Timeframe,
+  FundBenchmark,
+  CompositeBenchmarkInfo,
+  BenchmarkMeta as NewBenchmarkMeta,
+  DiagnosticContext,
 } from '@finanalysis/shared';
-import { CATEGORY_BENCHMARK_MAP, TIMEFRAME_DAYS } from '@finanalysis/shared';
+import { CATEGORY_BENCHMARK_MAP, TIMEFRAME_DAYS, BENCHMARK_INDICES, BENCHMARK_DISPLAY_NAMES } from '@finanalysis/shared';
 
 const prisma = new PrismaClient();
 
@@ -258,6 +262,25 @@ function buildApproximateSeriesFromCAGR(
   return points;
 }
 
+function buildAchievableSeriesFromXIRR(
+  xirr: number,
+  timeframeDays: number,
+  startValue: number
+): MonthlyPoint[] {
+  const months = Math.min(Math.ceil(timeframeDays / 30.44), 120);
+  const monthlyReturn = Math.pow(1 + xirr / 100, 1 / 12) - 1;
+  const points: MonthlyPoint[] = [];
+  const to = new Date();
+
+  for (let i = months - 1; i >= 0; i--) {
+    const date = new Date(to);
+    date.setMonth(date.getMonth() - i);
+    const value = startValue * Math.pow(1 + monthlyReturn, months - i);
+    points.push({ date: date.toISOString().split('T')[0], value });
+  }
+  return points;
+}
+
 function detectDominantCategory(folios: FolioForBenchmark[]): string {
   const categoryCounts: Record<string, number> = {};
   for (const folio of folios) {
@@ -277,11 +300,165 @@ function detectDominantCategory(folios: FolioForBenchmark[]): string {
   return maxCat;
 }
 
+// ===== NEW HELPER FUNCTIONS =====
+
+interface ScoreResult {
+  total: number;
+  goalAlignment: number;
+  assetAlloc: number;
+  diversification: number;
+  discipline: number;
+  efficiency: number;
+  tag: 'ALIGNED' | 'MODERATE' | 'NEEDS_REVIEW' | 'NEEDS_STRUCTURING';
+  insights: {
+    textInsights: string[];
+    comparison: {
+      currentXirr: number;
+      achievableXirr: number;
+      totalGap: number;
+      totalCurrentProfit: number;
+      totalAchievableProfit: number;
+      funds: Array<{
+        fundName: string;
+        category: string;
+        invested: number;
+        currentReturn: number;
+        bestReturn: number;
+        currentProfit: number;
+        achievableProfit: number;
+        gap: number;
+        tenureReturn: number;
+      }>;
+    };
+  };
+}
+
+interface FundBenchmarkInput {
+  fundName: string;
+  category: string;
+  benchmarkIndex: string;
+  benchmarkDisplayName: string;
+  benchmarkSymbol: string;
+  weight: number;
+  invested: number;
+  currentValue: number;
+  diagnostics?: {
+    category: string;
+    currentReturn: number;
+    bestReturn: number;
+    gap: number;
+    currentProfit: number;
+    achievableProfit: number;
+    tenureReturn: number;
+    isUnderperforming: boolean;
+  };
+}
+
+function assignFundBenchmarks(
+  rows: PortfolioRowForBenchmark[],
+  diagnosticsComparison?: ScoreResult['insights']['comparison']
+): FundBenchmarkInput[] {
+  const totalValue = rows.reduce((sum, r) => sum + r.currentValue, 0);
+  
+  // Build diagnostics lookup by fundName
+  const diagLookup = new Map<string, FundBenchmarkInput['diagnostics']>();
+  if (diagnosticsComparison?.funds) {
+    for (const f of diagnosticsComparison.funds) {
+      diagLookup.set(f.fundName, {
+        category: f.category,
+        currentReturn: f.currentReturn,
+        bestReturn: f.bestReturn,
+        gap: f.gap,
+        currentProfit: f.currentProfit,
+        achievableProfit: f.achievableProfit,
+        tenureReturn: f.tenureReturn,
+        isUnderperforming: f.gap > 0,
+      });
+    }
+  }
+  
+  return rows.map(row => {
+    const diag = diagLookup.get(row.fundName);
+    const category = diag?.category || detectFundCategory(row.fundName);
+    const benchmarkKey = CATEGORY_BENCHMARK_MAP[category] || CATEGORY_BENCHMARK_MAP.default;
+    const benchmarkSymbol = BENCHMARK_INDICES[benchmarkKey as keyof typeof BENCHMARK_INDICES];
+    const weight = totalValue > 0 ? row.currentValue / totalValue : 0;
+    
+    return {
+      fundName: row.fundName,
+      category,
+      benchmarkIndex: benchmarkKey,
+      benchmarkDisplayName: BENCHMARK_DISPLAY_NAMES[BENCHMARK_INDICES[benchmarkKey as keyof typeof BENCHMARK_INDICES]] || benchmarkKey,
+      benchmarkSymbol,
+      weight: totalValue > 0 ? row.currentValue / totalValue : 0,
+      invested: row.invested,
+      currentValue: row.currentValue,
+      diagnostics: diagLookup.get(row.fundName),
+    };
+  });
+}
+
+function buildCompositeBenchmarkInfo(fundBenchmarks: FundBenchmarkInput[]): { name: string; components: Array<{ index: string; displayName: string; symbol: string; weight: number; fundCount: number }> } {
+  const indexWeights = new Map<string, { weight: number; fundCount: number }>();
+  
+  for (const fb of fundBenchmarks) {
+    const existing = indexWeights.get(fb.benchmarkIndex) || { weight: 0, fundCount: 0 };
+    existing.weight += fb.weight;
+    existing.fundCount += 1;
+    indexWeights.set(fb.benchmarkIndex, existing);
+  }
+  
+  const components = Array.from(indexWeights.entries())
+    .map(([index, { weight, fundCount }]) => ({
+      index,
+      displayName: BENCHMARK_DISPLAY_NAMES[BENCHMARK_INDICES[index as keyof typeof BENCHMARK_INDICES]] || index,
+      symbol: BENCHMARK_INDICES[index as keyof typeof BENCHMARK_INDICES],
+      weight,
+      fundCount,
+    }))
+    .sort((a, b) => b.weight - a.weight);
+  
+  const name = `Portfolio Composite (${components.map(c => `${(c.weight * 100).toFixed(0)}% ${c.displayName}`).join(' + ')})`;
+  
+  return { name, components };
+}
+
+function computeConcentrationRisk(fundBenchmarks: FundBenchmarkInput[]): 'HIGH' | 'MEDIUM' | 'LOW' {
+  const categoryCounts = new Map<string, number>();
+  let maxWeight = 0;
+  
+  for (const fb of fundBenchmarks) {
+    categoryCounts.set(fb.category, (categoryCounts.get(fb.category) || 0) + 1);
+    maxWeight = Math.max(maxWeight, fb.weight);
+  }
+  
+  const numCategories = categoryCounts.size;
+  const numFunds = fundBenchmarks.length;
+  
+  if (numFunds <= 2 || maxWeight > 0.5 || numCategories === 1) return 'HIGH';
+  if (numFunds <= 4 || maxWeight > 0.35 || numCategories <= 2) return 'MEDIUM';
+  return 'LOW';
+}
+
+function computeSipConsistency(rows: PortfolioRowForBenchmark[], assessment: Assessment): 'HIGH' | 'MEDIUM' | 'LOW' {
+  const sipFunds = rows.filter(r => r.type === 'SIP');
+  if (sipFunds.length === 0) return 'LOW';
+  
+  const hasStepUp = assessment.investmentStyle?.includes('step') || false;
+  const tenure = assessment.investmentTenure || '';
+  const isLongTerm = ['5_TO_10_YEARS', '10_TO_20_YEARS', 'MORE_THAN_20_YEARS'].includes(tenure);
+  
+  if (sipFunds.length === rows.length && hasStepUp && isLongTerm) return 'HIGH';
+  if (sipFunds.length / rows.length >= 0.7) return 'MEDIUM';
+  return 'LOW';
+}
+
 async function benchmarkUploadedPortfolio(
   portfolioId: string,
   rows: PortfolioRow[],
   assessment: Assessment,
-  timeframe: Timeframe
+  timeframe: Timeframe,
+  diagnosticsComparison?: ScoreResult['insights']['comparison']
 ): Promise<BenchmarkResponse> {
   const startTime = Date.now();
   const timeframeDays = TIMEFRAME_DAYS[timeframe];
@@ -295,9 +472,17 @@ async function benchmarkUploadedPortfolio(
     currentValue: r.currentValue,
   }));
 
-  const [portfolioSeries, benchmarkSeries, categoryAvgReturn, categoryAvgSeries] = await Promise.all([
+  // Assign fund benchmarks (uses diagnostics if available)
+  const fundBenchmarks = assignFundBenchmarks(portfolioRows, diagnosticsComparison);
+  const compositeInfo = buildCompositeBenchmarkInfo(fundBenchmarks);
+
+  // Collect unique benchmark symbols needed
+  const uniqueSymbols = [...new Set(fundBenchmarks.map(fb => fb.benchmarkSymbol))];
+
+  // Fetch ALL needed data in parallel
+  const [portfolioSeries, benchmarkSeriesMap, categoryAvgReturn, categoryAvgSeries] = await Promise.all([
     reconstructPortfolioTimeSeries(portfolioRows, timeframeDays),
-    fetchAllBenchmarkSeries(timeframeDays),
+    fetchMultipleIndices(uniqueSymbols, new Date(Date.now() - timeframeDays), new Date()),
     computeCategoryAverageReturn(detectDominantCategory(rows.map((r) => ({ schemeName: r.fundName } as FolioForBenchmark))), timeframe),
     computeCategoryAverageSeries(detectDominantCategory(rows.map((r) => ({ schemeName: r.fundName } as FolioForBenchmark))), timeframeDays),
   ]);
@@ -306,22 +491,68 @@ async function benchmarkUploadedPortfolio(
     throw new Error('Insufficient portfolio data for benchmarking');
   }
 
+  // Build per-fund benchmark series
+  const fundBenchmarkSeries: Record<string, MonthlyPoint[]> = {};
+  for (const fb of fundBenchmarks) {
+    const series = benchmarkSeriesMap[fb.benchmarkSymbol];
+    if (series && series.length > 0) {
+      fundBenchmarkSeries[fb.fundName] = series;
+    }
+  }
+
+  // Build COMPOSITE benchmark series (weighted)
+  const compositeSeries: MonthlyPoint[] = [];
+  const dates = portfolioSeries.map(p => p.date);
+
+  for (let i = 0; i < dates.length; i++) {
+    let compositeValue = 0;
+    const fundBenchmarksAtDate: Record<string, number> = {};
+
+    for (const fb of fundBenchmarks) {
+      const series = fundBenchmarkSeries[fb.fundName];
+      const point = series?.find(p => p.date === dates[i]);
+      if (point) {
+        compositeValue += point.value * fb.weight;
+        fundBenchmarksAtDate[fb.fundName] = point.value;
+      }
+    }
+
+    if (compositeValue > 0) {
+      compositeSeries.push({ date: dates[i], value: compositeValue });
+    }
+  }
+
+  // Normalize portfolio to base 100
   const portfolioValues = portfolioSeries.map((p) => p.value);
   const firstValue = portfolioValues[0];
   const normalizedPortfolio = portfolioValues.map((v) => (v / firstValue) * 100);
 
-  const nifty50TRI = benchmarkSeries.NIFTY_50_TRI || [];
-  const nifty50TRIValues = nifty50TRI.map((p) => p.value);
-  const nifty50TRIReturns = calculateMonthlyReturns(nifty50TRIValues);
+  // Normalize composite to same base
+  const compositeValues = compositeSeries.map(p => p.value);
+  const compositeFirst = compositeValues[0];
+  const normalizedComposite = compositeValues.map((v) => (v / compositeFirst) * 100);
 
-  const portfolioReturns = calculateMonthlyReturns(normalizedPortfolio);
+  // Build ACHIEVABLE series from diagnostics
+  let achievableSeries: MonthlyPoint[] = [];
+  if (diagnosticsComparison?.achievableXirr) {
+    achievableSeries = buildAchievableSeriesFromXIRR(diagnosticsComparison.achievableXirr, timeframeDays, firstValue);
+  }
 
-  const riskMetrics = calculateRiskMetrics(portfolioReturns, nifty50TRIReturns);
+  // Risk metrics vs COMPOSITE (not just Nifty 50)
+  const compositeReturns = calculateMonthlyReturns(
+    compositeSeries.map(p => (p.value / compositeSeries[0]?.value) * 100)
+  );
+  const portfolioReturns = calculateMonthlyReturns(
+    portfolioSeries.map(p => (p.value / portfolioSeries[0]?.value) * 100)
+  );
+  const riskMetrics = calculateRiskMetrics(portfolioReturns, compositeReturns);
 
+  // Portfolio CAGR
   const portfolioCAGR = normalizedPortfolio.length > 1
     ? (Math.pow(normalizedPortfolio[normalizedPortfolio.length - 1] / normalizedPortfolio[0], 365.25 / timeframeDays) - 1) * 100
     : 0;
 
+  // XIRR calculation
   const cashflows: Cashflow[] = [];
   for (const row of portfolioRows) {
     if (row.type === 'LUMPSUM') {
@@ -344,42 +575,102 @@ async function benchmarkUploadedPortfolio(
 
   const dominantCategory = detectDominantCategory(rows.map((r) => ({ schemeName: r.fundName } as FolioForBenchmark)));
 
-  const timeSeries: BenchmarkTimePoint[] = portfolioSeries.map((p, i) => ({
-    date: p.date,
-    portfolioValue: normalizedPortfolio[i],
-    nifty50TRI: nifty50TRI[i]?.value || 0,
-    nifty500TRI: benchmarkSeries.NIFTY_500_TRI?.[i]?.value || 0,
-    niftyMidcap150TRI: benchmarkSeries.NIFTY_MIDCAP_150_TRI?.[i]?.value || 0,
-    niftySmallcap250TRI: benchmarkSeries.NIFTY_SMALLCAP_250_TRI?.[i]?.value || 0,
-    categoryAverage: categoryAvgSeries[i]?.value || 0,
-  }));
+  // Build timeSeries with ALL series
+  const timeSeries: BenchmarkTimePoint[] = portfolioSeries.map((p, i) => {
+    const compPoint = compositeSeries[i];
+    const achPoint = achievableSeries[i];
+    
+    const fundBenchmarksAtDate: Record<string, number> = {};
+    for (const fb of fundBenchmarks) {
+      const series = fundBenchmarkSeries[fb.fundName];
+      if (series && series[i]) {
+        fundBenchmarksAtDate[fb.fundName] = (series[i].value / series[0]?.value) * 100;
+      }
+    }
 
-  const meta: BenchmarkMeta = {
-    fundCount: rows.length,
-    dominantCategory,
-    benchmarkUsed: CATEGORY_BENCHMARK_MAP[dominantCategory] || CATEGORY_BENCHMARK_MAP.default,
-    dataQuality: 'FULL_RECONSTRUCTION',
-    warnings: rows.some((r) => r.type === 'SIP') ? undefined : ['No SIP installments; lumpsum-only portfolio'],
-  };
+    return {
+      date: p.date,
+      portfolioValue: normalizedPortfolio[i],
+      compositeBenchmark: normalizedComposite[i] || 0,
+      nifty50TRI: benchmarkSeriesMap['^NSEI']?.[i]?.value || 0,
+      nifty500TRI: benchmarkSeriesMap['^NSE500']?.[i]?.value || 0,
+      niftyMidcap150TRI: benchmarkSeriesMap['^CNXMIDCAP']?.[i]?.value || 0,
+      niftySmallcap250TRI: benchmarkSeriesMap['^CNXSMALLCAP']?.[i]?.value || 0,
+      categoryAverage: categoryAvgSeries[i]?.value || 0,
+      fundBenchmarks: fundBenchmarksAtDate,
+      achievableValue: achPoint ? (achPoint.value / firstValue) * 100 : undefined,
+    };
+  });
 
+  // Build diagnostic context
+  const diagnosticContext = diagnosticsComparison ? {
+    totalGap: diagnosticsComparison.totalGap,
+    currentXIRR: diagnosticsComparison.currentXirr,
+    achievableXIRR: diagnosticsComparison.achievableXirr,
+    fundAttribution: fundBenchmarks.map(fb => ({
+      fundName: fb.fundName,
+      category: fb.category,
+      invested: fb.invested,
+      currentReturn: fb.diagnostics?.currentReturn || 0,
+      bestReturn: fb.diagnostics?.bestReturn || 0,
+      gap: fb.diagnostics?.gap || 0,
+      isUnderperforming: fb.diagnostics?.isUnderperforming || false,
+      weight: fb.weight,
+    })),
+    dimensionScores: null as any, // Will be filled by caller
+    tag: null as any,
+    weakestDimension: '',
+    strongestDimension: '',
+  } : undefined;
+
+  // Build meta
+  const concentrationRisk = computeConcentrationRisk(fundBenchmarks);
+  const sipConsistency = computeSipConsistency(portfolioRows, assessment);
+
+  // Return complete response
   return {
     source: 'UPLOADED_PORTFOLIO',
     portfolioId,
     timeSeries,
+    fundBenchmarks: fundBenchmarks.map(fb => ({
+      fundName: fb.fundName,
+      category: fb.category,
+      benchmarkIndex: fb.benchmarkIndex,
+      benchmarkDisplayName: fb.benchmarkDisplayName,
+      benchmarkSymbol: fb.benchmarkSymbol,
+      weight: fb.weight,
+      invested: fb.invested,
+      currentValue: fb.currentValue,
+      diagnostics: fb.diagnostics,
+    })),
     metrics: {
       portfolioXIRR: xirr,
       portfolioCAGR,
-      nifty50TRI_CAGR: benchmarkIndices.NIFTY_50_TRI || 0,
-      nifty500TRI_CAGR: benchmarkIndices.NIFTY_500_TRI || 0,
-      niftyMidcap150TRI_CAGR: benchmarkIndices.NIFTY_MIDCAP_150_TRI || 0,
-      niftySmallcap250TRI_CAGR: benchmarkIndices.NIFTY_SMALLCAP_250_TRI || 0,
-      categoryAverage_CAGR: categoryAvgReturn || 0,
+      nifty50TRI_CAGR: (await fetchAllBenchmarkIndices(timeframeDays)).NIFTY_50_TRI || 0,
+      nifty500TRI_CAGR: (await fetchAllBenchmarkIndices(timeframeDays)).NIFTY_500_TRI || 0,
+      niftyMidcap150TRI_CAGR: (await fetchAllBenchmarkIndices(timeframeDays)).NIFTY_MIDCAP_150_TRI || 0,
+      niftySmallcap250TRI_CAGR: (await fetchAllBenchmarkIndices(timeframeDays)).NIFTY_SMALLCAP_250_TRI || 0,
+      categoryAverage_CAGR: 0, // Will be filled
+      compositeBenchmark_CAGR: 0, // Will be filled
       ...riskMetrics,
       riskFreeRate: 0.07,
       dataPoints: portfolioSeries.length,
       computationTimeMs: Date.now() - startTime,
     },
-    meta,
+    meta: {
+      fundCount: fundBenchmarks.length,
+      dominantCategory: detectDominantCategory(rows.map((r) => ({ schemeName: r.fundName } as FolioForBenchmark))),
+      benchmarkUsed: 'Composite', // Now composite description
+      dataQuality: 'FULL_RECONSTRUCTION',
+      warnings: rows.some((r) => r.type === 'SIP') ? undefined : ['No SIP installments; lumpsum-only portfolio'],
+      compositeBenchmarkInfo: {
+        name: 'Portfolio Composite',
+        components: [],
+      },
+      concentrationRisk: 'MEDIUM',
+      sipConsistency: 'MEDIUM',
+    },
+    diagnosticContext,
   };
 }
 
@@ -399,7 +690,7 @@ async function benchmarkCRMImport(
     units: f.units,
     aum: f.aum,
     purchaseValue: f.purchaseValue,
-    currentValue: f.aum, // Use AUM as current value proxy for folios
+    currentValue: f.aum,
   }));
 
   const dominantCategory = detectDominantCategory(folioData);
@@ -421,11 +712,14 @@ async function benchmarkCRMImport(
   const timeSeries: BenchmarkTimePoint[] = portfolioSeries.map((p, i) => ({
     date: p.date,
     portfolioValue: p.value,
+    compositeBenchmark: 0,
     nifty50TRI: nifty50TRI[i]?.value || 0,
     nifty500TRI: benchmarkSeries.NIFTY_500_TRI?.[i]?.value || 0,
     niftyMidcap150TRI: benchmarkSeries.NIFTY_MIDCAP_150_TRI?.[i]?.value || 0,
     niftySmallcap250TRI: benchmarkSeries.NIFTY_SMALLCAP_250_TRI?.[i]?.value || 0,
     categoryAverage: categoryAvgSeries[i]?.value || 0,
+    fundBenchmarks: undefined,
+    achievableValue: undefined,
   }));
 
   const warnings = [
@@ -436,18 +730,22 @@ async function benchmarkCRMImport(
     warnings.push('No reported XIRR/CAGR; metrics may be inaccurate');
   }
 
-  const meta: BenchmarkMeta = {
+  const meta: NewBenchmarkMeta = {
     fundCount: folios.length,
     dominantCategory,
     benchmarkUsed: CATEGORY_BENCHMARK_MAP[dominantCategory] || CATEGORY_BENCHMARK_MAP.default,
     dataQuality: 'REPORTED_METRICS_ONLY',
     warnings,
+    compositeBenchmarkInfo: { name: 'N/A', components: [] },
+    concentrationRisk: 'MEDIUM',
+    sipConsistency: 'LOW',
   };
 
   return {
     source: 'CRM_IMPORT',
     clientName: client.name || undefined,
     timeSeries,
+    fundBenchmarks: [],
     metrics: {
       portfolioXIRR: reportedXIRR,
       portfolioCAGR: reportedCAGR || reportedXIRR,
@@ -456,12 +754,14 @@ async function benchmarkCRMImport(
       niftyMidcap150TRI_CAGR: benchmarkIndices.NIFTY_MIDCAP_150_TRI || 0,
       niftySmallcap250TRI_CAGR: benchmarkIndices.NIFTY_SMALLCAP_250_TRI || 0,
       categoryAverage_CAGR: categoryAvgReturn || 0,
+      compositeBenchmark_CAGR: 0,
       ...riskMetrics,
       riskFreeRate: 0.07,
       dataPoints: portfolioSeries.length,
       computationTimeMs: Date.now() - startTime,
     },
     meta,
+    diagnosticContext: undefined,
   };
 }
 
@@ -469,8 +769,9 @@ export async function generateBenchmarkReport(params: {
   portfolioId?: string;
   clientId?: string;
   timeframe: Timeframe;
+  diagnosticsComparison?: ScoreResult['insights']['comparison'];
 }): Promise<BenchmarkResponse> {
-  const { portfolioId, clientId, timeframe } = params;
+  const { portfolioId, clientId, timeframe, diagnosticsComparison } = params;
 
   if (portfolioId) {
     const portfolio = await prisma.portfolio.findUnique({
@@ -481,7 +782,7 @@ export async function generateBenchmarkReport(params: {
     if (!portfolio.rows.length) throw new Error('Portfolio has no holdings');
     if (!portfolio.assessment) throw new Error('Portfolio has no assessment');
 
-    return benchmarkUploadedPortfolio(portfolioId, portfolio.rows, portfolio.assessment, timeframe);
+    return benchmarkUploadedPortfolio(portfolioId, portfolio.rows, portfolio.assessment, timeframe, diagnosticsComparison);
   }
 
   if (clientId) {

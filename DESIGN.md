@@ -541,8 +541,11 @@ The Benchmarking module is an **Admin Dashboard only** feature that compares bot
 - Portfolio dropdown: Searchable list of user's uploaded portfolios (name, goal, date, AUM)
 - Data quality badge: "Full Reconstruction" (green) / "Reported Metrics Only" (amber)
 - Timeframe pills: 1Y / 3Y / 5Y / All
-- Recharts LineChart: Portfolio (solid), Nifty 50 TRI (dashed), Category Avg (dotted)
-- 6-card Metric Grid: XIRR, Alpha, Beta, Sharpe, Info Ratio, Max Drawdown
+- Recharts LineChart: Portfolio (solid), Composite Benchmark (dashed), Nifty 50 TRI (dotted), Category Avg (dotted), Achievable (amber dashed)
+- Composite Benchmark Badge: Shows weighted composition (e.g., "Portfolio Composite (45% Nifty 50 + 30% Midcap 150 + 25% Smallcap 250)")
+- Diagnostic Context Panel: Score tag, total gap, dimension scores, weakest/strongest dimensions
+- Fund Benchmark Table (collapsible): Per-fund category, benchmark, weight, current/best returns, gap, status
+- 7-card Metric Grid: XIRR, Alpha, Beta, Sharpe, Info Ratio, Max Drawdown, Composite CAGR
 - Color-coded: Green (positive) / Red (negative) per metric direction
 - CSV Export button
 - Matches dashboard design system (neutral-900, font-clash, rounded-2xl)
@@ -562,12 +565,13 @@ All in-memory `Map` with expiry (consistent with `amfiService.ts` pattern).
 
 | File | Purpose |
 |------|---------|
-| `shared/src/types/benchmarking.ts` | Shared interfaces (BenchmarkTimePoint, BenchmarkMetrics, etc.) |
-| `shared/src/constants/benchmarks.ts` | Index symbols, risk-free rate, category mapping |
-| `backend/src/services/yahooFinance.ts` | TRI index fetcher with 1hr cache |
+| `shared/src/types/benchmarking.ts` | Shared interfaces (BenchmarkTimePoint, BenchmarkMetrics, FundBenchmark, CompositeBenchmarkInfo, DiagnosticContext, etc.) |
+| `shared/src/constants/benchmarks.ts` | Index symbols, risk-free rate, category mapping, chart config |
+| `backend/src/services/yahooFinance.ts` | TRI index fetcher with 1hr cache + multi-symbol fetch |
 | `backend/src/services/categoryAverage.ts` | Category average return computer (AMFI top N) |
-| `backend/src/services/benchmarking.ts` | Dual-mode engine (reconstruction + reported metrics) |
-| `frontend/components/dashboard/BenchmarkTab.tsx` | Client dashboard tab with chart + metrics + export |
+| `backend/src/services/benchmarking.ts` | Dynamic fund-level engine with diagnostics integration |
+| `backend/src/services/amfiService.ts` | Enhanced fund category detection (sector support) |
+| `frontend/components/dashboard/BenchmarkTab.tsx` | Client dashboard tab with diagnostic panel, fund table, composite badge, achievable line |
 
 ---
 
@@ -699,4 +703,4 @@ lib/
 
 ---
 
-*Document version: 1.2 | Last updated: 2026-09-11*
+*Document version: 1.3 | Last updated: 2026-09-11*

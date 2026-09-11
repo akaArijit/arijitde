@@ -8,7 +8,7 @@ import { authMiddleware } from '../middleware/auth';
 import type { AuthenticatedRequest } from '../middleware/auth';
 import { UploadType, FundType } from '@prisma/client';
 import { generateBenchmarkReport } from '../services/benchmarking';
-import { Timeframe } from '@finanalysis/shared';
+import { Timeframe, ScoreResult } from '@finanalysis/shared';
 
 const router = Router();
 
@@ -668,7 +668,11 @@ router.get(
       if (portfolioId) {
         const portfolio = await prisma.portfolio.findUnique({
           where: { id: portfolioId },
-          select: { userId: true },
+          include: {
+            rows: true,
+            assessment: true,
+            score: true,
+          },
         });
 
         if (!portfolio) {
@@ -687,10 +691,41 @@ router.get(
           return;
         }
 
+        // Get diagnostics from score if available
+        let diagnosticsComparison = portfolio.score?.insights as any;
+        if (diagnosticsComparison) {
+          diagnosticsComparison = diagnosticsComparison.comparison;
+        }
+
         const report = await generateBenchmarkReport({
           portfolioId,
           timeframe: timeframe as Timeframe,
+          diagnosticsComparison,
         });
+
+        // Enrich diagnosticContext with dimension scores
+        if (report.diagnosticContext && portfolio.score) {
+          report.diagnosticContext.dimensionScores = {
+            goalAlignment: portfolio.score.goalAlignment,
+            assetAlloc: portfolio.score.assetAlloc,
+            diversification: portfolio.score.diversification,
+            discipline: portfolio.score.discipline,
+            efficiency: portfolio.score.efficiency,
+          };
+          report.diagnosticContext.tag = portfolio.score.tag;
+
+          // Determine weakest/strongest
+          const dims = [
+            { name: 'Goal Alignment', score: portfolio.score.goalAlignment },
+            { name: 'Asset Allocation', score: portfolio.score.assetAlloc },
+            { name: 'Diversification', score: portfolio.score.diversification },
+            { name: 'Discipline', score: portfolio.score.discipline },
+            { name: 'Efficiency', score: portfolio.score.efficiency },
+          ];
+          dims.sort((a, b) => a.score - b.score);
+          report.diagnosticContext.weakestDimension = dims[0].name;
+          report.diagnosticContext.strongestDimension = dims[dims.length - 1].name;
+        }
 
         res.json({
           success: true,

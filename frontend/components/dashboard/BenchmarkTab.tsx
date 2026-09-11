@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import {
   TrendingUp, TrendingDown, Minus, Info, RefreshCw, Download, FileText,
-  Search, ChevronDown, ChevronUp, AlertTriangle, CheckCircle, X
+  Search, ChevronDown, ChevronUp, ChevronRight, AlertTriangle, CheckCircle, X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -16,6 +16,8 @@ import {
   Timeframe,
   BenchmarkTimePoint,
   BenchmarkMetrics,
+  FundBenchmark,
+  DiagnosticContext,
 } from '@finanalysis/shared';
 
 interface ExistingClientSummary {
@@ -45,11 +47,12 @@ const TIMEFRAMES: { value: Timeframe; label: string }[] = [
 
 const METRIC_CONFIG = [
   { key: 'portfolioXIRR', label: 'Portfolio XIRR', suffix: '%', higherBetter: true, ideal: undefined },
-  { key: 'alpha', label: 'Alpha (vs Nifty 50 TRI)', suffix: '%', higherBetter: true, ideal: undefined },
-  { key: 'beta', label: 'Beta (vs Nifty 50 TRI)', suffix: 'x', higherBetter: null, ideal: 1 },
+  { key: 'alpha', label: 'Alpha (vs Composite)', suffix: '%', higherBetter: true, ideal: undefined },
+  { key: 'beta', label: 'Beta (vs Composite)', suffix: 'x', higherBetter: null, ideal: 1 },
   { key: 'sharpeRatio', label: 'Sharpe Ratio', suffix: '', higherBetter: true, ideal: undefined },
-  { key: 'informationRatio', label: 'Information Ratio', suffix: '', higherBetter: true, ideal: undefined },
+  { key: 'informationRatio', label: 'Information Ratio (vs Composite)', suffix: '', higherBetter: true, ideal: undefined },
   { key: 'maxDrawdown', label: 'Max Drawdown', suffix: '%', higherBetter: false, ideal: undefined },
+  { key: 'compositeBenchmark_CAGR', label: 'Composite CAGR', suffix: '%', higherBetter: true, ideal: undefined },
 ] as const;
 
 type MetricKey = typeof METRIC_CONFIG[number]['key'];
@@ -81,6 +84,36 @@ function getQualityBadge(dataQuality: BenchmarkMeta['dataQuality']) {
       <AlertTriangle className="w-2.5 h-2.5" /> Reported Metrics Only
     </span>
   );
+}
+
+function getScoreColor(tag: DiagnosticContext['tag']): string {
+  switch (tag) {
+    case 'ALIGNED':
+      return 'bg-emerald-100 text-emerald-700';
+    case 'MODERATE':
+      return 'bg-amber-100 text-amber-700';
+    case 'NEEDS_REVIEW':
+      return 'bg-red-100 text-red-700';
+    case 'NEEDS_STRUCTURING':
+      return 'bg-amber-100 text-amber-700';
+    default:
+      return 'bg-neutral-100 text-neutral-700';
+  }
+}
+
+function getTagLabel(tag: DiagnosticContext['tag']): string {
+  switch (tag) {
+    case 'ALIGNED':
+      return 'Aligned';
+    case 'MODERATE':
+      return 'Moderate';
+    case 'NEEDS_REVIEW':
+      return 'Needs Review';
+    case 'NEEDS_STRUCTURING':
+      return 'Needs Structuring';
+    default:
+      return tag;
+  }
 }
 
 function SkeletonLoader() {
@@ -122,6 +155,7 @@ interface BenchmarkTabProps {
   timeframe: Timeframe;
   onFetchBenchmark: (params: { portfolioId?: string; timeframe: Timeframe }) => Promise<void>;
   onTimeframeChange: (tf: Timeframe) => void;
+  diagnosticContext?: DiagnosticContext;
 }
 
 export function BenchmarkTab({
@@ -133,6 +167,7 @@ export function BenchmarkTab({
   timeframe,
   onFetchBenchmark,
   onTimeframeChange,
+  diagnosticContext,
 }: BenchmarkTabProps) {
   const [source, setSource] = useState<'portfolio' | 'client'>('portfolio');
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string>('');
@@ -156,11 +191,13 @@ export function BenchmarkTab({
     return report.timeSeries.map((point: BenchmarkTimePoint) => ({
       date: new Date(point.date).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }),
       Portfolio: point.portfolioValue,
+      'Composite Benchmark': point.compositeBenchmark,
       'Nifty 50 TRI': point.nifty50TRI,
       'Nifty 500 TRI': point.nifty500TRI,
       'Midcap 150 TRI': point.niftyMidcap150TRI,
       'Smallcap 250 TRI': point.niftySmallcap250TRI,
       'Category Avg': point.categoryAverage,
+      Achievable: point.achievableValue,
     }));
   }, [report]);
 
@@ -402,6 +439,40 @@ export function BenchmarkTab({
             </div>
           </div>
         )}
+
+        {/* Composite Benchmark Badge */}
+        {report?.meta?.compositeBenchmarkInfo && (
+          <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-xl">
+            <span className="text-[10px] font-mono text-primary font-bold">Composite Benchmark:</span>
+            <span className="ml-2 text-sm text-neutral-700 font-mono">
+              {report.meta.compositeBenchmarkInfo.name}
+            </span>
+          </div>
+        )}
+
+        {/* Diagnostic Context Panel */}
+        {diagnosticContext && (
+          <div className="mt-4 p-4 bg-white/50 border border-neutral-200 rounded-2xl">
+            <div className="flex flex-wrap items-center gap-4 mb-3">
+              <span className={`px-3 py-1 rounded-xl text-xs font-bold font-mono ${getScoreColor(diagnosticContext.tag)}`}>
+                {getTagLabel(diagnosticContext.tag)}
+              </span>
+              <span className="text-[10px] font-mono text-neutral-500">
+                Weakest: {diagnosticContext.weakestDimension} | Strongest: {diagnosticContext.strongestDimension}
+              </span>
+              <span className="ml-auto text-[10px] font-mono text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                Gap: ₹{diagnosticContext.totalGap.toLocaleString('en-IN')}
+              </span>
+            </div>
+            <div className="grid grid-cols-5 gap-2 text-[10px] font-mono text-neutral-600">
+              <div>Goal: {diagnosticContext.dimensionScores?.goalAlignment}/20</div>
+              <div>Asset: {diagnosticContext.dimensionScores?.assetAlloc}/20</div>
+              <div>Divers: {diagnosticContext.dimensionScores?.diversification}/20</div>
+              <div>Discip: {diagnosticContext.dimensionScores?.discipline}/20</div>
+              <div>Effic: {diagnosticContext.dimensionScores?.efficiency}/20</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Error State */}
@@ -491,7 +562,7 @@ export function BenchmarkTab({
                 />
                 <Line
                   type="monotone"
-                  dataKey="Nifty 50 TRI"
+                  dataKey="Composite Benchmark"
                   stroke="#10b981"
                   strokeWidth={2}
                   strokeDasharray="5 5"
@@ -499,10 +570,26 @@ export function BenchmarkTab({
                 />
                 <Line
                   type="monotone"
+                  dataKey="Nifty 50 TRI"
+                  stroke="#3b82f6"
+                  strokeWidth={1.5}
+                  strokeDasharray="8 4"
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
                   dataKey="Category Avg"
                   stroke="#06b6d4"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   strokeDasharray="8 4"
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Achievable"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  strokeDasharray="3 6"
                   dot={false}
                 />
               </LineChart>
@@ -513,10 +600,16 @@ export function BenchmarkTab({
               <span className="w-5 h-0.5 bg-[#09090b]" /> Portfolio
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-5 h-0.5 border-t-[1.5px] border-dashed border-[#10b981]" /> Nifty 50 TRI
+              <span className="w-5 h-0.5 border-t-[1.5px] border-dashed border-[#10b981]" /> Composite
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-0.5 border-t-[1.5px] border-dashed border-[#3b82f6]" /> Nifty 50 TRI
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-5 h-0.5 border-t-[1.5px] border-dashed border-[#06b6d4]" /> Category Avg
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-0.5 border-t-[1.5px] border-dashed border-[#f59e0b]" /> Achievable
             </span>
           </div>
         </div>
@@ -550,6 +643,58 @@ export function BenchmarkTab({
             </div>
           ))}
         </div>
+      )}
+
+      {/* Fund Benchmark Table */}
+      {report?.fundBenchmarks && report.fundBenchmarks.length > 0 && (
+        <details className="mt-6 bg-white border border-neutral-200 rounded-2xl">
+          <summary className="p-4 cursor-pointer font-semibold text-neutral-900 flex items-center gap-2">
+            <ChevronRight className="w-4 h-4" />
+            Fund-Level Benchmarks ({report.fundBenchmarks.length})
+          </summary>
+          <div className="px-4 pb-4 overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-neutral-200 text-neutral-500 font-mono text-[9px] uppercase">
+                  <th className="p-3">Fund</th>
+                  <th className="p-3">Category</th>
+                  <th className="p-3 text-right">Weight</th>
+                  <th className="p-3 text-right">Benchmark</th>
+                  <th className="p-3 text-right">Current 1Y</th>
+                  <th className="p-3 text-right">Best 1Y</th>
+                  <th className="p-3 text-right">Gap ₹</th>
+                  <th className="p-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.fundBenchmarks.map(fb => (
+                  <tr key={fb.fundName} className="border-b border-neutral-100">
+                    <td className="p-3 font-medium truncate max-w-[180px]">{fb.fundName}</td>
+                    <td className="p-3 text-neutral-600">{fb.category}</td>
+                    <td className="p-3 text-right font-mono">{(fb.weight * 100).toFixed(1)}%</td>
+                    <td className="p-3 text-right text-neutral-600">{fb.benchmarkDisplayName}</td>
+                    <td className="p-3 text-right font-mono">
+                      {fb.diagnostics?.currentReturn ? `${fb.diagnostics.currentReturn.toFixed(1)}%` : '—'}
+                    </td>
+                    <td className="p-3 text-right font-mono text-emerald-600">
+                      {fb.diagnostics?.bestReturn ? `${fb.diagnostics.bestReturn.toFixed(1)}%` : '—'}
+                    </td>
+                    <td className="p-3 text-right font-mono text-rose-600">
+                      {fb.diagnostics?.gap ? `₹${fb.diagnostics.gap.toLocaleString('en-IN')}` : '—'}
+                    </td>
+                    <td className="p-3 text-center">
+                      {fb.diagnostics?.isUnderperforming ? (
+                        <span className="px-2 py-0.5 text-[9px] bg-rose-100 text-rose-700 rounded-full">Underperforming</span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-[9px] bg-emerald-100 text-emerald-700 rounded-full">On Track</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
       )}
 
       {/* Empty State */}

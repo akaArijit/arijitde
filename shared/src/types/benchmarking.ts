@@ -11,11 +11,14 @@ export interface MonthlyPoint {
 export interface BenchmarkTimePoint {
   date: string;
   portfolioValue: number;
+  compositeBenchmark: number;
   nifty50TRI: number;
   nifty500TRI: number;
   niftyMidcap150TRI: number;
   niftySmallcap250TRI: number;
   categoryAverage: number;
+  fundBenchmarks?: Record<string, number>;
+  achievableValue?: number;
 }
 
 export interface BenchmarkMetrics {
@@ -26,6 +29,7 @@ export interface BenchmarkMetrics {
   niftyMidcap150TRI_CAGR: number;
   niftySmallcap250TRI_CAGR: number;
   categoryAverage_CAGR: number;
+  compositeBenchmark_CAGR: number;
   alpha: number;
   beta: number;
   sharpeRatio: number;
@@ -36,12 +40,73 @@ export interface BenchmarkMetrics {
   computationTimeMs: number;
 }
 
+export interface FundBenchmark {
+  fundName: string;
+  category: string;
+  benchmarkIndex: string;
+  benchmarkDisplayName: string;
+  benchmarkSymbol: string;
+  weight: number;
+  invested: number;
+  currentValue: number;
+  diagnostics?: {
+    category: string;
+    currentReturn: number;
+    bestReturn: number;
+    gap: number;
+    currentProfit: number;
+    achievableProfit: number;
+    tenureReturn: number;
+    isUnderperforming: boolean;
+  };
+}
+
+export interface CompositeBenchmarkInfo {
+  name: string;
+  components: Array<{
+    index: string;
+    displayName: string;
+    symbol: string;
+    weight: number;
+    fundCount: number;
+  }>;
+}
+
 export interface BenchmarkMeta {
   fundCount: number;
   dominantCategory: string;
   benchmarkUsed: string;
   dataQuality: DataQuality;
   warnings?: string[];
+  compositeBenchmarkInfo: CompositeBenchmarkInfo;
+  concentrationRisk: 'HIGH' | 'MEDIUM' | 'LOW';
+  sipConsistency: 'HIGH' | 'MEDIUM' | 'LOW';
+}
+
+export interface DiagnosticContext {
+  totalGap: number;
+  currentXIRR: number;
+  achievableXIRR: number;
+  fundAttribution: Array<{
+    fundName: string;
+    category: string;
+    invested: number;
+    currentReturn: number;
+    bestReturn: number;
+    gap: number;
+    isUnderperforming: boolean;
+    weight: number;
+  }>;
+  dimensionScores: {
+    goalAlignment: number;
+    assetAlloc: number;
+    diversification: number;
+    discipline: number;
+    efficiency: number;
+  };
+  tag: 'ALIGNED' | 'MODERATE' | 'NEEDS_REVIEW' | 'NEEDS_STRUCTURING';
+  weakestDimension: string;
+  strongestDimension: string;
 }
 
 export interface BenchmarkResponse {
@@ -51,6 +116,8 @@ export interface BenchmarkResponse {
   timeSeries: BenchmarkTimePoint[];
   metrics: BenchmarkMetrics;
   meta: BenchmarkMeta;
+  fundBenchmarks: FundBenchmark[];
+  diagnosticContext?: DiagnosticContext;
 }
 
 export interface Cashflow {

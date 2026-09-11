@@ -190,3 +190,25 @@ export async function fetchAllBenchmarkSeries(
   });
   return output;
 }
+
+export async function fetchMultipleIndices(
+  symbols: string[],
+  from: Date,
+  to: Date
+): Promise<Record<string, MonthlyPoint[]>> {
+  const uniqueSymbols = [...new Set(symbols)];
+  const results = await Promise.allSettled(
+    uniqueSymbols.map((s) => fetchIndexHistory(s, from, to))
+  );
+
+  const output: Record<string, MonthlyPoint[]> = {};
+  uniqueSymbols.forEach((s, i) => {
+    if (results[i].status === 'fulfilled') {
+      output[s] = normalizeToBase100(results[i].value);
+    } else {
+      output[s] = [];
+      console.error(`Failed to fetch ${s}:`, results[i].reason);
+    }
+  });
+  return output;
+}
