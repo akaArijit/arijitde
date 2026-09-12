@@ -169,6 +169,77 @@ export function detectFundCategory(fundName: string): string {
     return 'index';
 
   // Default — classify as flexi_cap (broad equity)
+  // Sector-specific detection (after main categories)
+  if (
+    name.includes('bank') ||
+    name.includes('banking') ||
+    name.includes('psu bank')
+  )
+    return 'banking';
+  if (
+    name.includes('tech') ||
+    name.includes('information') ||
+    name.includes('digital') ||
+    name.includes('it ')
+  )
+    return 'technology';
+  if (
+    name.includes('pharma') ||
+    name.includes('healthcare') ||
+    name.includes('medical')
+  )
+    return 'pharma';
+  if (
+    name.includes('auto') ||
+    name.includes('automobile') ||
+    name.includes('ev ')
+  )
+    return 'auto';
+  if (
+    name.includes('energy') ||
+    name.includes('oil') ||
+    name.includes('gas') ||
+    name.includes('power')
+  )
+    return 'energy';
+  if (
+    name.includes('infra') ||
+    name.includes('infrastructure') ||
+    name.includes('cement') ||
+    name.includes('construction')
+  )
+    return 'infra';
+  if (
+    name.includes('metal') ||
+    name.includes('mining') ||
+    name.includes('steel') ||
+    name.includes('aluminium')
+  )
+    return 'metal';
+  if (
+    name.includes('realty') ||
+    name.includes('real estate') ||
+    name.includes('reit')
+  )
+    return 'realty';
+  if (
+    name.includes('consumption') ||
+    name.includes('consumer') ||
+    name.includes('fmcg') ||
+    name.includes('retail')
+  )
+    return 'consumption';
+  if (
+    name.includes('mnc') ||
+    name.includes('multinational')
+  )
+    return 'mnc';
+  if (
+    name.includes('pse') ||
+    name.includes('public sector')
+  )
+    return 'pse';
+
   return 'flexi_cap';
 }
 

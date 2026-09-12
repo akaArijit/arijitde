@@ -37,6 +37,7 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 
+
 // Goal Mapping helper
 const GOAL_LABELS: Record<string, { label: string; desc: string; icon: any }> =
   {

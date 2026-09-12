@@ -30,6 +30,16 @@ import {
   TrendingUp,
   Star,
   Shield,
+  TrendingDown,
+  Minus,
+  Info,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  CheckCircle,
+  X,
+  Radio,
 } from 'lucide-react';
 import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
 import GradualBlur from '@/components/GradualBlur';
@@ -43,6 +53,14 @@ import {
   Legend,
 } from 'recharts';
 import Footer from '@/components/Footer';
+import { BenchmarkTab } from '@/components/dashboard/BenchmarkTab';
+import {
+  BenchmarkResponse,
+  BenchmarkMeta,
+  Timeframe,
+  BenchmarkTimePoint,
+  BenchmarkMetrics,
+} from '@finanalysis/shared';
 
 const SLEEK_COLORS = [
   '#6366F1', // Indigo
@@ -645,6 +663,13 @@ export default function ClientDashboard() {
 
   const [currentTime, setCurrentTime] = useState('');
 
+  // Benchmarking States
+  const [benchmarkReport, setBenchmarkReport] = useState<BenchmarkResponse | null>(null);
+  const [benchmarkLoading, setBenchmarkLoading] = useState(false);
+  const [benchmarkError, setBenchmarkError] = useState<string | null>(null);
+  const [benchmarkTimeframe, setBenchmarkTimeframe] = useState<Timeframe>('1Y');
+  const [userPortfolios, setUserPortfolios] = useState<any[]>([]);
+
   // Computed values for portfolio totals and breakdowns (either certified client data or active portfolio fallback)
   const hasExistingClientData = !!(
     existingClientData &&
@@ -940,6 +965,16 @@ export default function ClientDashboard() {
       const portData = await portRes.json();
       const userPortfolios = portData.success ? portData.data : [];
 
+      // Set user portfolios for benchmarking dropdown
+      setUserPortfolios(userPortfolios.map((p: any) => ({
+        id: p.id,
+        createdAt: p.createdAt,
+        rowCount: p.rows?.length || 0,
+        totalInvested: p.rows?.reduce((s: number, r: any) => s + r.invested, 0) || 0,
+        totalCurrentValue: p.rows?.reduce((s: number, r: any) => s + r.currentValue, 0) || 0,
+        assessment: p.assessment,
+      })));
+
       if (userPortfolios.length > 0) {
         const latestPortfolio = userPortfolios[0];
         setActivePortfolioId(latestPortfolio.id);
@@ -986,6 +1021,29 @@ export default function ClientDashboard() {
       }
     } catch (err) {
       setError('Network error running score calculation.');
+    }
+  };
+
+  const handleFetchBenchmark = async (params: { portfolioId?: string; timeframe: Timeframe }) => {
+    setBenchmarkLoading(true);
+    setBenchmarkError(null);
+    try {
+      const query = new URLSearchParams();
+      if (params.portfolioId) query.set('portfolioId', params.portfolioId);
+      query.set('timeframe', params.timeframe);
+      const res = await fetch(`${backendUrl}/api/portfolio/benchmark?${query}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBenchmarkReport(data.data);
+      } else {
+        throw new Error(data.error || 'Failed to load benchmark');
+      }
+    } catch (err: any) {
+      setBenchmarkError(err.message);
+    } finally {
+      setBenchmarkLoading(false);
     }
   };
 
@@ -3297,6 +3355,40 @@ export default function ClientDashboard() {
                     })()}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Portfolio Benchmarking */}
+            {(userPortfolios.length > 0 || (existingClientData && (existingClientData.aum || existingClientData.currentValue || 0) > 0)) && (
+              <div className="bg-white/50 backdrop-blur-xl border border-white/40 shadow-xl rounded-3xl p-6 space-y-6 animate-in fade-in duration-300">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border/20 pb-4 gap-3">
+                  <div className="space-y-0.5">
+                    <h3 className="text-base font-bold text-neutral-900 font-clash">
+                      Portfolio Benchmarking
+                    </h3>
+                    <p className="text-neutral-500 text-xs font-sans">
+                      Compare your portfolio against Nifty TRI indices and category averages with risk-adjusted metrics.
+                    </p>
+                  </div>
+                </div>
+                <BenchmarkTab
+                  userPortfolios={userPortfolios}
+                  clientData={existingClientData && (existingClientData.aum || existingClientData.currentValue || 0) > 0 ? {
+                    id: existingClientData.id,
+                    name: existingClientData.name,
+                    pan: existingClientData.pan,
+                    email: existingClientData.email,
+                    mobile: existingClientData.mobile,
+                    aum: existingClientData.aum || existingClientData.currentValue || 0,
+                  } : null}
+                  report={benchmarkReport}
+                  loading={benchmarkLoading}
+                  error={benchmarkError}
+                  timeframe={benchmarkTimeframe}
+                  onFetchBenchmark={handleFetchBenchmark}
+                  onTimeframeChange={setBenchmarkTimeframe}
+                  diagnosticContext={benchmarkReport?.diagnosticContext}
+                />
               </div>
             )}
 
