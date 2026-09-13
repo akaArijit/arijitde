@@ -70,49 +70,55 @@ export async function scoreDimension(
   }
 
   // ── 2. Fund vs Benchmark & Category Top Performers Comparison (+6) ──
-  // Fetch returns from AMFI API (parallel, with error tolerance)
+  // Fetch returns from AMFI API (batched with concurrency limit & error tolerance)
   let benchmarkComparisonScore = 0;
   let comparisonData: any = null;
 
   try {
-    // Get returns for each fund (parallel with timeout)
-    const fundReturnPromises = rows.map(async (row) => {
-      const category = detectFundCategory(row.fundName);
-      const topPerformer =
-        CATEGORY_TOP_PERFORMERS[category] ||
-        CATEGORY_TOP_PERFORMERS['default']!;
+    const BATCH_SIZE = 4;
+    const fundReturns: Array<{
+      fundName: string;
+      category: string;
+      fundReturn: number | null;
+      benchmarkReturn: number | null;
+      bestReturn: number | null;
+      invested: number;
+      currentValue: number;
+      bestFundName: string;
+    }> = [];
 
-      const [fundResult, benchmarkReturn, bestReturn, bestFundData] =
-        await Promise.all([
-          getFundReturn(row.fundName),
-          getCategoryBenchmarkReturn(category),
-          calculate1YReturn(topPerformer.code),
-          getSchemeNAV(topPerformer.code),
-        ]);
-      return {
-        fundName: row.fundName,
-        category,
-        fundReturn: fundResult.returnPct,
-        benchmarkReturn,
-        bestReturn,
-        invested: row.invested,
-        currentValue: row.currentValue,
-        bestFundName: bestFundData?.meta?.scheme_name || topPerformer.name,
-      };
-    });
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batch = rows.slice(i, i + BATCH_SIZE);
+      const batchPromises = batch.map(async (row) => {
+        const category = detectFundCategory(row.fundName);
+        const topPerformer =
+          CATEGORY_TOP_PERFORMERS[category] ||
+          CATEGORY_TOP_PERFORMERS['default']!;
 
-    // Race against a 10-second timeout for all AMFI calls
-    const timeoutPromise = new Promise<null>((resolve) =>
-      setTimeout(() => resolve(null), 10000),
-    );
-    const fundReturnsResult = await Promise.race([
-      Promise.all(fundReturnPromises),
-      timeoutPromise,
-    ]);
+        const [fundResult, benchmarkReturn, bestReturn, bestFundData] =
+          await Promise.all([
+            getFundReturn(row.fundName),
+            getCategoryBenchmarkReturn(category),
+            calculate1YReturn(topPerformer.code),
+            getSchemeNAV(topPerformer.code),
+          ]);
+        return {
+          fundName: row.fundName,
+          category,
+          fundReturn: fundResult.returnPct,
+          benchmarkReturn,
+          bestReturn,
+          invested: row.invested,
+          currentValue: row.currentValue,
+          bestFundName: bestFundData?.meta?.scheme_name || topPerformer.name,
+        };
+      });
 
-    if (fundReturnsResult && Array.isArray(fundReturnsResult)) {
-      const fundReturns = fundReturnsResult;
+      const batchResults = await Promise.all(batchPromises);
+      fundReturns.push(...batchResults);
+    }
 
+    if (fundReturns.length > 0) {
       // Count funds that beat or match their benchmark
       let beatingBenchmark = 0;
       let underperformingFunds: string[] = [];

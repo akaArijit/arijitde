@@ -1,16 +1,15 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { KnobSlider } from '@/components/ui/knob-slider';
 import CalculatorsCarousel from '@/components/CalculatorsCarousel';
 import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
-import LightTunnel from '@/components/LightTunnel';
 import GradualBlur from '@/components/GradualBlur';
 import ScrollRevealSection from '@/components/ScrollRevealSection';
 import ScrollBlurReveal from '@/components/ScrollBlurReveal';
 import SvgScrollWipe from '@/components/SvgScrollWipe';
 import ScrollTextReveal from '@/components/ScrollTextReveal';
-import ServicesConstellation from '@/components/ServicesConstellation';
 import { GoArrowDownRight } from 'react-icons/go';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -18,6 +17,16 @@ import ChatbotWidget from '@/components/ChatbotWidget';
 import AIOrbFace from '@/components/smoothui/ai-orb-face';
 import BookCallModal from '@/components/BookCallModal';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+
+const LightTunnel = dynamic(() => import('@/components/LightTunnel'), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-transparent" />,
+});
+
+const ServicesConstellation = dynamic(
+  () => import('@/components/ServicesConstellation'),
+  { ssr: false }
+);
 import {
   Target,
   PieChart,

@@ -4,27 +4,18 @@
  * using the public api.mfapi.in API.
  */
 
-// ── In-memory cache with TTL ──
-interface CacheEntry<T> {
-  data: T;
-  expiry: number;
-}
+import { LRUCache } from '../lib/lruCache';
 
-const cache = new Map<string, CacheEntry<any>>();
+// ── In-memory LRU cache with bounded capacity & TTL ──
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const cache = new LRUCache<any>(1000, CACHE_TTL_MS);
 
 function getCached<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expiry) {
-    cache.delete(key);
-    return null;
-  }
-  return entry.data as T;
+  return cache.get(key) as T | null;
 }
 
 function setCache<T>(key: string, data: T): void {
-  cache.set(key, { data, expiry: Date.now() + CACHE_TTL_MS });
+  cache.set(key, data, CACHE_TTL_MS);
 }
 
 // ── AMFI API Types ──

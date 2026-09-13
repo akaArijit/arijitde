@@ -1,25 +1,15 @@
-interface CacheEntry<T> {
-  data: T;
-  expiry: number;
-}
-
 import type { MonthlyPoint } from '@finanalysis/shared';
+import { LRUCache } from '../lib/lruCache';
 
-const cache = new Map<string, CacheEntry<any>>();
 const CACHE_TTL_MS = 60 * 60 * 1000;
+const cache = new LRUCache<any>(300, CACHE_TTL_MS);
 
 function getCached<T>(key: string): T | null {
-  const entry = cache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expiry) {
-    cache.delete(key);
-    return null;
-  }
-  return entry.data as T;
+  return cache.get(key) as T | null;
 }
 
 function setCache<T>(key: string, data: T): void {
-  cache.set(key, { data, expiry: Date.now() + CACHE_TTL_MS });
+  cache.set(key, data, CACHE_TTL_MS);
 }
 
 interface YahooChartResponse {
@@ -40,14 +30,29 @@ interface YahooChartResponse {
   };
 }
 
-async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { signal: controller.signal });
-  } finally {
-    clearTimeout(timeout);
+async function fetchWithTimeout(url: string, timeoutMs = 8000, retries = 2): Promise<Response> {
+  let lastError: any;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      if (res.ok) return res;
+      if (res.status >= 500 && attempt < retries) {
+        await new Promise((r) => setTimeout(r, 400 * Math.pow(2, attempt)));
+        continue;
+      }
+      return res;
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 400 * Math.pow(2, attempt)));
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  throw lastError || new Error(`Failed to fetch ${url} after ${retries} retries`);
 }
 
 export async function fetchIndexHistory(

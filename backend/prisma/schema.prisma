@@ -246,6 +246,8 @@ model Folio {
   createdAt            DateTime @default(now())
 
   @@index([existingClientId])
+  @@index([existingClientId, createdAt])
+  @@index([schemeName, existingClientId])
   @@index([createdAt])
   @@index([clientName])
   @@index([clientPan])

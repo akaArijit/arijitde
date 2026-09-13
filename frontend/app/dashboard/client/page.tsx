@@ -52,8 +52,19 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import dynamic from 'next/dynamic';
 import Footer from '@/components/Footer';
-import { BenchmarkTab } from '@/components/dashboard/BenchmarkTab';
+
+const BenchmarkTab = dynamic(
+  () => import('@/components/dashboard/BenchmarkTab').then((mod) => mod.BenchmarkTab),
+  {
+    loading: () => (
+      <div className="p-8 text-center text-xs font-mono text-neutral-500 animate-pulse">
+        Loading Benchmark Analytics...
+      </div>
+    ),
+  }
+);
 import {
   BenchmarkResponse,
   BenchmarkMeta,

@@ -1,4 +1,5 @@
-import { PrismaClient, PortfolioRow, Portfolio, Assessment, ExistingClient, Folio } from '@prisma/client';
+import { PortfolioRow, Portfolio, Assessment, ExistingClient, Folio } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { detectFundCategory, getSchemeNAV } from './amfiService';
 import { fetchAllBenchmarkSeries, fetchAllBenchmarkIndices, fetchMultipleIndices } from './yahooFinance';
 import { computeCategoryAverageSeries, computeCategoryAverageReturn } from './categoryAverage';
@@ -18,8 +19,6 @@ import {
   DiagnosticContext,
 } from '@finanalysis/shared';
 import { CATEGORY_BENCHMARK_MAP, TIMEFRAME_DAYS, BENCHMARK_INDICES, BENCHMARK_DISPLAY_NAMES } from '@finanalysis/shared';
-
-const prisma = new PrismaClient();
 
 function calculateXIRR(cashflows: Cashflow[]): number {
   if (cashflows.length < 2) return 0;
@@ -646,10 +645,10 @@ async function benchmarkUploadedPortfolio(
     metrics: {
       portfolioXIRR: xirr,
       portfolioCAGR,
-      nifty50TRI_CAGR: (await fetchAllBenchmarkIndices(timeframeDays)).NIFTY_50_TRI || 0,
-      nifty500TRI_CAGR: (await fetchAllBenchmarkIndices(timeframeDays)).NIFTY_500_TRI || 0,
-      niftyMidcap150TRI_CAGR: (await fetchAllBenchmarkIndices(timeframeDays)).NIFTY_MIDCAP_150_TRI || 0,
-      niftySmallcap250TRI_CAGR: (await fetchAllBenchmarkIndices(timeframeDays)).NIFTY_SMALLCAP_250_TRI || 0,
+      nifty50TRI_CAGR: benchmarkIndices.NIFTY_50_TRI || 0,
+      nifty500TRI_CAGR: benchmarkIndices.NIFTY_500_TRI || 0,
+      niftyMidcap150TRI_CAGR: benchmarkIndices.NIFTY_MIDCAP_150_TRI || 0,
+      niftySmallcap250TRI_CAGR: benchmarkIndices.NIFTY_SMALLCAP_250_TRI || 0,
       categoryAverage_CAGR: 0, // Will be filled
       compositeBenchmark_CAGR: 0, // Will be filled
       ...riskMetrics,
