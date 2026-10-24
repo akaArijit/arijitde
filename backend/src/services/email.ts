@@ -3,51 +3,7 @@ import nodemailer from 'nodemailer';
 import nunjucks from 'nunjucks';
 import path from 'path';
 import { logger } from '../lib/logger';
-
-function parsePositiveInt(name: string, value: string | undefined, defaultValue: number): number {
-  if (value === undefined) {
-    return defaultValue;
-  }
-  const parsed = Number.parseInt(value, 10);
-  if (Number.isNaN(parsed) || parsed <= 0) {
-    throw new Error(`Invalid ${name}: must be a positive integer, got "${value}"`);
-  }
-  return parsed;
-}
-
-const connectionTimeout = parsePositiveInt(
-  'SMTP_CONNECTION_TIMEOUT',
-  process.env.SMTP_CONNECTION_TIMEOUT,
-  10000
-);
-const greetingTimeout = parsePositiveInt(
-  'SMTP_GREETING_TIMEOUT',
-  process.env.SMTP_GREETING_TIMEOUT,
-  5000
-);
-const socketTimeout = parsePositiveInt(
-  'SMTP_SOCKET_TIMEOUT',
-  process.env.SMTP_SOCKET_TIMEOUT,
-  10000
-);
-const emailSendTimeout = parsePositiveInt(
-  'EMAIL_SEND_TIMEOUT',
-  process.env.EMAIL_SEND_TIMEOUT,
-  15000
-);
-
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  connectionTimeout,
-  greetingTimeout,
-  socketTimeout,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+import { getEmailProvider } from './email/factory';
 
 const templateDir = fs.existsSync(path.resolve(__dirname, '../templates'))
   ? path.resolve(__dirname, '../templates')
@@ -58,7 +14,6 @@ const templatesEnv = nunjucks.configure(templateDir, {
   noCache: process.env.NODE_ENV !== 'production',
 });
 
-// Allowed email templates - prevents template injection
 const ALLOWED_TEMPLATES = new Set([
   'otp',
   'password-reset',
@@ -76,13 +31,7 @@ interface EmailOptions {
   data: Record<string, any>;
 }
 
-interface SendResult {
-  success: boolean;
-  uncertain?: boolean;
-  error?: Error;
-}
-
-export async function sendTemplatedEmail({ to, subject, template, data }: EmailOptions): Promise<SendResult> {
+export async function sendTemplatedEmail({ to, subject, template, data }: EmailOptions): Promise<{ success: boolean; uncertain?: boolean; error?: Error }> {
   if (!ALLOWED_TEMPLATES.has(template)) {
     throw new Error(`Invalid email template: ${template}. Allowed: ${Array.from(ALLOWED_TEMPLATES).join(', ')}`);
   }
@@ -92,33 +41,14 @@ export async function sendTemplatedEmail({ to, subject, template, data }: EmailO
       year: new Date().getFullYear(),
     });
 
-    const mailOptions = {
-      from: `"FinAnalysis" <${process.env.GMAIL_USER}>`,
+    const provider = getEmailProvider();
+    const result = await provider.sendEmail({
       to,
       subject,
       html,
-    };
-
-    logger.info({ to, subject, template }, 'SMTP connecting');
-    const sendMailPromise = transporter.sendMail(mailOptions);
-    let timeoutId: NodeJS.Timeout;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutId = setTimeout(() => reject(new Error('Email send timeout')), emailSendTimeout);
     });
-    logger.info({ to, subject, template }, 'SMTP sending');
-    try {
-      await Promise.race([sendMailPromise, timeoutPromise]);
-      logger.info({ to, subject, template }, 'Email sent successfully');
-      return { success: true };
-    } catch (error) {
-      if (error instanceof Error && error.message === 'Email send timeout') {
-        logger.warn({ to, subject, template }, 'Email send timed out - delivery uncertain');
-        return { success: false, uncertain: true, error };
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId!);
-    }
+
+    return result;
   } catch (error) {
     logger.error({ err: error, to, subject, template }, 'Failed to send email');
     return { success: false, error: error instanceof Error ? error : new Error(String(error)) };
@@ -175,13 +105,13 @@ export async function sendWelcomeEmail(email: string, name?: string, dashboardUr
 
 function getRecipientEmail(): string {
   const email = process.env.CONTACT_EMAIL || process.env.SUPPORT_EMAIL || process.env.GMAIL_USER;
-  
+
   if (!email) {
     throw new Error(
       'Email recipient not configured. Set CONTACT_EMAIL, SUPPORT_EMAIL, or GMAIL_USER environment variable.'
     );
   }
-  
+
   return email;
 }
 
