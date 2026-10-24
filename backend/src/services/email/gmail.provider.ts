@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 import { logger } from '../../lib/logger';
 import { BaseEmailProvider, type EmailOptions, type SendResult } from './provider';
 
@@ -31,6 +32,9 @@ export class GmailProvider extends BaseEmailProvider {
       port: 587,
       secure: false,
       family: 4,
+      lookup: (hostname: string, options: dns.LookupOptions, callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void) => {
+        dns.lookup(hostname, { family: 4 }, callback);
+      },
       connectionTimeout,
       greetingTimeout,
       socketTimeout,
