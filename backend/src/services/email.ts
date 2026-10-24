@@ -1,5 +1,4 @@
 import fs from 'fs';
-import nodemailer from 'nodemailer';
 import nunjucks from 'nunjucks';
 import path from 'path';
 import { logger } from '../lib/logger';
