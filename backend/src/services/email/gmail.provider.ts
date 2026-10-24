@@ -1,0 +1,69 @@
+import nodemailer from 'nodemailer';
+import { logger } from '../../lib/logger';
+import { BaseEmailProvider, type EmailOptions, type SendResult } from './provider';
+
+function parsePositiveInt(name: string, value: string | undefined, defaultValue: number): number {
+  if (value === undefined) {
+    return defaultValue;
+  }
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    throw new Error(`Invalid ${name}: must be a positive integer, got "${value}"`);
+  }
+  return parsed;
+}
+
+export class GmailProvider extends BaseEmailProvider {
+  private readonly transporter: nodemailer.Transporter;
+  private readonly emailSendTimeout: number;
+
+  constructor() {
+    const fromEmail = process.env.GMAIL_USER ? `"FinAnalysis" <${process.env.GMAIL_USER}>` : 'FinAnalysis <noreply@finanalysis.site>';
+    super(fromEmail);
+
+    const connectionTimeout = parsePositiveInt('SMTP_CONNECTION_TIMEOUT', process.env.SMTP_CONNECTION_TIMEOUT, 10000);
+    const greetingTimeout = parsePositiveInt('SMTP_GREETING_TIMEOUT', process.env.SMTP_GREETING_TIMEOUT, 5000);
+    const socketTimeout = parsePositiveInt('SMTP_SOCKET_TIMEOUT', process.env.SMTP_SOCKET_TIMEOUT, 10000);
+    this.emailSendTimeout = parsePositiveInt('EMAIL_SEND_TIMEOUT', process.env.EMAIL_SEND_TIMEOUT, 15000);
+
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      family: 4,
+      connectionTimeout,
+      greetingTimeout,
+      socketTimeout,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    } as nodemailer.TransportOptions);
+
+    logger.info({ host: 'smtp.gmail.com', port: 587 }, 'Gmail provider initialized with IPv4');
+  }
+
+  async sendEmail(options: EmailOptions): Promise<SendResult> {
+    const mailOptions = this.buildMailOptions(options);
+
+    logger.info({ to: options.to, subject: options.subject }, 'SMTP connecting');
+    const sendMailPromise = this.transporter.sendMail(mailOptions);
+    let timeoutId: NodeJS.Timeout;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('Email send timeout')), this.emailSendTimeout);
+    });
+    logger.info({ to: options.to, subject: options.subject }, 'SMTP sending');
+    try {
+      await Promise.race([sendMailPromise, timeoutPromise]);
+      return this.handleSuccess('gmail', options);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Email send timeout') {
+        logger.warn({ to: options.to, subject: options.subject }, 'Email send timed out - delivery uncertain');
+        return { success: false, uncertain: true, error };
+      }
+      return this.handleError('gmail', options, error);
+    } finally {
+      clearTimeout(timeoutId!);
+    }
+  }
+}
