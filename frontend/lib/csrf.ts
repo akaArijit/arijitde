@@ -29,5 +29,5 @@ export async function csrfFetch(
   if (csrfToken && !headers.has('x-csrf-token')) {
     headers.set('x-csrf-token', csrfToken);
   }
-  return fetch(url, { ...init, headers });
+  return fetch(url, { ...init, headers, credentials: 'include' });
 }
