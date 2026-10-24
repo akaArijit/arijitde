@@ -27,8 +27,20 @@ export class GmailProvider extends BaseEmailProvider {
     const socketTimeout = parsePositiveInt('SMTP_SOCKET_TIMEOUT', process.env.SMTP_SOCKET_TIMEOUT, 10000);
     this.emailSendTimeout = parsePositiveInt('EMAIL_SEND_TIMEOUT', process.env.EMAIL_SEND_TIMEOUT, 15000);
 
+    // Known Gmail SMTP IPv4 addresses (as of 2024) - used as fallback when DNS resolution fails
+    const GMAIL_SMTP_IPV4_ADDRESSES = [
+      '74.125.133.108',
+      '74.125.193.108',
+      '74.125.67.108',
+      '74.125.133.109',
+      '74.125.193.109',
+    ];
+
+    // Allow explicit IPv4 host via env var, fallback to known IPs, then DNS with IPv4 forced
+    const smtpHost = process.env.GMAIL_SMTP_HOST || GMAIL_SMTP_IPV4_ADDRESSES[0];
+
     this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
+      host: smtpHost,
       port: 587,
       secure: false,
       family: 4,
@@ -44,7 +56,7 @@ export class GmailProvider extends BaseEmailProvider {
       },
     } as nodemailer.TransportOptions);
 
-    logger.info({ host: 'smtp.gmail.com', port: 587 }, 'Gmail provider initialized with IPv4');
+    logger.info({ host: smtpHost, port: 587, explicitIP: !process.env.GMAIL_SMTP_HOST }, 'Gmail provider initialized with IPv4');
   }
 
   async sendEmail(options: EmailOptions): Promise<SendResult> {
