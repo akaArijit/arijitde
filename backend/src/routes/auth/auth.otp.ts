@@ -86,8 +86,13 @@ router.post('/otp/send', otpSendLimiter, async (req: Request, res: Response, nex
 
     const otp = generateOTP();
     await saveOTP(formattedEmail, otp, 'login');
-    try { await sendOTP(formattedEmail, otp); }
-    catch { await deleteOTP(formattedEmail, otp, 'login'); return next(ApiError.internal('Failed to send OTP email')); }
+    
+    // Send OTP email asynchronously - don't block the response
+    // Log failure but don't block user registration/login
+    sendOTP(formattedEmail, otp).catch((err) => {
+      // Log the error but don't delete OTP - user can request resend
+      console.error('Failed to send OTP email:', err);
+    });
 
     res.json({ success: true, data: { message: 'OTP sent' } });
   } catch (error) { next(error); }

@@ -76,44 +76,48 @@ export async function scoreDimension(
   let comparisonData: any = null;
 
   try {
-    // Get returns for each fund (parallel with timeout)
+    // Get returns for each fund (parallel with individual timeouts)
     const fundReturnPromises = rows.map(async (row) => {
       const category = detectFundCategory(row.fundName);
       const topPerformer =
         CATEGORY_TOP_PERFORMERS[category] ||
         CATEGORY_TOP_PERFORMERS['default']!;
 
+      // Wrap each API call with individual timeout
+      const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | null> => {
+        const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), ms));
+        return Promise.race([promise, timeout]);
+      };
+
       const [fundResult, benchmarkReturn, bestReturn, bestFundData] =
-        await Promise.all([
-          getFundReturn(row.fundName),
-          getCategoryBenchmarkReturn(category),
-          calculate1YReturn(topPerformer.code),
-          getSchemeNAV(topPerformer.code),
+        await Promise.allSettled([
+          withTimeout(getFundReturn(row.fundName), 8000),
+          withTimeout(getCategoryBenchmarkReturn(category), 5000),
+          withTimeout(calculate1YReturn(topPerformer.code), 8000),
+          withTimeout(getSchemeNAV(topPerformer.code), 5000),
         ]);
+
       return {
         fundName: row.fundName,
         category,
-        fundReturn: fundResult.returnPct,
-        benchmarkReturn,
-        bestReturn,
+        fundReturn: fundResult.status === 'fulfilled' ? (fundResult.value?.returnPct ?? null) : null,
+        benchmarkReturn: benchmarkReturn.status === 'fulfilled' ? (benchmarkReturn.value ?? null) : null,
+        bestReturn: bestReturn.status === 'fulfilled' ? (bestReturn.value ?? null) : null,
         invested: row.invested,
         currentValue: row.currentValue,
-        bestFundName: bestFundData?.meta?.scheme_name || topPerformer.name,
+        bestFundName: bestFundData.status === 'fulfilled' ? (bestFundData.value?.meta?.scheme_name ?? topPerformer.name) : topPerformer.name,
       };
     });
 
-    // Race against a 10-second timeout for all AMFI calls
-    const timeoutPromise = new Promise<null>((resolve) =>
-      setTimeout(() => resolve(null), 10000),
-    );
-    const fundReturnsResult = await Promise.race([
-      Promise.all(fundReturnPromises),
-      timeoutPromise,
-    ]);
+    // No global timeout - individual calls have their own timeouts
+    const fundReturnsResult = await Promise.allSettled(fundReturnPromises);
 
-    if (fundReturnsResult && Array.isArray(fundReturnsResult)) {
-      const fundReturns = fundReturnsResult;
+    // Extract fulfilled values from Promise.allSettled results
+    const fundReturns = fundReturnsResult
+      .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
+      .map((r) => r.value);
 
+    if (fundReturns.length > 0) {
       // Count funds that beat or match their benchmark
       let beatingBenchmark = 0;
       let underperformingFunds: string[] = [];

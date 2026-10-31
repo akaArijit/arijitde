@@ -137,13 +137,11 @@ router.post(
       const { assessmentId } = req.body;
       if (!assessmentId) {
         return next(ApiError.badRequest('assessmentId is required'));
-        return;
       }
 
       const file = req.file;
       if (!file) {
         return next(ApiError.badRequest('Excel file is required'));
-        return;
       }
 
       // Check assessment existence and ownership
@@ -411,14 +409,36 @@ router.post(
 
         // Validate Total Invested
         const invested = parseExcelNumber(rawInvested);
-        if (invested === null || invested <= 0) {
-          continue;
+        if (invested === null) {
+          res.status(400).json({
+            success: false,
+            error: `Row ${i + 2}: Total Invested must be a valid number`,
+          });
+          return;
+        }
+        if (invested <= 0) {
+          res.status(400).json({
+            success: false,
+            error: `Row ${i + 2}: Total Invested must be positive`,
+          });
+          return;
         }
 
         // Validate Current Value
         const currentValue = parseExcelNumber(rawCurrentValue);
-        if (currentValue === null || currentValue <= 0) {
-          continue;
+        if (currentValue === null) {
+          res.status(400).json({
+            success: false,
+            error: `Row ${i + 2}: Current Value must be a valid number`,
+          });
+          return;
+        }
+        if (currentValue <= 0) {
+          res.status(400).json({
+            success: false,
+            error: `Row ${i + 2}: Current Value must be positive`,
+          });
+          return;
         }
 
         parsedRows.push({

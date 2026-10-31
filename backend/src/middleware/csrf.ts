@@ -41,11 +41,22 @@ export function csrfMiddleware(
     }
   }
 
-  // Validate double-submit cookie
+  // Validate double-submit cookie using timing-safe comparison
   const cookieToken = req.cookies?.[CSRF_COOKIE];
   const headerToken = req.headers[CSRF_HEADER] as string | undefined;
 
-  if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+  if (!cookieToken || !headerToken) {
+    res.status(403).json({
+      success: false,
+      error: 'Invalid or missing CSRF token',
+    });
+    return;
+  }
+
+  // Use timing-safe comparison to prevent timing attacks
+  const cookieTokenBuf = Buffer.from(cookieToken);
+  const headerTokenBuf = Buffer.from(headerToken);
+  if (cookieTokenBuf.length !== headerTokenBuf.length || !crypto.timingSafeEqual(cookieTokenBuf, headerTokenBuf)) {
     res.status(403).json({
       success: false,
       error: 'Invalid or missing CSRF token',

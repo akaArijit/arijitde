@@ -17,6 +17,11 @@ import leadsRouter from './leads';
 
 const router = Router();
 
+  // Validation schema for bulk import confirmations
+  const bulkImportConfirmSchema = z.object({
+    confirm: z.boolean().optional(),
+  });
+
 // Setup Multer memory storage with file type validation
 const ALLOWED_MIMETYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
@@ -220,38 +225,56 @@ router.get('/stats', async (req: AuthenticatedRequest, res: Response, next) => {
 // 2. GET /api/admin/users
 router.get('/users', async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        pan: true,
-        role: true,
-        dob: true,
-        anniversary: true,
-        createdAt: true,
-        assessments: {
-          orderBy: { createdAt: 'desc' },
-        },
-        portfolios: {
-          include: {
-            score: true,
-            rows: true,
+    const page = parseInt((req.query.page as string) || '1', 10);
+    const limit = Math.min(parseInt((req.query.limit as string) || '20', 10), 100);
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          phone: true,
+          pan: true,
+          role: true,
+          dob: true,
+          anniversary: true,
+          createdAt: true,
+          referralCode: true,
+          _count: {
+            select: {
+              assessments: true,
+              portfolios: true,
+              leads: true,
+            },
           },
-          orderBy: { createdAt: 'desc' },
+          client: {
+            select: {
+              activePlan: true,
+              advisorNotes: true,
+              activatedAt: true,
+            },
+          },
         },
-        leads: {
-          orderBy: { createdAt: 'desc' },
-        },
-        client: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.user.count(),
+    ]);
 
     res.json({
       success: true,
-      data: users,
+      data: {
+        users,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -387,25 +410,28 @@ router.post(
         return;
       }
 
-      if (pan !== undefined) {
-        await prisma.user.update({
-          where: { id },
-          data: { pan: pan === '' ? null : pan },
-        });
-      }
+      // Use transaction to prevent race condition when updating PAN
+      const clientProfile = await prisma.$transaction(async (tx) => {
+        if (pan !== undefined) {
+          await tx.user.update({
+            where: { id },
+            data: { pan: pan === '' ? null : pan },
+          });
+        }
 
-      const clientProfile = await prisma.client.upsert({
-        where: { userId: id },
-        update: {
-          advisorNotes,
-          activePlan,
-        },
-        create: {
-          userId: id,
-          advisorNotes: advisorNotes || '',
-          activePlan: activePlan || 'PREMIUM',
-          activatedAt: new Date(),
-        },
+        return tx.client.upsert({
+          where: { userId: id },
+          update: {
+            advisorNotes,
+            activePlan,
+          },
+          create: {
+            userId: id,
+            advisorNotes: advisorNotes || '',
+            activePlan: activePlan || 'PREMIUM',
+            activatedAt: new Date(),
+          },
+        });
       });
 
       // Audit log
@@ -440,10 +466,15 @@ router.post(
   upload.single('file'),
   async (req: AuthenticatedRequest, res: Response, next) => {
     try {
+      // Require explicit confirmation for destructive operation
+      const { confirm } = bulkImportConfirmSchema.parse(req.query);
+      if (!confirm) {
+        return next(ApiError.badRequest('This operation will delete all existing folio records. Provide confirm=true query parameter to proceed.'));
+      }
+
       const file = req.file;
       if (!file) {
         return next(ApiError.badRequest('CSV/Excel file is required'));
-        return;
       }
 
       let workbook: XLSX.WorkBook;
@@ -844,7 +875,12 @@ router.post(
           // 3. Find which rows require creating a new client, and collect unique new clients to prevent duplicates
           const newClientsToInsertMap = new Map<string, any>();
 
-          for (const row of parsedFolios) {
+          // Pre-compute matches for all rows to avoid O(n²) duplicate matching
+          interface MatchResult { match: any | null; newClientKey: string | null }
+          const matchResults = new Map<number, MatchResult>();
+
+          for (let i = 0; i < parsedFolios.length; i++) {
+            const row = parsedFolios[i];
             let match = null;
             if (row.clientPan) {
               match = clientByPan.get(row.clientPan.trim().toUpperCase());
@@ -859,6 +895,7 @@ router.post(
               match = clientByName.get(row.nameAsPerFolio.trim().toLowerCase());
             }
 
+            let newClientKey: string | null = null;
             if (!match) {
               const name = row.clientName || row.nameAsPerFolio;
               if (name) {
@@ -867,9 +904,7 @@ router.post(
                   : row.panAsPerFolio
                     ? row.panAsPerFolio.trim().toUpperCase()
                     : null;
-                const key = pan
-                  ? `pan:${pan}`
-                  : `name:${name.trim().toLowerCase()}`;
+                const key = pan ? `pan:${pan}` : `name:${name.trim().toLowerCase()}`;
                 if (!newClientsToInsertMap.has(key)) {
                   newClientsToInsertMap.set(key, {
                     name: name,
@@ -898,8 +933,10 @@ router.post(
                     aum: row.aum,
                   });
                 }
+                newClientKey = key;
               }
             }
+            matchResults.set(i, { match, newClientKey });
           }
 
           // 4. Bulk insert new clients in chunks
@@ -926,20 +963,17 @@ router.post(
             }
           }
 
-          // 6. Map each folio to its matched client ID
-          const foliosToInsert = parsedFolios.map((row) => {
-            let match = null;
-            if (row.clientPan) {
-              match = clientByPan.get(row.clientPan.trim().toUpperCase());
-            }
-            if (!match && row.panAsPerFolio) {
-              match = clientByPan.get(row.panAsPerFolio.trim().toUpperCase());
-            }
-            if (!match && row.clientName) {
-              match = clientByName.get(row.clientName.trim().toLowerCase());
-            }
-            if (!match && row.nameAsPerFolio) {
-              match = clientByName.get(row.nameAsPerFolio.trim().toLowerCase());
+          // 6. Map each folio to its matched client ID using pre-computed matches
+          const foliosToInsert = parsedFolios.map((row, i) => {
+            const { match: preMatch, newClientKey } = matchResults.get(i)!;
+            let match = preMatch;
+            if (!match && newClientKey) {
+              // Look up newly created client
+              if (newClientKey.startsWith('pan:')) {
+                match = clientByPan.get(newClientKey.slice(4));
+              } else {
+                match = clientByName.get(newClientKey.slice(5));
+              }
             }
 
             return {
@@ -1099,6 +1133,12 @@ router.delete(
   '/folios/clear',
   async (req: AuthenticatedRequest, res: Response, next) => {
     try {
+      // Require explicit confirmation for destructive operation
+      const { confirm } = bulkImportConfirmSchema.parse(req.query);
+      if (!confirm) {
+        return next(ApiError.badRequest('This operation will delete all folio records. Provide confirm=true query parameter to proceed.'));
+      }
+
       const result = await prisma.folio.deleteMany({});
       
       // Audit log
@@ -1125,10 +1165,15 @@ router.post(
   upload.single('file'),
   async (req: AuthenticatedRequest, res: Response, next) => {
     try {
+      // Require explicit confirmation for destructive operation
+      const { confirm } = bulkImportConfirmSchema.parse(req.query);
+      if (!confirm) {
+        return next(ApiError.badRequest('This operation will delete all existing client and folio records. Provide confirm=true query parameter to proceed.'));
+      }
+
       const file = req.file;
       if (!file) {
         return next(ApiError.badRequest('CSV/Excel file is required'));
-        return;
       }
 
       let workbook: XLSX.WorkBook;

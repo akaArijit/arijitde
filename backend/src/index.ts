@@ -38,9 +38,6 @@ import { logger } from './lib/logger';
 if (process.env.ENABLE_REFRESH_TOKENS === undefined) {
   process.env.ENABLE_REFRESH_TOKENS = 'true';
 }
-if (!process.env.PAN_VERIFICATION_SECRET && process.env.JWT_SECRET) {
-  process.env.PAN_VERIFICATION_SECRET = process.env.JWT_SECRET;
-}
 
 // Verify required environment variables
 const requiredEnvVars = [

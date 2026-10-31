@@ -82,38 +82,61 @@ router.post('/refresh', async (req: Request, res: Response, next) => {
 
     const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
 
-    const matchedToken = await prisma.refreshToken.findUnique({
-      where: { token: tokenHash, expiresAt: { gt: new Date() } },
+    // Use a transaction to atomically find and consume the refresh token
+    // This prevents race conditions where the same token could be used concurrently
+    const result = await prisma.$transaction(async (tx) => {
+      const matchedToken = await tx.refreshToken.findUnique({
+        where: { token: tokenHash, expiresAt: { gt: new Date() } },
+      });
+
+      if (!matchedToken || matchedToken.userId !== decoded.userId) {
+        await tx.refreshToken.deleteMany({ where: { userId: decoded.userId } });
+        return { error: 'revoked' };
+      }
+
+      if (matchedToken.expiresAt < new Date()) {
+        await tx.refreshToken.delete({ where: { id: matchedToken.id } });
+        return { error: 'expired' };
+      }
+
+      // Atomically consume the token - delete it as part of the same transaction
+      const deleted = await tx.refreshToken.delete({
+        where: { id: matchedToken.id },
+      });
+
+      if (!deleted) {
+        // Token was already consumed by another request
+        await tx.refreshToken.deleteMany({ where: { userId: decoded.userId } });
+        return { error: 'reuse' };
+      }
+
+      // Clean up expired tokens
+      await tx.refreshToken.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+
+      const user = await tx.user.findUnique({ where: { id: decoded.userId } });
+      if (!user) {
+        return { error: 'user_not_found' };
+      }
+
+      return { user };
     });
 
-    if (!matchedToken || matchedToken.userId !== decoded.userId) {
-      await prisma.refreshToken.deleteMany({ where: { userId: decoded.userId } });
+    if (result.error === 'revoked') {
       res.clearCookie('refreshToken', { path: '/' });
       return next(ApiError.unauthorized('Refresh token revoked — all sessions terminated'));
     }
-
-    if (matchedToken.expiresAt < new Date()) {
-      await prisma.refreshToken.delete({ where: { id: matchedToken.id } });
+    if (result.error === 'expired') {
       res.clearCookie('refreshToken', { path: '/' });
       return next(ApiError.unauthorized('Refresh token expired'));
     }
-
-    const { count: deletedCount } = await prisma.refreshToken.deleteMany({
-      where: { id: matchedToken.id, userId: decoded.userId },
-    });
-    if (deletedCount === 0) {
-      await prisma.refreshToken.deleteMany({ where: { userId: decoded.userId } });
+    if (result.error === 'reuse') {
       return next(ApiError.unauthorized('Refresh token reuse detected — all sessions terminated'));
     }
-
-    await prisma.refreshToken.deleteMany({ where: { expiresAt: { lt: new Date() } } });
-
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-    if (!user) {
+    if (result.error === 'user_not_found' || !result.user) {
       return next(ApiError.unauthorized('User not found'));
     }
 
-    const tokens = await createTokenPair(user, res);
+    const tokens = await createTokenPair(result.user!, res);
     res.json({ success: true, data: { token: tokens.token } });
   } catch (error) {
     next(error);

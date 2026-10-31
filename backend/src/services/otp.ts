@@ -1,4 +1,4 @@
-import { randomInt, createHmac } from 'crypto';
+import { randomInt, createHmac, createHash } from 'crypto';
 import { sendOTPEmail } from './email';
 import { redis, isRedisAvailable } from '../lib/redis';
 import {
@@ -13,6 +13,12 @@ if (!OTP_SECRET) {
     'OTP_SECRET environment variable is required. Set a separate secret for OTP hashing.',
   );
 }
+
+// Derive a separate key for Redis key derivation using HKDF
+// This ensures that even if OTP_SECRET is compromised, Redis keys cannot be easily derived
+// without also knowing the key derivation salt
+const OTP_KEY_DERIVATION_SECRET = process.env.OTP_KEY_DERIVATION_SECRET 
+  || createHash('sha256').update(OTP_SECRET + ':key-derivation').digest('hex');
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -47,7 +53,7 @@ export function generateOTP(): string {
 
 function otpKey(email: string, purpose: string): string {
   const normalizedEmail = email.toLowerCase();
-  const digest = createHmac('sha256', OTP_SECRET)
+  const digest = createHmac('sha256', OTP_KEY_DERIVATION_SECRET)
     .update(`${normalizedEmail}:${purpose}`)
     .digest('hex')
     .slice(0, OTP_CONFIG.KEY_DIGEST_LENGTH);
