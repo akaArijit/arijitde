@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Response } from 'express';
 import multer from 'multer';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
@@ -81,18 +81,12 @@ function parseExcelDate(val: unknown): Date | null {
     return isNaN(val.getTime()) ? null : val;
   }
   if (typeof val === 'number') {
-    const dateObj = XLSX.SSF.parse_date_code(val);
-    if (!dateObj) return null;
-    return new Date(
-      Date.UTC(
-        dateObj.y,
-        dateObj.m - 1,
-        dateObj.d,
-        dateObj.H,
-        dateObj.M,
-        dateObj.S,
-      ),
-    );
+    // Excel stores dates as days since 1900-01-01 (with a bug: treats 1900 as leap year)
+    // ExcelJS already converts to JS Date objects, so this shouldn't be needed
+    // But keeping as fallback for raw values
+    const excelEpoch = new Date(1899, 11, 30); // Excel epoch is 1899-12-30
+    const date = new Date(excelEpoch.getTime() + val * 24 * 60 * 60 * 1000);
+    return isNaN(date.getTime()) ? null : date;
   }
   if (typeof val === 'string') {
     const trimmed = val.trim();
@@ -158,9 +152,11 @@ router.post(
       }
 
       // Read and parse Excel file
-      let workbook: XLSX.WorkBook;
+      let workbook: ExcelJS.Workbook;
       try {
-        workbook = XLSX.read(file.buffer, { type: 'buffer' });
+        workbook = new ExcelJS.Workbook();
+        // @ts-ignore - file.buffer is Buffer<ArrayBufferLike> but ExcelJS expects Buffer
+        await workbook.xlsx.load(file.buffer);
       } catch {
         res.status(400).json({
           success: false,
@@ -169,16 +165,19 @@ router.post(
         return;
       }
 
-      const sheetName = workbook.SheetNames[0];
-      if (!sheetName) {
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
         return next(ApiError.badRequest('Excel sheet is empty'));
-        return;
       }
 
-      const worksheet = workbook.Sheets[sheetName];
       // Read sheet as a 2D array of raw values to retain column order
-      const rawRows = XLSX.utils.sheet_to_json<unknown[]>(worksheet!, {
-        header: 1,
+      const rawRows: unknown[][] = [];
+      worksheet.eachRow({ includeEmpty: true }, (row) => {
+        const rowData: unknown[] = [];
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          rowData.push(cell.value);
+        });
+        rawRows.push(rowData);
       });
 
       if (rawRows.length === 0) {

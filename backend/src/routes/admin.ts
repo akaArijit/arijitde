@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Response } from 'express';
 import { z } from 'zod';
 import multer from 'multer';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '../lib/prisma';
@@ -75,32 +75,26 @@ function getRowValue(row: Record<string, any>, aliases: string[]): any {
 }
 
 function findHeaderRowIndex(
-  worksheet: XLSX.WorkSheet,
+  worksheet: ExcelJS.Worksheet,
   headerIndicators: string[],
 ): number {
-  const rawSheets = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });
-  for (let i = 0; i < rawSheets.length; i++) {
-    const row = rawSheets[i];
-    if (Array.isArray(row)) {
-      const rowStrings = row.map((cell) =>
-        String(cell || '')
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, ''),
-      );
-      const found = headerIndicators.some((indicator) => {
-        const cleanIndicator = indicator
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, '');
-        return rowStrings.includes(cleanIndicator);
-      });
-      if (found) {
-        return i;
-      }
+  const headerIndicatorsClean = headerIndicators.map((indicator) =>
+    indicator.trim().toLowerCase().replace(/\s+/g, ''),
+  );
+
+  let headerRowIndex = 0;
+  worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    if (headerRowIndex !== 0) return;
+    const rowStrings: string[] = [];
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      rowStrings.push(String(cell.value || '').trim().toLowerCase().replace(/\s+/g, ''));
+    });
+    const found = headerIndicatorsClean.some((indicator) => rowStrings.includes(indicator));
+    if (found) {
+      headerRowIndex = rowNumber - 1; // ExcelJS is 1-indexed, we want 0-indexed
     }
-  }
-  return 0;
+  });
+  return headerRowIndex;
 }
 
 function parseAvgHoldingDays(val: unknown): number | null {
@@ -477,9 +471,11 @@ router.post(
         return next(ApiError.badRequest('CSV/Excel file is required'));
       }
 
-      let workbook: XLSX.WorkBook;
+      let workbook: ExcelJS.Workbook;
       try {
-        workbook = XLSX.read(file.buffer, { type: 'buffer' });
+        workbook = new ExcelJS.Workbook();
+        // @ts-ignore - file.buffer is Buffer<ArrayBufferLike> but ExcelJS expects Buffer
+        await workbook.xlsx.load(file.buffer);
       } catch {
         res.status(400).json({
           success: false,
@@ -489,24 +485,40 @@ router.post(
         return;
       }
 
-      const sheetName = workbook.SheetNames[0];
-      if (!sheetName) {
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
         return next(ApiError.badRequest('File sheet is empty'));
-        return;
       }
 
-      const worksheet = workbook.Sheets[sheetName];
-      const headerRowIndex = findHeaderRowIndex(worksheet!, [
+      const headerRowIndex = findHeaderRowIndex(worksheet, [
         'Client Name',
         'Name',
       ]);
-      const rawRows = XLSX.utils.sheet_to_json<Record<string, any>>(
-        worksheet!,
-        {
-          range: headerRowIndex,
-          defval: '',
-        },
-      );
+      // Convert worksheet to JSON rows using ExcelJS
+      const rawRows: Record<string, any>[] = [];
+      const headerRow = worksheet.getRow(headerRowIndex + 1); // ExcelJS is 1-indexed
+      const headers: string[] = [];
+      headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        headers[colNumber - 1] = String(cell.value || `col_${colNumber}`);
+      });
+
+      // Iterate data rows (skip header row)
+      for (let rowNum = headerRowIndex + 2; rowNum <= worksheet.rowCount; rowNum++) {
+        const row = worksheet.getRow(rowNum);
+        const rowData: Record<string, any> = {};
+        let hasData = false;
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          if (headers[colNumber - 1]) {
+            rowData[headers[colNumber - 1]] = cell.value;
+            if (cell.value !== null && cell.value !== undefined && String(cell.value).trim() !== '') {
+              hasData = true;
+            }
+          }
+        });
+        if (hasData) {
+          rawRows.push(rowData);
+        }
+      }
 
       if (rawRows.length === 0) {
         return next(ApiError.badRequest('File contains no data rows'));
@@ -1176,9 +1188,11 @@ router.post(
         return next(ApiError.badRequest('CSV/Excel file is required'));
       }
 
-      let workbook: XLSX.WorkBook;
+      let workbook: ExcelJS.Workbook;
       try {
-        workbook = XLSX.read(file.buffer, { type: 'buffer' });
+        workbook = new ExcelJS.Workbook();
+        // @ts-ignore - file.buffer is Buffer<ArrayBufferLike> but ExcelJS expects Buffer
+        await workbook.xlsx.load(file.buffer);
       } catch {
         res.status(400).json({
           success: false,
@@ -1188,21 +1202,37 @@ router.post(
         return;
       }
 
-      const sheetName = workbook.SheetNames[0];
-      if (!sheetName) {
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
         return next(ApiError.badRequest('File sheet is empty'));
-        return;
       }
 
-      const worksheet = workbook.Sheets[sheetName];
-      const headerRowIndex = findHeaderRowIndex(worksheet!, ['Name', 'PAN']);
-      const rawRows = XLSX.utils.sheet_to_json<Record<string, any>>(
-        worksheet!,
-        {
-          range: headerRowIndex,
-          defval: '',
-        },
-      );
+      const headerRowIndex = findHeaderRowIndex(worksheet, ['Name', 'PAN']);
+      // Convert worksheet to JSON rows using ExcelJS
+      const rawRows: Record<string, any>[] = [];
+      const headerRow = worksheet.getRow(headerRowIndex + 1); // ExcelJS is 1-indexed
+      const headers: string[] = [];
+      headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        headers[colNumber - 1] = String(cell.value || `col_${colNumber}`);
+      });
+
+      // Iterate data rows (skip header row)
+      for (let rowNum = headerRowIndex + 2; rowNum <= worksheet.rowCount; rowNum++) {
+        const row = worksheet.getRow(rowNum);
+        const rowData: Record<string, any> = {};
+        let hasData = false;
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          if (headers[colNumber - 1]) {
+            rowData[headers[colNumber - 1]] = cell.value;
+            if (cell.value !== null && cell.value !== undefined && String(cell.value).trim() !== '') {
+              hasData = true;
+            }
+          }
+        });
+        if (hasData) {
+          rawRows.push(rowData);
+        }
+      }
 
       if (rawRows.length === 0) {
         return next(ApiError.badRequest('File contains no data rows'));
@@ -1737,9 +1767,11 @@ router.post(
         return;
       }
 
-      let workbook: XLSX.WorkBook;
+      let workbook: ExcelJS.Workbook;
       try {
-        workbook = XLSX.read(file.buffer, { type: 'buffer' });
+        workbook = new ExcelJS.Workbook();
+        // @ts-ignore - file.buffer is Buffer<ArrayBufferLike> but ExcelJS expects Buffer
+        await workbook.xlsx.load(file.buffer);
       } catch {
         res.status(400).json({
           success: false,
@@ -1749,24 +1781,40 @@ router.post(
         return;
       }
 
-      const sheetName = workbook.SheetNames[0];
-      if (!sheetName) {
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
         return next(ApiError.badRequest('File sheet is empty'));
-        return;
       }
 
-      const worksheet = workbook.Sheets[sheetName];
-      const headerRowIndex = findHeaderRowIndex(worksheet!, [
+      const headerRowIndex = findHeaderRowIndex(worksheet, [
         'Client Name',
         'Name',
       ]);
-      const rawRows = XLSX.utils.sheet_to_json<Record<string, any>>(
-        worksheet!,
-        {
-          range: headerRowIndex,
-          defval: '',
-        },
-      );
+      // Convert worksheet to JSON rows using ExcelJS
+      const rawRows: Record<string, any>[] = [];
+      const headerRow = worksheet.getRow(headerRowIndex + 1); // ExcelJS is 1-indexed
+      const headers: string[] = [];
+      headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        headers[colNumber - 1] = String(cell.value || `col_${colNumber}`);
+      });
+
+      // Iterate data rows (skip header row)
+      for (let rowNum = headerRowIndex + 2; rowNum <= worksheet.rowCount; rowNum++) {
+        const row = worksheet.getRow(rowNum);
+        const rowData: Record<string, any> = {};
+        let hasData = false;
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          if (headers[colNumber - 1]) {
+            rowData[headers[colNumber - 1]] = cell.value;
+            if (cell.value !== null && cell.value !== undefined && String(cell.value).trim() !== '') {
+              hasData = true;
+            }
+          }
+        });
+        if (hasData) {
+          rawRows.push(rowData);
+        }
+      }
 
       if (rawRows.length === 0) {
         return next(ApiError.badRequest('File contains no data rows'));

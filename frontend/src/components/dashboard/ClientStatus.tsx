@@ -160,6 +160,7 @@ export function ClientStatus({
               </div>
             )}
           </div>
+        </>
         )
         : (
           <div className="p-4 bg-white/40 border border-white/30 rounded-2xl text-left space-y-3 font-sans text-xs">

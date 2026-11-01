@@ -138,6 +138,8 @@ const AIOrbFace = ({
   }, []);
 
   // Snap shut, ease back open — an even-timed blink reads as a machine.
+  const blinkRef = useRef<((double?: boolean) => Promise<void>) | null>(null);
+
   const blink = useCallback(
     async (double = false) => {
       const closeT = { duration: 0.07, ease: EASE_IN };
@@ -157,11 +159,15 @@ const AIOrbFace = ({
         rightLid.start({ scaleY: 1 }, double ? closeT : openT),
       ]);
       if (double) {
-        await blink(false);
+        await blinkRef.current?.(false);
       }
     },
     [leftLid, rightLid],
   );
+
+  useEffect(() => {
+    blinkRef.current = blink;
+  }, [blink]);
 
   // Idle blinking, occasionally a double.
   useEffect(() => {
@@ -174,7 +180,7 @@ const AIOrbFace = ({
       timeout = setTimeout(
         () => {
           if (mounted) {
-            blink(Math.random() < DOUBLE_BLINK_CHANCE);
+            blinkRef.current?.(Math.random() < DOUBLE_BLINK_CHANCE);
           }
           schedule();
         },

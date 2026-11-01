@@ -331,6 +331,7 @@ export function PortfolioAnalyzer({
               </button>
             </form>
           </div>
+        </div>
         </>
       ) : (
         <>

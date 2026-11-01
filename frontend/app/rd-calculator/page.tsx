@@ -1,39 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
 import GradualBlur from '@/components/GradualBlur';
-import { Coins, Calendar, TrendingUp, ArrowLeft } from 'lucide-react';
+import { Coins, Calendar, TrendingUp, ArrowLeft, ShieldCheck, Download } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 export default function RDCalculator() {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(true); // Client component, always mounted
 
   // Calculator inputs state
   const [monthlyDeposit, setMonthlyDeposit] = useState(5000);
   const [interestRate, setInterestRate] = useState(7.0); // typical RD rate
   const [years, setYears] = useState(5);
 
-  // Calculated outputs state
-  const [investedAmount, setInvestedAmount] = useState(0);
-  const [estReturns, setEstReturns] = useState(0);
-  const [totalValue, setTotalValue] = useState(0);
-  // Mount animation
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    setMounted(true);
-    document.title = 'Recurring Deposit (RD) Calculator | FinAnalysis';
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Run calculations whenever inputs change
-  useEffect(() => {
+  // Memoized calculation
+  const calculation = useMemo(() => {
     const totalMonths = years * 12;
     let maturityValue = 0;
     const totalInvested = monthlyDeposit * totalMonths;
@@ -48,10 +33,22 @@ export default function RDCalculator() {
       maturityValue += installmentMaturity;
     }
 
-    setInvestedAmount(Math.round(totalInvested));
-    setEstReturns(Math.round(Math.max(0, maturityValue - totalInvested)));
-    setTotalValue(Math.round(maturityValue));
+    const investedAmount = Math.round(totalInvested);
+    const estReturns = Math.round(Math.max(0, maturityValue - totalInvested));
+    const totalValue = Math.round(maturityValue);
+
+    return { investedAmount, estReturns, totalValue };
   }, [monthlyDeposit, interestRate, years]);
+
+  // Mount animation
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.title = 'Recurring Deposit (RD) Calculator | FinAnalysis';
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Format currency helper (Indian style)
   const formatCurrency = (val: number) => {
@@ -64,9 +61,9 @@ export default function RDCalculator() {
   };
 
   // SVG Donut Calculations
-  const returnsPercent = totalValue > 0 ? (estReturns / totalValue) * 100 : 0;
+  const returnsPercent = calculation.totalValue > 0 ? (calculation.estReturns / calculation.totalValue) * 100 : 0;
   const investedPercent =
-    totalValue > 0 ? (investedAmount / totalValue) * 100 : 100;
+    calculation.totalValue > 0 ? (calculation.investedAmount / calculation.totalValue) * 100 : 100;
 
   // Donut parameters
   const radius = 50;
@@ -81,7 +78,7 @@ export default function RDCalculator() {
         <SoftBoxBlurBg />
       </div>
 
-      <Navbar isLoaded={isLoaded} activePath="/sip-calculator" />
+      <Navbar isLoaded={isLoaded} activePath="/rd-calculator" />
 
       {/* Header Title Section */}
       <div className="relative z-10 flex flex-col justify-center items-center px-6 pt-44 pb-6 text-center max-w-5xl mx-auto">
@@ -99,277 +96,236 @@ export default function RDCalculator() {
               }
             }
           }}
-          className="group flex items-center gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-primary bg-white/40 border border-border hover:bg-white/60 rounded-xl transition duration-200 shadow-sm mb-4 cursor-pointer animate-in fade-in slide-in-from-top-2 duration-1000"
+          className="absolute left-6 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/50 border border-white/30 hover:bg-white/70 transition-colors text-neutral-700 hover:text-neutral-900 cursor-pointer"
+          aria-label="Back to Home"
         >
-          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
-          Back to Home
+          <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1
-          className={`text-4xl md:text-7xl font-normal tracking-tight mt-12 mb-4 leading-none text-primary font-clash transition-all duration-[1200ms] ease-out ${
-            isLoaded
-              ? 'opacity-100 blur-none scale-100'
-              : 'opacity-0 blur-lg scale-95'
-          } delay-[200ms]`}
-        >
-          Recurring Deposit Calculator
-        </h1>
-        <p
-          className={`text-sm md:text-base text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed font-sans transition-all duration-[1200ms] ease-out ${
-            isLoaded
-              ? 'opacity-100 blur-none scale-100'
-              : 'opacity-0 blur-md scale-95'
-          } delay-[400ms]`}
-        >
-          Plan your monthly savings systematically with a Recurring Deposit (RD)
-          compounding quarterly.
-        </p>
+        <div className="space-y-3">
+          <div className="inline-flex items-center gap-2 bg-white/50 backdrop-blur-md border border-white/30 px-4 py-1.5 rounded-full shadow-sm">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            <span className="text-xs font-bold text-primary font-mono tracking-wider">
+              Secured by FinAnalysis
+            </span>
+          </div>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-neutral-900 font-clash">
+            RD
+            <span className="text-primary"> Calculator</span>
+          </h1>
+          <p className="text-neutral-600 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed font-sans">
+            Calculate your Recurring Deposit maturity amount. Enter your monthly deposit, interest rate,
+            and tenure to see estimated returns with quarterly compounding.
+          </p>
+        </div>
       </div>
 
-      {/* Calculator Columns Layout */}
-      <div
-        className={`relative z-10 w-full max-w-5xl mx-auto px-6 pb-36 grid grid-cols-1 lg:grid-cols-12 gap-10 transition-all duration-[1200ms] ease-out ${
-          isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-        } delay-[500ms]`}
-      >
-        {/* Left Column: Sliders and Range Inputs */}
-        <div className="lg:col-span-7 bg-white/35 border border-border rounded-3xl p-8 shadow-md backdrop-blur-2xl space-y-8 flex flex-col justify-center text-left">
-          {/* Monthly RD Installment */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center text-sm font-sans">
-              <span className="text-muted-foreground flex items-center gap-1.5 font-clash uppercase font-semibold text-[11px] tracking-wider">
-                <Coins className="w-4 h-4 text-primary" />
-                Monthly RD Contribution
-              </span>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-[#F2F0EF]/80 border border-border px-3 py-1 rounded-xl font-mono font-bold text-base text-foreground">
-                  <span>₹</span>
-                  <input
-                    type="number"
-                    value={monthlyDeposit}
-                    onChange={(e) =>
-                      setMonthlyDeposit(Math.max(0, Number(e.target.value)))
-                    }
-                    className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    style={{
-                      width: `${Math.max(3, String(monthlyDeposit).length) * 9 + 5}px`,
-                    }}
-                  />
-                </div>
-              </div>
+      {/* Calculator Form & Results */}
+      <div className="relative z-10 flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 md:py-12 flex flex-col items-center">
+        {/* Input Card */}
+        <div className="w-full bg-white/50 backdrop-blur-md border border-white/30 rounded-2xl p-6 md:p-8 shadow-sm mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                Monthly Deposit (₹)
+              </label>
+              <input
+                type="number"
+                min="100"
+                max="1000000"
+                step="100"
+                value={monthlyDeposit}
+                onChange={(e) => setMonthlyDeposit(Number(e.target.value))}
+                className="w-full px-4 py-3 bg-white/50 border border-neutral-200 rounded-xl text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-neutral-900 font-mono"
+                placeholder="e.g. 5000"
+              />
             </div>
-            <input
-              type="range"
-              min={500}
-              max={100000}
-              step={500}
-              value={Math.min(100000, Math.max(500, monthlyDeposit))}
-              onChange={(e) => setMonthlyDeposit(Number(e.target.value))}
-              className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-              <span>₹500</span>
-              <span>₹50,000</span>
-              <span>₹1,00,000</span>
-            </div>
-          </div>
 
-          {/* Rate of Interest */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center text-sm font-sans">
-              <span className="text-muted-foreground flex items-center gap-1.5 font-clash uppercase font-semibold text-[11px] tracking-wider">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                Rate of Interest (p.a)
-              </span>
-              <div className="flex items-center gap-1 bg-[#F2F0EF]/80 border border-border px-3 py-1 rounded-xl font-mono font-bold text-base text-foreground">
-                <input
-                  type="number"
-                  step="0.1"
-                  value={interestRate}
-                  onChange={(e) =>
-                    setInterestRate(Math.max(0, Number(e.target.value)))
-                  }
-                  className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  style={{
-                    width: `${Math.max(3, String(interestRate).length) * 9 + 5}px`,
-                  }}
-                />
-                <span>%</span>
-              </div>
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                Interest Rate (% p.a.)
+              </label>
+              <input
+                type="number"
+                min="0.1"
+                max="15"
+                step="0.1"
+                value={interestRate}
+                onChange={(e) => setInterestRate(Number(e.target.value))}
+                className="w-full px-4 py-3 bg-white/50 border border-neutral-200 rounded-xl text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-neutral-900 font-mono"
+                placeholder="e.g. 7.0"
+              />
             </div>
-            <input
-              type="range"
-              min={2}
-              max={15}
-              step={0.1}
-              value={Math.min(15, Math.max(2, interestRate))}
-              onChange={(e) => setInterestRate(Number(e.target.value))}
-              className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-              <span>2%</span>
-              <span>8.5%</span>
-              <span>15%</span>
-            </div>
-          </div>
 
-          {/* RD Tenure */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center text-sm font-sans">
-              <span className="text-muted-foreground flex items-center gap-1.5 font-clash uppercase font-semibold text-[11px] tracking-wider">
-                <Calendar className="w-4 h-4 text-primary" />
-                Tenure Period (Years)
-              </span>
-              <div className="flex items-center gap-1 bg-[#F2F0EF]/80 border border-border px-3 py-1 rounded-xl font-mono font-bold text-base text-foreground">
-                <input
-                  type="number"
-                  value={years}
-                  onChange={(e) =>
-                    setYears(Math.max(0, Number(e.target.value)))
-                  }
-                  className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  style={{
-                    width: `${Math.max(2, String(years).length) * 9 + 5}px`,
-                  }}
-                />
-                <span>{years === 1 ? 'Year' : 'Years'}</span>
-              </div>
-            </div>
-            <input
-              type="range"
-              min={1}
-              max={10}
-              step={1}
-              value={Math.min(10, Math.max(1, years))}
-              onChange={(e) => setYears(Number(e.target.value))}
-              className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-              <span>1 Yr</span>
-              <span>5 Yrs</span>
-              <span>10 Yrs</span>
-            </div>
-          </div>
-
-          {/* Dotted divider */}
-          <div className="border-t border-dashed border-border w-full" />
-
-          {/* Metrics summary cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-            <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                Invested Capital
-              </span>
-              <span className="text-xl font-bold text-foreground mt-1">
-                {formatCurrency(investedAmount)}
-              </span>
-            </div>
-            <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-primary/75">
-                Est. Interest Appreciation
-              </span>
-              <span className="text-xl font-bold text-primary mt-1">
-                {formatCurrency(estReturns)}
-              </span>
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                Tenure (Years)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="30"
+                step="1"
+                value={years}
+                onChange={(e) => setYears(Number(e.target.value))}
+                className="w-full px-4 py-3 bg-white/50 border border-neutral-200 rounded-xl text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-neutral-900 font-mono"
+                placeholder="e.g. 5"
+              />
             </div>
           </div>
         </div>
 
-        {/* Right Column: SVG Donut Chart and Legend */}
-        <div className="lg:col-span-5 bg-white/35 border border-border rounded-3xl p-8 shadow-md backdrop-blur-2xl flex flex-col justify-center items-center">
-          {/* Donut container */}
-          <div className="relative w-64 h-64 flex justify-center items-center">
-            {/* SVG circle */}
-            <svg
-              width="100%"
-              height="100%"
-              viewBox="0 0 120 120"
-              className="transform -rotate-90"
-            >
-              {/* Backing Circle (Invested Amount) */}
-              <circle
-                cx="60"
-                cy="60"
-                r={radius}
-                fill="transparent"
-                stroke="rgba(147, 197, 253, 0.15)"
-                strokeWidth="10"
-              />
-              <circle
-                cx="60"
-                cy="60"
-                r={radius}
-                fill="transparent"
-                stroke="#d4d4d8"
-                strokeWidth="10"
-                strokeDasharray={circumference}
-                strokeDashoffset="0"
-                className="transition-all duration-500 ease-out"
-              />
+        {/* Results Card */}
+        <div className="w-full bg-white/50 backdrop-blur-md border border-white/30 rounded-2xl p-6 md:p-8 shadow-sm">
+          <h2 className="text-2xl font-bold text-neutral-900 mb-6 text-center font-clash">
+            Your RD Maturity Summary
+          </h2>
 
-              {/* Foreground Circle (Est. Returns) */}
-              {returnsPercent > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {/* Result Card - Total Invested */}
+            <div className="bg-white border border-neutral-200 rounded-xl p-4 md:p-6 text-center">
+              <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                Total Invested
+              </div>
+              <div className="text-2xl md:text-3xl font-extrabold text-primary font-clash">
+                {formatCurrency(calculation.investedAmount)}
+              </div>
+              <p className="text-xs text-neutral-500 mt-1">
+                {monthlyDeposit.toLocaleString('en-IN')} × {years * 12} months
+              </p>
+            </div>
+
+            {/* Result Card - Estimated Returns */}
+            <div className="bg-white border border-neutral-200 rounded-xl p-4 md:p-6 text-center">
+              <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                Estimated Returns
+              </div>
+              <div className="text-2xl md:text-3xl font-extrabold text-amber-600 font-clash">
+                {formatCurrency(calculation.estReturns)}
+              </div>
+              <p className="text-xs text-neutral-500 mt-1">Interest earned</p>
+            </div>
+
+            {/* Result Card - Maturity Value */}
+            <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 md:p-6 text-center md:col-span-1 lg:col-span-2">
+              <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                Maturity Value
+              </div>
+              <div className="text-4xl md:text-5xl font-extrabold text-primary font-clash">
+                {formatCurrency(calculation.totalValue)}
+              </div>
+              <p className="text-sm text-primary/80 mt-1">Total value at maturity</p>
+            </div>
+          </div>
+
+          {/* Visual Donut Chart */}
+          <div className="mt-8 md:mt-12 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+            <div className="relative w-32 h-32 md:w-40 md:h-40 flex-shrink-0">
+              <svg width="100%" height="100%" viewBox="0 0 100 100">
                 <circle
-                  cx="60"
-                  cy="60"
+                  cx="50"
+                  cy="50"
                   r={radius}
-                  fill="transparent"
-                  stroke="#3A8293"
-                  strokeWidth="10.2"
+                  stroke="#E5E7EB"
+                  strokeWidth="8"
+                  fill="none"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r={radius}
+                  stroke="url(#rd-gradient)"
+                  strokeWidth="8"
+                  fill="none"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
                   strokeLinecap="round"
-                  className="transition-all duration-500 ease-out"
+                  className="transform -rotate-90 transition-all duration-1000 ease-out"
                 />
-              )}
-            </svg>
+                <defs>
+                  <linearGradient id="rd-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3A8293" />
+                    <stop offset="100%" stopColor="#06B6D4" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span className="text-2xl md:text-3xl font-extrabold text-neutral-900 font-clash">
+                  {returnsPercent.toFixed(0)}%
+                </span>
+                <span className="text-xs text-neutral-500">Returns</span>
+              </div>
+            </div>
 
-            {/* Inner Center Label */}
-            <div className="absolute flex flex-col items-center justify-center text-center">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                Maturity Value
-              </span>
-              <span className="text-xl md:text-2xl font-bold text-foreground mt-1 select-text">
-                {formatCurrency(totalValue)}
-              </span>
+            <div className="flex-1 max-w-xs md:max-w-md text-center md:text-left">
+              <h3 className="text-lg md:text-xl font-bold text-neutral-900 font-clash mb-2">
+                Returns Breakdown
+              </h3>
+              <p className="text-neutral-600 text-sm leading-relaxed font-sans">
+                Out of the total {formatCurrency(calculation.totalValue)} at maturity,
+                {formatCurrency(calculation.investedAmount)} ({investedPercent.toFixed(0)}%) is your principal
+                investment, while {formatCurrency(calculation.estReturns)} ({returnsPercent.toFixed(0)}%) comes from
+                quarterly compounded interest at {interestRate}% p.a.
+              </p>
             </div>
           </div>
 
-          {/* Donut Legend */}
-          <div className="w-full mt-6 space-y-3 font-sans">
-            <div className="flex justify-between items-center text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 rounded bg-zinc-400 border border-border shrink-0" />
-                <span className="text-muted-foreground">Invested Capital</span>
-              </div>
-              <span className="text-foreground font-mono font-medium">
-                {investedPercent.toFixed(1)}% ({formatCurrency(investedAmount)})
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 rounded bg-[#3A8293] shrink-0" />
-                <span className="text-muted-foreground">
-                  Est. Interest Earned
+          {/* Key Insights */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white/50 border border-neutral-200 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                  Key Insight
                 </span>
               </div>
-              <span className="text-foreground font-mono font-bold">
-                {returnsPercent.toFixed(1)}% ({formatCurrency(estReturns)})
-              </span>
+              <p className="text-sm text-neutral-700 font-sans">
+                RD interest is compounded quarterly. Higher monthly deposits and longer tenures benefit
+                significantly from compounding. Consider increasing your monthly deposit for
+                exponentially higher returns.
+              </p>
+            </div>
+            <div className="bg-white/50 border border-neutral-200 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Download className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                  Quick Action
+                </span>
+              </div>
+              <p className="text-sm text-neutral-700 font-sans">
+                Compare RD rates across banks. Even a 0.5% difference in interest rate can significantly
+                impact your maturity value over long tenures.
+              </p>
             </div>
           </div>
         </div>
+
+        {/* Formula Explanation */}
+        <details className="w-full max-w-4xl mx-auto mt-12">
+          <summary className="cursor-pointer text-primary font-bold text-sm hover:underline font-clash flex items-center gap-2">
+            <Coins className="w-4 h-4" />
+            View Calculation Formula & Assumptions
+          </summary>
+          <div className="mt-4 p-4 bg-white/50 backdrop-blur-md border border-white/30 rounded-xl text-sm text-neutral-700 space-y-3 font-sans">
+            <div>
+              <strong className="text-neutral-900 font-clash">Formula (Quarterly Compounding)</strong>
+            </div>
+            <div className="space-y-2 font-mono text-xs bg-neutral-50 rounded-lg p-3">
+              <div>For each month k = 1 to n (n = years × 12):</div>
+              <div>  Months remaining = n - k + 1</div>
+              <div>  Quarters remaining = Months remaining / 3</div>
+              <div>  Installment value = Monthly Deposit × (1 + Rate/400)^Quarters</div>
+              <div>  Maturity Value = Sum of all installment values</div>
+            </div>
+            <div className="text-xs text-neutral-500">
+              <strong>Assumptions:</strong> Interest rate is constant, deposits made at month-start,
+              interest compounded quarterly, no taxes/fees considered. Actual bank RD rates
+              and compounding frequency may vary.
+            </div>
+          </div>
+        </details>
       </div>
 
       <Footer />
-
-      {isLoaded && (
-        <GradualBlur
-          preset="page-footer"
-          height="2rem"
-          style={{ zIndex: 30 }}
-        />
-      )}
     </main>
   );
 }

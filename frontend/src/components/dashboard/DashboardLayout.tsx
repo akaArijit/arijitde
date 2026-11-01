@@ -160,23 +160,11 @@ export function DashboardLayout() {
   const [isExistingClient, setIsExistingClient] = useState(false);
   const [existingClientData, setExistingClientData] = useState<any>(null);
 
-  // Phone Modal state
-  const [showPhoneModal, setShowPhoneModal] = useState(false);
-  const [phoneInput, setPhoneInput] = useState('');
-  const [dobInput, setDobInput] = useState('');
-  const [anniversaryInput, setAnniversaryInput] = useState('');
-  const [modalSubmitting, setModalSubmitting] = useState(false);
-  const [modalError, setModalError] = useState<string | null>(null);
-
   // Groww Guide state
   const [showGrowwGuide, setShowGrowwGuide] = useState(false);
 
   // Uploaded file state
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-
-  // Existing Client Detection
-  const [isExistingClient, setIsExistingClient] = useState(false);
-  const [existingClientData, setExistingClientData] = useState<any>(null);
 
   // Auth Guard & Initial Fetch
   useEffect(() => {
@@ -804,36 +792,6 @@ export function DashboardLayout() {
       setModalSubmitting(false);
     }
   };
-
-  const handleSignOut = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/onboarding');
-  };
-
-  const calculateAge = (dobString: string | Date) => {
-    const birthDate = new Date(dobString);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-    return age;
-  };
-
-  const getAgeRangeFromAge = (age: number) => {
-    if (age < 25) return 'BELOW_25';
-    if (age <= 35) return '25_35';
-    if (age <= 45) return '36_45';
-    if (age <= 60) return '46_60';
-    return 'ABOVE_60';
-  };
-
-  if (!isLoaded) {
     return (
       <main className="relative min-h-screen w-full bg-transparent text-neutral-900 flex flex-col font-clash">
         <div className="page-backdrop fixed inset-0 z-0 select-none pointer-events-none">

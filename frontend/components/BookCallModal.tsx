@@ -48,6 +48,7 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
   const initializedRef = useRef(false);
 
   // Initialize form from localStorage on first open
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!isOpen || initializedRef.current) return;
     initializedRef.current = true;

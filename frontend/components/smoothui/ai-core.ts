@@ -321,8 +321,10 @@ export const useAudioAmplitude = (
     }
   }, [fftSize]);
 
+  const autoStartRef = useRef(false);
   useEffect(() => {
-    if (autoStart) {
+    if (autoStart && !autoStartRef.current) {
+      autoStartRef.current = true;
       start();
     }
     return stop;
