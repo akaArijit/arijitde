@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { csrfFetch } from '@/lib/csrf';
 import { X, Send, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -70,15 +70,21 @@ function formatMessageText(text: string) {
   });
 }
 
+// Simple counter for unique IDs to avoid Date.now() in render
+let messageIdCounter = 0;
+function getNextMessageId(): number {
+  return ++messageIdCounter;
+}
+
 export default function ChatbotWidget({
   isFooterIntersecting = false,
   isOpen,
   onOpenChange,
 }: ChatbotWidgetProps) {
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(true); // Client component, always mounted
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [aiState, setAiState] = useState<AIState>('idle');
-  const stateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const stateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const simulatedAmplitude = useSimulatedAmplitude(aiState);
 
@@ -92,7 +98,7 @@ export default function ChatbotWidget({
   };
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: 1,
+      id: getNextMessageId(),
       sender: 'bot',
       text: "Hello! I'm Virtual Arijit, your personal AI assistant. Before we begin, are you a New User or an Existing Client? Select an option below to get started, or ask a question:",
       options: ['New User', 'Existing Client'],
@@ -101,26 +107,6 @@ export default function ChatbotWidget({
   const [inputVal, setInputVal] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.timestamp
-          ? m
-          : {
-              ...m,
-              timestamp: new Date().toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              }),
-            },
-      ),
-    );
-    return () => {
-      if (stateTimerRef.current) clearTimeout(stateTimerRef.current);
-    };
-  }, []);
 
   // Auto scroll to bottom only on new messages or typing
   useEffect(() => {
@@ -131,77 +117,93 @@ export default function ChatbotWidget({
     return () => cancelAnimationFrame(id);
   }, [messages.length, isTyping]);
 
-  if (!mounted) return null;
-
-  const sendUserMessage = async (
-    userMessageText: string,
-    currentMessagesState = messages,
-  ) => {
-    if (isTyping) return;
-    const nowTime = new Date().toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    const userMsg: Message = {
-      id: Date.now(),
-      sender: 'user',
-      text: userMessageText,
-      timestamp: nowTime,
-    };
-    const updatedMessages = [...currentMessagesState, userMsg];
-    setMessages(updatedMessages);
-    setIsTyping(true);
-    setAiState('thinking');
-    if (stateTimerRef.current) clearTimeout(stateTimerRef.current);
-
-    try {
-      const token = localStorage.getItem('token');
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      // Format messages history for the API (exclude layout-only options attribute)
-      const history = updatedMessages.map((msg) => ({
-        role: msg.sender === 'user' ? 'user' : 'assistant',
-        content: msg.text,
-      }));
-
-      const res = await csrfFetch(`/api/chat`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ messages: history }),
-      });
-
-      const data = await res.json();
-      const botTime = new Date().toLocaleTimeString([], {
+  const sendUserMessage = useCallback(
+    async (userMessageText: string, currentMessagesState = messages) => {
+      if (isTyping) return;
+      const nowTime = new Date().toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',
       });
+      const userMsg: Message = {
+        id: getNextMessageId(),
+        sender: 'user',
+        text: userMessageText,
+        timestamp: nowTime,
+      };
+      const updatedMessages = [...currentMessagesState, userMsg];
+      setMessages(updatedMessages);
+      setIsTyping(true);
+      setAiState('thinking');
+      if (stateTimerRef.current) clearTimeout(stateTimerRef.current);
 
-      if (data.success) {
+      try {
+        const token = localStorage.getItem('token');
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        // Format messages history for the API (exclude layout-only options attribute)
+        const history = updatedMessages.map((msg) => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.text,
+        }));
+
+        const res = await csrfFetch(`/api/chat`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ messages: history }),
+        });
+
+        const data = await res.json();
+        const botTime = new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        if (data.success) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: getNextMessageId(),
+              sender: 'bot',
+              text: data.text,
+              timestamp: botTime,
+            },
+          ]);
+          setAiState('done');
+          stateTimerRef.current = setTimeout(() => {
+            setAiState('idle');
+          }, 2600);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: getNextMessageId(),
+              sender: 'bot',
+              text: data.error || 'Failed to get response. Please try again.',
+              timestamp: botTime,
+            },
+          ]);
+          setAiState('error');
+          stateTimerRef.current = setTimeout(() => {
+            setAiState('idle');
+          }, 3200);
+        }
+      } catch (err) {
+        console.error('Chat error:', err);
+        const botTime = new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
         setMessages((prev) => [
           ...prev,
           {
-            id: Date.now() + 1,
+            id: getNextMessageId(),
             sender: 'bot',
-            text: data.text,
-            timestamp: botTime,
-          },
-        ]);
-        setAiState('done');
-        stateTimerRef.current = setTimeout(() => {
-          setAiState('idle');
-        }, 2600);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            sender: 'bot',
-            text: data.error || 'Failed to get response. Please try again.',
+            text: 'Network error. Please check your connection and try again.',
             timestamp: botTime,
           },
         ]);
@@ -209,32 +211,14 @@ export default function ChatbotWidget({
         stateTimerRef.current = setTimeout(() => {
           setAiState('idle');
         }, 3200);
+      } finally {
+        setIsTyping(false);
       }
-    } catch (err) {
-      console.error('Chat error:', err);
-      const botTime = new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          sender: 'bot',
-          text: 'Network error. Please check your connection and try again.',
-          timestamp: botTime,
-        },
-      ]);
-      setAiState('error');
-      stateTimerRef.current = setTimeout(() => {
-        setAiState('idle');
-      }, 3200);
-    } finally {
-      setIsTyping(false);
-    }
-  };
+    },
+    [isTyping, messages],
+  );
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     if (isTyping) return;
     const lastUserMessage = [...messages]
       .reverse()
@@ -242,41 +226,50 @@ export default function ChatbotWidget({
     if (lastUserMessage) {
       sendUserMessage(lastUserMessage.text);
     }
-  };
+  }, [isTyping, messages, sendUserMessage]);
 
-  const handleOptionClick = (opt: string, messageId: number) => {
-    // 1. Clear the option pills from the message in state
-    setMessages((prev) =>
-      prev.map((m) => (m.id === messageId ? { ...m, options: undefined } : m)),
-    );
+  const handleOptionClick = useCallback(
+    (opt: string, messageId: number) => {
+      // 1. Clear the option pills from the message in state
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, options: undefined } : m)),
+      );
 
-    // 2. Submit the message using the updated state to avoid closure lag
-    const clearedMessages = messages.map((m) =>
-      m.id === messageId ? { ...m, options: undefined } : m,
-    );
-    sendUserMessage(opt, clearedMessages);
-  };
+      // 2. Submit the message using the updated state to avoid closure lag
+      const clearedMessages = messages.map((m) =>
+        m.id === messageId ? { ...m, options: undefined } : m,
+      );
+      sendUserMessage(opt, clearedMessages);
+    },
+    [messages, sendUserMessage],
+  );
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputVal.trim() || isTyping) return;
+  const handleSendMessage = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!inputVal.trim() || isTyping) return;
 
-    const userMessageText = inputVal.trim();
-    setInputVal('');
-    await sendUserMessage(userMessageText);
-  };
+      const userMessageText = inputVal.trim();
+      setInputVal('');
+      await sendUserMessage(userMessageText);
+    },
+    [inputVal, isTyping, sendUserMessage],
+  );
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setInputVal(val);
-    if (!isTyping) {
-      if (val.trim().length > 0) {
-        setAiState('listening');
-      } else {
-        setAiState('idle');
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      setInputVal(val);
+      if (!isTyping) {
+        if (val.trim().length > 0) {
+          setAiState('listening');
+        } else {
+          setAiState('idle');
+        }
       }
-    }
-  };
+    },
+    [isTyping],
+  );
 
   return (
     <div
@@ -322,8 +315,8 @@ export default function ChatbotWidget({
                       aiState === 'error'
                         ? 'bg-rose-500'
                         : aiState === 'thinking'
-                          ? 'bg-amber-400 animate-ping'
-                          : 'bg-emerald-500',
+                        ? 'bg-amber-400 animate-ping'
+                        : 'bg-emerald-500',
                     )}
                   />
                 </div>
@@ -341,12 +334,12 @@ export default function ChatbotWidget({
                       {aiState === 'thinking'
                         ? 'Thinking...'
                         : aiState === 'listening'
-                          ? 'Listening...'
-                          : aiState === 'done'
-                            ? 'Response ready'
-                            : aiState === 'error'
-                              ? 'Connection issue'
-                              : 'AI AGENT • ONLINE'}
+                        ? 'Listening...'
+                        : aiState === 'done'
+                        ? 'Response ready'
+                        : aiState === 'error'
+                        ? 'Connection issue'
+                        : 'AI AGENT • ONLINE'}
                     </span>
                   </span>
                 </div>

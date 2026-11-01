@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter, type TransportOptions } from 'nodemailer';
 import dns from 'dns';
 import { logger } from '../../lib/logger';
 import { BaseEmailProvider, type EmailOptions, type SendResult } from './provider';
@@ -15,7 +15,7 @@ function parsePositiveInt(name: string, value: string | undefined, defaultValue:
 }
 
 export class GmailProvider extends BaseEmailProvider {
-  private readonly transporter: nodemailer.Transporter;
+  private readonly transporter: Transporter;
   private readonly emailSendTimeout: number;
 
   constructor() {
@@ -54,7 +54,7 @@ export class GmailProvider extends BaseEmailProvider {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_APP_PASSWORD,
       },
-    } as nodemailer.TransportOptions);
+    } as TransportOptions);
 
     logger.info({ host: smtpHost, port: 587, explicitIP: !process.env.GMAIL_SMTP_HOST }, 'Gmail provider initialized with IPv4');
   }

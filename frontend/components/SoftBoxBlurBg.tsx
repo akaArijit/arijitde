@@ -1,18 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 /** Renders the animated ambient backdrop behind the home page content. */
 export default function SoftBoxBlurBg() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <div className="backdrop-inner absolute inset-0 w-full h-full overflow-hidden select-none pointer-events-none">

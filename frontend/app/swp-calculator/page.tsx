@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
 import {
@@ -17,7 +17,7 @@ import GradualBlur from '@/components/GradualBlur';
 
 export default function SWPCalculator() {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(true); // Client component, always mounted
   const [calculationMode, setCalculationMode] = useState<'tenure' | 'corpus'>(
     'tenure',
   );
@@ -33,31 +33,8 @@ export default function SWPCalculator() {
   const [corpusExpectedReturn, setCorpusExpectedReturn] = useState(9); // 9%
   const [desiredTenureYears, setDesiredTenureYears] = useState(25);
 
-  // Outputs
-  const [calculatedTenureMonths, setCalculatedTenureMonths] = useState(0);
-  const [tenureLastsForever, setTenureLastsForever] = useState(false);
-  const [tenureTotalWithdrawn, setTenureTotalWithdrawn] = useState(0);
-  const [tenureInterestEarned, setTenureInterestEarned] = useState(0);
-  const [tenureRemainingBalance, setTenureRemainingBalance] = useState(0);
-
-  const [calculatedRequiredCorpus, setCalculatedRequiredCorpus] = useState(0);
-  const [corpusTotalWithdrawn, setCorpusTotalWithdrawn] = useState(0);
-  const [corpusInterestComponent, setCorpusInterestComponent] = useState(0);
-  // Mount animation
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    setMounted(true);
-    document.title = 'SWP Calculator | FinAnalysis';
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Run calculation for "Tenure Mode"
-  useEffect(() => {
-    if (calculationMode !== 'tenure') return;
-
+  // Memoized calculation for "Tenure Mode"
+  const tenureCalculation = useMemo(() => {
     const C = corpusAmount;
     const W = monthlyWithdrawal;
     const R = expectedReturn;
@@ -79,15 +56,16 @@ export default function SWPCalculator() {
         balance = balance + balance * r - W;
       }
       const interest = balance + totalWithdrawn - C;
-      setTenureLastsForever(true);
-      setCalculatedTenureMonths(totalMonths);
-      setTenureTotalWithdrawn(totalWithdrawn);
-      setTenureInterestEarned(Math.max(0, interest));
-      setTenureRemainingBalance(Math.round(balance));
-      return;
+      return {
+        lastsForever: true,
+        calculatedTenureMonths: totalMonths,
+        totalWithdrawn,
+        interestEarned: Math.max(0, interest),
+        remainingBalance: Math.round(balance),
+      };
     }
 
-    setTenureLastsForever(false);
+    lastsForever = false;
     let finalInterest = 0;
 
     for (let m = 0; m < totalMonths; m++) {
@@ -105,22 +83,22 @@ export default function SWPCalculator() {
       monthsElapsed++;
     }
 
-    setCalculatedTenureMonths(monthsElapsed);
-    setTenureTotalWithdrawn(Math.round(totalWithdrawn));
-    setTenureInterestEarned(Math.round(finalInterest));
-    setTenureRemainingBalance(Math.round(balance));
+    return {
+      lastsForever: false,
+      calculatedTenureMonths: monthsElapsed,
+      totalWithdrawn: Math.round(totalWithdrawn),
+      interestEarned: Math.round(finalInterest),
+      remainingBalance: Math.round(balance),
+    };
   }, [
     corpusAmount,
     monthlyWithdrawal,
     expectedReturn,
     tenureYears,
-    calculationMode,
   ]);
 
-  // Run calculation for "Corpus Mode"
-  useEffect(() => {
-    if (calculationMode !== 'corpus') return;
-
+  // Memoized calculation for "Corpus Mode"
+  const corpusCalculation = useMemo(() => {
     const W = desiredMonthlyIncome;
     const R = corpusExpectedReturn;
     const T = desiredTenureYears;
@@ -138,15 +116,51 @@ export default function SWPCalculator() {
     const totalWithdrawn = W * n;
     const interestComponent = Math.max(0, totalWithdrawn - required);
 
-    setCalculatedRequiredCorpus(Math.round(required));
-    setCorpusTotalWithdrawn(Math.round(totalWithdrawn));
-    setCorpusInterestComponent(Math.round(interestComponent));
+    return {
+      requiredCorpus: Math.round(required),
+      totalWithdrawn: Math.round(totalWithdrawn),
+      interestComponent: Math.round(interestComponent),
+    };
   }, [
     desiredMonthlyIncome,
     corpusExpectedReturn,
     desiredTenureYears,
-    calculationMode,
   ]);
+
+  // Extract calculation results
+  const {
+    lastsForever: tenureLastsForever,
+    calculatedTenureMonths,
+    totalWithdrawn: tenureTotalWithdrawn,
+    interestEarned: tenureInterestEarned,
+    remainingBalance: tenureRemainingBalance,
+  } = calculationMode === 'tenure' ? tenureCalculation : {
+    lastsForever: false,
+    calculatedTenureMonths: 0,
+    totalWithdrawn: 0,
+    interestEarned: 0,
+    remainingBalance: 0,
+  };
+
+  const {
+    requiredCorpus: calculatedRequiredCorpus,
+    totalWithdrawn: corpusTotalWithdrawn,
+    interestComponent: corpusInterestComponent,
+  } = calculationMode === 'corpus' ? corpusCalculation : {
+    requiredCorpus: 0,
+    totalWithdrawn: 0,
+    interestComponent: 0,
+  };
+
+  // Mount animation
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.title = 'SWP Calculator | FinAnalysis';
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Currency Formatter
   const formatCurrency = (val: number) => {
@@ -200,684 +214,461 @@ export default function SWPCalculator() {
 
       <Navbar isLoaded={isLoaded} activePath="/swp-calculator" />
 
-      {/* Header Title Section */}
-      <div className="relative z-10 flex flex-col justify-center items-center px-6 pt-44 pb-6 text-center max-w-5xl mx-auto">
-        <button
-          type="button"
-          onClick={() => {
-            if (typeof window !== 'undefined') {
-              if (!sessionStorage.getItem('savedHomeScrollY')) {
-                sessionStorage.setItem('savedHomeScrollY', '6299');
-              }
-              if (window.history.length > 1) {
-                window.history.back();
-              } else {
-                window.location.href = '/';
-              }
-            }
-          }}
-          className="group flex items-center gap-2 px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-primary bg-white/40 border border-border hover:bg-white/60 rounded-xl transition duration-200 shadow-sm mb-4 cursor-pointer animate-in fade-in slide-in-from-top-2 duration-1000"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
-          Back to Home
-        </button>
-        <h1
-          className={`text-4xl md:text-7xl font-normal tracking-tight mt-12 mb-4 leading-none text-primary font-clash transition-all duration-[1200ms] ease-out ${
-            isLoaded
-              ? 'opacity-100 blur-none scale-100'
-              : 'opacity-0 blur-lg scale-95'
-          } delay-[200ms]`}
-        >
-          SWP Calculator
-        </h1>
-        <p
-          className={`text-sm md:text-base text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed font-sans transition-all duration-[1200ms] ease-out ${
-            isLoaded
-              ? 'opacity-100 blur-none scale-100'
-              : 'opacity-0 blur-md scale-95'
-          } delay-[400ms]`}
-        >
-          A Systematic Withdrawal Plan (SWP) lets you withdraw a fixed amount
-          monthly from your mutual funds or investments. Project how long your
-          retirement corpus will last or find out how much you need.
-        </p>
-
-        {/* Calculation Mode Toggle Tabs */}
-        <div className="flex bg-white/30 border border-border/80 p-1.5 rounded-2xl w-full max-w-md mx-auto shadow-sm select-none">
-          <button
-            onClick={() => setCalculationMode('tenure')}
-            className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all duration-350 ${
-              calculationMode === 'tenure'
-                ? 'bg-primary text-primary-foreground shadow-sm font-bold'
-                : 'text-muted-foreground hover:text-primary'
-            }`}
-          >
-            How long will corpus last
-          </button>
-          <button
-            onClick={() => setCalculationMode('corpus')}
-            className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all duration-350 ${
-              calculationMode === 'corpus'
-                ? 'bg-primary text-primary-foreground shadow-sm font-bold'
-                : 'text-muted-foreground hover:text-primary'
-            }`}
-          >
-            What corpus is needed
-          </button>
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10 flex flex-col items-center">
+        {/* Header Section */}
+        <div className="w-full text-center mb-8 md:mb-12">
+          <div className="inline-flex items-center gap-2 bg-white/50 backdrop-blur-md border border-white/30 px-4 py-1.5 rounded-full shadow-sm mb-4">
+            <ShieldCheck className="w-4 h-4 text-primary" />
+            <span className="text-xs font-bold text-primary font-mono tracking-wider">
+              Secured by FinAnalysis
+            </span>
+          </div>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-neutral-900 font-clash mb-3">
+            SWP
+            <span className="text-primary"> Calculator</span>
+          </h1>
+          <p className="text-neutral-600 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed font-sans">
+            Plan your Systematic Withdrawal Plan. Calculate how long your corpus will
+            last or what corpus you need for a desired monthly income.
+          </p>
         </div>
-      </div>
 
-      {/* Main content grid */}
-      <div
-        className={`relative z-10 w-full max-w-5xl mx-auto px-6 pb-36 grid grid-cols-1 lg:grid-cols-12 gap-10 transition-all duration-[1200ms] ease-out ${
-          isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-        } delay-[500ms]`}
-      >
-        {/* Left Column: Sliders and Inputs */}
-        <div className="lg:col-span-7 bg-white/35 border border-border rounded-3xl p-8 shadow-md backdrop-blur-2xl space-y-8 flex flex-col justify-center text-left">
+        {/* Mode Toggle */}
+        <div className="w-full max-w-xl mb-8">
+          <div className="flex bg-white/50 backdrop-blur-md border border-white/30 rounded-full p-1 shadow-sm">
+            <button
+              onClick={() => setCalculationMode('tenure')}
+              className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-full transition-all duration-200 ${
+                calculationMode === 'tenure'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              How long will my corpus last?
+            </button>
+            <button
+              onClick={() => setCalculationMode('corpus')}
+              className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-full transition-all duration-200 ${
+                calculationMode === 'corpus'
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              What corpus do I need?
+            </button>
+          </div>
+        </div>
+
+        {/* Calculator Form */}
+        <div className="w-full max-w-4xl mx-auto space-y-6">
           {calculationMode === 'tenure' ? (
-            <>
-              {/* Total Corpus Amount */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5 font-clash uppercase font-semibold text-[11px] tracking-wider">
-                    <Coins className="w-4 h-4 text-primary" />
-                    Total Corpus Amount
-                  </span>
-                  <div className="flex items-center gap-1 bg-[#F2F0EF]/80 border border-border px-3 py-1 rounded-xl font-mono font-bold text-base text-foreground">
-                    <span>₹</span>
-                    <input
-                      type="number"
-                      value={corpusAmount}
-                      onChange={(e) =>
-                        setCorpusAmount(Math.max(0, Number(e.target.value)))
-                      }
-                      className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{
-                        width: `${Math.max(3, String(corpusAmount).length) * 9 + 5}px`,
-                      }}
-                    />
-                  </div>
-                </div>
+            /* Tenure Mode Inputs */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                  Initial Corpus Amount (₹)
+                </label>
                 <input
-                  type="range"
-                  min={100000}
-                  max={50000000}
-                  step={100000}
-                  value={Math.min(50000000, Math.max(100000, corpusAmount))}
+                  type="number"
+                  min="10000"
+                  max="100000000"
+                  step="10000"
+                  value={corpusAmount}
                   onChange={(e) => setCorpusAmount(Number(e.target.value))}
-                  className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-white/50 border border-neutral-200 rounded-xl text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-neutral-900 font-mono"
+                  placeholder="e.g. 5000000"
                 />
-                <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                  <span>₹1 Lakh</span>
-                  <span>₹2.5 Crore</span>
-                  <span>₹5 Crore</span>
-                </div>
               </div>
 
-              {/* Monthly Withdrawal */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5 font-clash uppercase font-semibold text-[11px] tracking-wider">
-                    <Download className="w-4 h-4 text-primary" />
-                    Desired Monthly Withdrawal
-                  </span>
-                  <div className="flex items-center gap-1 bg-[#F2F0EF]/80 border border-border px-3 py-1 rounded-xl font-mono font-bold text-base text-foreground">
-                    <span>₹</span>
-                    <input
-                      type="number"
-                      value={monthlyWithdrawal}
-                      onChange={(e) =>
-                        setMonthlyWithdrawal(
-                          Math.max(0, Number(e.target.value)),
-                        )
-                      }
-                      className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{
-                        width: `${Math.max(3, String(monthlyWithdrawal).length) * 9 + 5}px`,
-                      }}
-                    />
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                  Monthly Withdrawal (₹)
+                </label>
                 <input
-                  type="range"
-                  min={5000}
-                  max={500000}
-                  step={5000}
-                  value={Math.min(500000, Math.max(5000, monthlyWithdrawal))}
+                  type="number"
+                  min="1000"
+                  max="1000000"
+                  step="1000"
+                  value={monthlyWithdrawal}
                   onChange={(e) => setMonthlyWithdrawal(Number(e.target.value))}
-                  className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-white/50 border border-neutral-200 rounded-xl text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-neutral-900 font-mono"
+                  placeholder="e.g. 40000"
                 />
-                <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                  <span>₹5k</span>
-                  <span>₹2.5 Lakh</span>
-                  <span>₹5 Lakh</span>
-                </div>
               </div>
 
-              {/* Expected Return Rate */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5 font-clash uppercase font-semibold text-[11px] tracking-wider">
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                    Expected Return Rate (p.a)
-                  </span>
-                  <div className="flex items-center gap-1 bg-[#F2F0EF]/80 border border-border px-3 py-1 rounded-xl font-mono font-bold text-base text-foreground">
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={expectedReturn}
-                      onChange={(e) =>
-                        setExpectedReturn(Math.max(0, Number(e.target.value)))
-                      }
-                      className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{
-                        width: `${Math.max(3, String(expectedReturn).length) * 9 + 5}px`,
-                      }}
-                    />
-                    <span>%</span>
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                  Expected Annual Return (%)
+                </label>
                 <input
-                  type="range"
-                  min={1}
-                  max={25}
-                  step={0.5}
-                  value={Math.min(25, Math.max(1, expectedReturn))}
+                  type="number"
+                  min="0"
+                  max="25"
+                  step="0.5"
+                  value={expectedReturn}
                   onChange={(e) => setExpectedReturn(Number(e.target.value))}
-                  className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-white/50 border border-neutral-200 rounded-xl text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-neutral-900 font-mono"
+                  placeholder="e.g. 10"
                 />
-                <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                  <span>1%</span>
-                  <span>13%</span>
-                  <span>25%</span>
-                </div>
               </div>
 
-              {/* Pinned Plan Tenure */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5 font-clash uppercase font-semibold text-[11px] tracking-wider">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    Withdrawal Tenure (Years)
-                  </span>
-                  <div className="flex items-center gap-1 bg-[#F2F0EF]/80 border border-border px-3 py-1 rounded-xl font-mono font-bold text-base text-foreground">
-                    <input
-                      type="number"
-                      value={tenureYears}
-                      onChange={(e) =>
-                        setTenureYears(Math.max(0, Number(e.target.value)))
-                      }
-                      className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{
-                        width: `${Math.max(2, String(tenureYears).length) * 9 + 5}px`,
-                      }}
-                    />
-                    <span>{tenureYears === 1 ? 'Year' : 'Years'}</span>
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                  Max Tenure (Years)
+                </label>
                 <input
-                  type="range"
-                  min={1}
-                  max={40}
-                  step={1}
-                  value={Math.min(40, Math.max(1, tenureYears))}
+                  type="number"
+                  min="1"
+                  max="50"
+                  step="1"
+                  value={tenureYears}
                   onChange={(e) => setTenureYears(Number(e.target.value))}
-                  className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-white/50 border border-neutral-200 rounded-xl text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-neutral-900 font-mono"
+                  placeholder="e.g. 20"
                 />
-                <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                  <span>1 Year</span>
-                  <span>20 Years</span>
-                  <span>40 Years</span>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Desired Monthly Income */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5 font-clash uppercase font-semibold text-[11px] tracking-wider">
-                    <Download className="w-4 h-4 text-primary" />
-                    Desired Monthly Income (Payout)
-                  </span>
-                  <div className="flex items-center gap-1 bg-[#F2F0EF]/80 border border-border px-3 py-1 rounded-xl font-mono font-bold text-base text-foreground">
-                    <span>₹</span>
-                    <input
-                      type="number"
-                      value={desiredMonthlyIncome}
-                      onChange={(e) =>
-                        setDesiredMonthlyIncome(
-                          Math.max(0, Number(e.target.value)),
-                        )
-                      }
-                      className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{
-                        width: `${Math.max(3, String(desiredMonthlyIncome).length) * 9 + 5}px`,
-                      }}
-                    />
-                  </div>
-                </div>
-                <input
-                  type="range"
-                  min={5000}
-                  max={500000}
-                  step={5000}
-                  value={Math.min(500000, Math.max(5000, desiredMonthlyIncome))}
-                  onChange={(e) =>
-                    setDesiredMonthlyIncome(Number(e.target.value))
-                  }
-                  className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                  <span>₹5k</span>
-                  <span>₹2.5 Lakh</span>
-                  <span>₹5 Lakh</span>
-                </div>
-              </div>
-
-              {/* Expected Return Rate */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5 font-clash uppercase font-semibold text-[11px] tracking-wider">
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                    Expected Return Rate (p.a)
-                  </span>
-                  <div className="flex items-center gap-1 bg-[#F2F0EF]/80 border border-border px-3 py-1 rounded-xl font-mono font-bold text-base text-foreground">
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={corpusExpectedReturn}
-                      onChange={(e) =>
-                        setCorpusExpectedReturn(
-                          Math.max(0, Number(e.target.value)),
-                        )
-                      }
-                      className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{
-                        width: `${Math.max(3, String(corpusExpectedReturn).length) * 9 + 5}px`,
-                      }}
-                    />
-                    <span>%</span>
-                  </div>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={25}
-                  step={0.5}
-                  value={Math.min(25, Math.max(1, corpusExpectedReturn))}
-                  onChange={(e) =>
-                    setCorpusExpectedReturn(Number(e.target.value))
-                  }
-                  className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                  <span>1%</span>
-                  <span>13%</span>
-                  <span>25%</span>
-                </div>
-              </div>
-
-              {/* Time Period (Years) */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5 font-clash uppercase font-semibold text-[11px] tracking-wider">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    Duration of Payout (Years)
-                  </span>
-                  <div className="flex items-center gap-1 bg-[#F2F0EF]/80 border border-border px-3 py-1 rounded-xl font-mono font-bold text-base text-foreground">
-                    <input
-                      type="number"
-                      value={desiredTenureYears}
-                      onChange={(e) =>
-                        setDesiredTenureYears(
-                          Math.max(0, Number(e.target.value)),
-                        )
-                      }
-                      className="bg-transparent border-none outline-none text-foreground font-mono font-bold text-base text-right p-0 focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      style={{
-                        width: `${Math.max(2, String(desiredTenureYears).length) * 9 + 5}px`,
-                      }}
-                    />
-                    <span>{desiredTenureYears === 1 ? 'Year' : 'Years'}</span>
-                  </div>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={45}
-                  step={1}
-                  value={Math.min(45, Math.max(1, desiredTenureYears))}
-                  onChange={(e) =>
-                    setDesiredTenureYears(Number(e.target.value))
-                  }
-                  className="w-full accent-primary h-1 bg-border rounded-lg appearance-none cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                  <span>1 Year</span>
-                  <span>22 Years</span>
-                  <span>45 Years</span>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Dash divider */}
-          <div className="border-t border-dashed border-border w-full" />
-
-          {/* Split output info cards */}
-          {calculationMode === 'tenure' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-              <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                  Total Payouts
-                </span>
-                <span className="text-xl font-bold text-foreground mt-1">
-                  {formatCurrency(tenureTotalWithdrawn)}
-                </span>
-              </div>
-              <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-primary/75">
-                  Est. Interest Earned
-                </span>
-                <span className="text-xl font-bold text-primary mt-1">
-                  {formatCurrency(tenureInterestEarned)}
-                </span>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-              <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                  Total Payout Received
-                </span>
-                <span className="text-xl font-bold text-foreground mt-1">
-                  {formatCurrency(corpusTotalWithdrawn)}
-                </span>
+            /* Corpus Mode Inputs */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                  Desired Monthly Income (₹)
+                </label>
+                <input
+                  type="number"
+                  min="1000"
+                  max="1000000"
+                  step="1000"
+                  value={desiredMonthlyIncome}
+                  onChange={(e) => setDesiredMonthlyIncome(Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-white/50 border border-neutral-200 rounded-xl text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-neutral-900 font-mono"
+                  placeholder="e.g. 50000"
+                />
               </div>
-              <div className="bg-white/30 border border-border p-4 rounded-2xl flex flex-col text-left">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-primary/75">
-                  Growth Interest Component
-                </span>
-                <span className="text-xl font-bold text-primary mt-1">
-                  {formatCurrency(corpusInterestComponent)}
-                </span>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                  Expected Annual Return (%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="25"
+                  step="0.5"
+                  value={corpusExpectedReturn}
+                  onChange={(e) => setCorpusExpectedReturn(Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-white/50 border border-neutral-200 rounded-xl text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-neutral-900 font-mono"
+                  placeholder="e.g. 9"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                  Desired Tenure (Years)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  step="1"
+                  value={desiredTenureYears}
+                  onChange={(e) => setDesiredTenureYears(Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-white/50 border border-neutral-200 rounded-xl text-base focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-neutral-900 font-mono"
+                  placeholder="e.g. 25"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                  {/* Empty spacer for grid alignment */}
+                </label>
+                <div className="h-11" />
               </div>
             </div>
           )}
-        </div>
 
-        {/* Right Column: Dynamic circular SVG indicator and Results */}
-        <div className="lg:col-span-5 bg-white/35 border border-border rounded-3xl p-8 shadow-md backdrop-blur-2xl flex flex-col justify-center items-center">
-          {calculationMode === 'tenure' ? (
-            <>
-              {/* Dynamic Center Panel */}
-              <div className="relative w-64 h-64 flex justify-center items-center">
-                <svg
-                  width="100%"
-                  height="100%"
-                  viewBox="0 0 120 120"
-                  className="transform -rotate-90"
-                >
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r={radius}
-                    fill="transparent"
-                    stroke="rgba(147, 197, 253, 0.15)"
-                    strokeWidth="10"
-                  />
-                  {/* Outer circle remaining balance background */}
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r={radius}
-                    fill="transparent"
-                    stroke={tenureLastsForever ? '#10B981' : '#d4d4d8'}
-                    strokeWidth="10"
-                    strokeDasharray={circumference}
-                    strokeDashoffset="0"
-                    className="transition-all duration-500 ease-out"
-                  />
-                  {/* Foreground circle: total withdrawals */}
-                  {!tenureLastsForever && tenureWithdrawnPercent > 0 && (
-                    <circle
-                      cx="60"
-                      cy="60"
-                      r={radius}
-                      fill="transparent"
-                      stroke="#3A8293"
-                      strokeWidth="10.2"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={strokeDashoffsetTenure}
-                      strokeLinecap="round"
-                      className="transition-all duration-500 ease-out"
-                    />
-                  )}
-                </svg>
+          {/* Results */}
+          <div className="mt-8">
+            <div className="bg-white/50 backdrop-blur-md border border-white/30 rounded-2xl p-6 md:p-8 shadow-sm">
+              <h2 className="text-2xl font-bold text-neutral-900 mb-6 text-center font-clash">
+                {calculationMode === 'tenure'
+                  ? 'How Long Will Your Corpus Last?'
+                  : 'Required Corpus for Your Income'}
+              </h2>
 
-                <div className="absolute flex flex-col items-center justify-center text-center px-4">
-                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                    Corpus Lifespan
-                  </span>
-                  {tenureLastsForever ? (
-                    <div className="flex flex-col items-center gap-1 mt-1">
-                      <span className="text-xl md:text-2xl font-bold text-emerald-600 select-text">
-                        Infinite
-                      </span>
-                      <span className="text-[9px] font-mono bg-emerald-500/10 text-emerald-600 border border-emerald-500/25 px-2.5 py-0.5 rounded-full uppercase tracking-wider font-bold">
-                        Forever lasts
-                      </span>
+              {calculationMode === 'tenure' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                  {/* Result Card - Tenure */}
+                  <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 md:p-6 text-center md:col-span-1 lg:col-span-2">
+                    <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                      Corpus Duration
                     </div>
-                  ) : (
-                    <span className="text-xl md:text-2xl font-bold text-foreground mt-1 select-text">
-                      {tenureYearsFraction > 0 &&
-                        `${tenureYearsFraction} Yr${tenureYearsFraction > 1 ? 's' : ''}`}
-                      {tenureMonthsFraction > 0 &&
-                        ` ${tenureMonthsFraction} Mo${tenureMonthsFraction > 1 ? 's' : ''}`}
-                      {tenureYearsFraction === 0 &&
-                        tenureMonthsFraction === 0 &&
-                        'Runs Out Immediately'}
-                    </span>
-                  )}
+                    {tenureLastsForever ? (
+                      <div className="space-y-1">
+                        <div className="text-4xl md:text-5xl font-extrabold text-emerald-600 font-clash">
+                          Indefinite ♾️
+                        </div>
+                        <p className="text-sm text-emerald-700 font-medium">
+                          Your corpus grows faster than withdrawals!
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="text-4xl md:text-5xl font-extrabold text-neutral-900 font-clash">
+                          {tenureYearsFraction} yr {tenureMonthsFraction} mo
+                        </div>
+                        <p className="text-sm text-neutral-500">
+                          Your corpus will be depleted after this period
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Result Card - Total Withdrawn */}
+                  <div className="bg-white border border-neutral-200 rounded-xl p-4 md:p-6 text-center">
+                    <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                      Total Withdrawn
+                    </div>
+                    <div className="text-2xl md:text-3xl font-extrabold text-primary font-clash">
+                      {formatCurrency(tenureTotalWithdrawn)}
+                    </div>
+                    <p className="text-xs text-neutral-500 mt-1">Over the full tenure</p>
+                  </div>
+
+                  {/* Result Card - Interest Earned */}
+                  <div className="bg-white border border-neutral-200 rounded-xl p-4 md:p-6 text-center">
+                    <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                      Interest Earned
+                    </div>
+                    <div className="text-2xl md:text-3xl font-extrabold text-amber-600 font-clash">
+                      {formatCurrency(tenureInterestEarned)}
+                    </div>
+                    <p className="text-xs text-neutral-500 mt-1">Growth from returns</p>
+                  </div>
+
+                  {/* Result Card - Remaining Balance */}
+                  <div className="bg-white border border-neutral-200 rounded-xl p-4 md:p-6 text-center">
+                    <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                      Final Balance
+                    </div>
+                    <div className="text-2xl md:text-3xl font-extrabold text-emerald-600 font-clash">
+                      {formatCurrency(tenureRemainingBalance)}
+                    </div>
+                    <p className="text-xs text-neutral-500 mt-1">Remaining after tenure</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  {/* Result Card - Required Corpus */}
+                  <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 md:p-6 text-center md:col-span-1 lg:col-span-2">
+                    <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                      Required Initial Corpus
+                    </div>
+                    <div className="text-4xl md:text-5xl font-extrabold text-primary font-clash">
+                      {formatCurrency(calculatedRequiredCorpus)}
+                    </div>
+                    <p className="text-sm text-primary/80 mt-1">
+                      Invest this amount today
+                    </p>
+                  </div>
+
+                  {/* Result Card - Total Withdrawn */}
+                  <div className="bg-white border border-neutral-200 rounded-xl p-4 md:p-6 text-center">
+                    <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                      Total Income Over {desiredTenureYears} Years
+                    </div>
+                    <div className="text-2xl md:text-3xl font-extrabold text-primary font-clash">
+                      {formatCurrency(corpusTotalWithdrawn)}
+                    </div>
+                    <p className="text-xs text-neutral-500 mt-1">Total withdrawals</p>
+                  </div>
+
+                  {/* Result Card - Interest Component */}
+                  <div className="bg-white border border-neutral-200 rounded-xl p-4 md:p-6 text-center">
+                    <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                      Interest Component
+                    </div>
+                    <div className="text-2xl md:text-3xl font-extrabold text-amber-600 font-clash">
+                      {formatCurrency(corpusInterestComponent)}
+                    </div>
+                    <p className="text-xs text-neutral-500 mt-1">Returns generated</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Visual Donut Chart */}
+              <div className="mt-8 md:mt-12 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+                {calculationMode === 'tenure' ? (
+                  <div className="relative w-32 h-32 md:w-40 md:h-40 flex-shrink-0">
+                    <svg width="100%" height="100%" viewBox="0 0 100 100">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r={radius}
+                        stroke="#E5E7EB"
+                        strokeWidth="8"
+                        fill="none"
+                      />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r={radius}
+                        stroke="url(#tenure-gradient)"
+                        strokeWidth="8"
+                        fill="none"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={strokeDashoffsetTenure}
+                        strokeLinecap="round"
+                        className="transform -rotate-90 transition-all duration-1000 ease-out"
+                      />
+                      <defs>
+                        <linearGradient id="tenure-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#3A8293" />
+                          <stop offset="100%" stopColor="#06B6D4" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                      <span className="text-2xl md:text-3xl font-extrabold text-neutral-900 font-clash">
+                        {tenureWithdrawnPercent.toFixed(0)}%
+                      </span>
+                      <span className="text-xs text-neutral-500">Utilized</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative w-32 h-32 md:w-40 md:h-40 flex-shrink-0">
+                    <svg width="100%" height="100%" viewBox="0 0 100 100">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r={radius}
+                        stroke="#E5E7EB"
+                        strokeWidth="8"
+                        fill="none"
+                      />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r={radius}
+                        stroke="url(#corpus-gradient)"
+                        strokeWidth="8"
+                        fill="none"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={strokeDashoffsetCorpus}
+                        strokeLinecap="round"
+                        className="transform -rotate-90 transition-all duration-1000 ease-out"
+                      />
+                      <defs>
+                        <linearGradient id="corpus-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#3A8293" />
+                          <stop offset="100%" stopColor="#06B6D4" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                      <span className="text-2xl md:text-3xl font-extrabold text-neutral-900 font-clash">
+                        {corpusInterestPercent.toFixed(0)}%
+                      </span>
+                      <span className="text-xs text-neutral-500">Interest</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex-1 max-w-xs md:max-w-md text-center md:text-left">
+                  <h3 className="text-lg md:text-xl font-bold text-neutral-900 font-clash mb-2">
+                    {calculationMode === 'tenure'
+                      ? 'Corpus Utilization'
+                      : 'Income Composition'}
+                  </h3>
+                  <p className="text-neutral-600 text-sm leading-relaxed font-sans">
+                    {calculationMode === 'tenure'
+                      ? tenureLastsForever
+                        ? 'Your monthly withdrawals are fully covered by investment returns. The corpus never depletes and continues to grow over time.'
+                        : `Over ${tenureYearsFraction} years and ${tenureMonthsFraction} months, you will withdraw ${formatCurrency(tenureTotalWithdrawn)}. The remaining balance of ${formatCurrency(tenureRemainingBalance)} represents ${tenureBalancePercent.toFixed(0)}% of your total potential.`
+                      : `Out of the total ${formatCurrency(corpusTotalWithdrawn)} withdrawn over ${desiredTenureYears} years, ${formatCurrency(corpusInterestComponent)} (${corpusInterestPercent.toFixed(0)}%) comes from investment returns, while ${formatCurrency(calculatedRequiredCorpus)} (${corpusPrincipalPercent.toFixed(0)}%) is your initial principal.`
+                    }
+                  </p>
                 </div>
               </div>
 
-              {/* Detailed metrics output */}
-              <div className="w-full mt-6 space-y-3 font-sans text-left">
-                <div className="flex justify-between items-center text-xs border-b border-border/40 pb-2">
-                  <span className="text-muted-foreground font-clash font-medium">
-                    Final Remaining Balance
-                  </span>
-                  <span className="text-foreground font-mono font-bold">
-                    {formatCurrency(tenureRemainingBalance)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-[#3A8293] shrink-0" />
-                    <span className="text-muted-foreground">
-                      Total Withdrawn Payouts
+              {/* Key Insights */}
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white/50 border border-neutral-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                      Key Insight
                     </span>
                   </div>
-                  <span className="text-foreground font-mono font-medium">
-                    {tenureWithdrawnPercent.toFixed(1)}%
-                  </span>
+                  <p className="text-sm text-neutral-700 font-sans">
+                    {calculationMode === 'tenure'
+                      ? tenureLastsForever
+                        ? 'Your withdrawal rate is sustainable indefinitely. The corpus grows faster than you withdraw.'
+                        : `Your corpus will last ${tenureYearsFraction} years ${tenureMonthsFraction} months. Consider reducing withdrawals or increasing returns to extend longevity.`
+                      : `You need ${formatCurrency(calculatedRequiredCorpus)} invested today to generate ${formatCurrency(desiredMonthlyIncome)}/month for ${desiredTenureYears} years at ${corpusExpectedReturn}% return.`
+                    }
+                  </p>
                 </div>
-
-                <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-zinc-400 shrink-0" />
-                    <span className="text-muted-foreground">
-                      Corpus Value Remaining
+                <div className="bg-white/50 border border-neutral-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Download className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider font-mono">
+                      Quick Action
                     </span>
                   </div>
-                  <span className="text-foreground font-mono font-medium">
-                    {tenureBalancePercent.toFixed(1)}%
-                  </span>
+                  <p className="text-sm text-neutral-700 font-sans">
+                    {calculationMode === 'tenure'
+                      ? 'Review your withdrawal strategy annually. Market returns vary and inflation impacts purchasing power.'
+                      : 'Start investing early to benefit from compounding. Consider SIPs in diversified mutual funds for the corpus.'
+                    }
+                  </p>
                 </div>
               </div>
-            </>
-          ) : (
-            <>
-              {/* Dynamic Center Panel (Corpus Mode) */}
-              <div className="relative w-64 h-64 flex justify-center items-center">
-                <svg
-                  width="100%"
-                  height="100%"
-                  viewBox="0 0 120 120"
-                  className="transform -rotate-90"
-                >
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r={radius}
-                    fill="transparent"
-                    stroke="rgba(147, 197, 253, 0.15)"
-                    strokeWidth="10"
-                  />
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r={radius}
-                    fill="transparent"
-                    stroke="#d4d4d8"
-                    strokeWidth="10"
-                    strokeDasharray={circumference}
-                    strokeDashoffset="0"
-                    className="transition-all duration-500 ease-out"
-                  />
-                  {corpusInterestPercent > 0 && (
-                    <circle
-                      cx="60"
-                      cy="60"
-                      r={radius}
-                      fill="transparent"
-                      stroke="#3A8293"
-                      strokeWidth="10.2"
-                      strokeDasharray={circumference}
-                      strokeDashoffset={strokeDashoffsetCorpus}
-                      strokeLinecap="round"
-                      className="transition-all duration-500 ease-out"
-                    />
-                  )}
-                </svg>
-
-                <div className="absolute flex flex-col items-center justify-center text-center px-4">
-                  <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                    Required Corpus
-                  </span>
-                  <span className="text-xl md:text-2xl font-bold text-primary mt-1 select-text">
-                    {formatCurrency(calculatedRequiredCorpus)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Detailed metrics output */}
-              <div className="w-full mt-6 space-y-3 font-sans text-left">
-                <div className="flex justify-between items-center text-xs border-b border-border/40 pb-2">
-                  <span className="text-muted-foreground font-clash font-medium">
-                    Target SWP Corpus Needed
-                  </span>
-                  <span className="text-foreground font-mono font-bold">
-                    {formatCurrency(calculatedRequiredCorpus)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-zinc-400 shrink-0" />
-                    <span className="text-muted-foreground">
-                      Self-funded Capital (Principal)
-                    </span>
-                  </div>
-                  <span className="text-foreground font-mono font-medium">
-                    {corpusPrincipalPercent.toFixed(1)}%
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-[#3A8293] shrink-0" />
-                    <span className="text-muted-foreground">
-                      Compound Growth Component
-                    </span>
-                  </div>
-                  <span className="text-foreground font-mono font-medium">
-                    {corpusInterestPercent.toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* SWP Distribution Info Section */}
-      <div className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-24 text-left">
-        <div className="bg-white/20 backdrop-blur-3xl border border-border p-8 rounded-3xl flex flex-col gap-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/5 border border-primary/10 text-primary">
-              <ShieldCheck className="w-6 h-6" />
             </div>
+          </div>
+        </div>
+
+        {/* Formula Explanation */}
+        <details className="w-full max-w-4xl mx-auto mt-12">
+          <summary className="cursor-pointer text-primary font-bold text-sm hover:underline font-clash flex items-center gap-2">
+            <Coins className="w-4 h-4" />
+            View Calculation Formula & Assumptions
+          </summary>
+          <div className="mt-4 p-4 bg-white/50 backdrop-blur-md border border-white/30 rounded-xl text-sm text-neutral-700 space-y-3 font-sans">
             <div>
-              <h3 className="text-lg font-bold text-primary font-clash">
-                How to structure a retirement SWP
-              </h3>
-              <p className="text-xs text-muted-foreground font-sans">
-                Playbook strategies for systematic passive withdrawals.
-              </p>
+              <strong className="text-neutral-900 font-clash">
+                {calculationMode === 'tenure' ? 'Tenure Calculation' : 'Corpus Calculation'}
+              </strong>
+            </div>
+            {calculationMode === 'tenure' ? (
+              <div className="space-y-2 font-mono text-xs bg-neutral-50 rounded-lg p-3">
+                <div>Monthly rate: r = Annual Rate / 12 / 100</div>
+                <div>For each month: balance = balance + (balance × r) - withdrawal</div>
+                <div>
+                  If balance × r ≥ withdrawal: corpus lasts indefinitely ♾️
+                </div>
+                <div>
+                  Else: simulate month-by-month until balance ≤ 0
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 font-mono text-xs bg-neutral-50 rounded-lg p-3">
+                <div>Monthly rate: r = Annual Rate / 12 / 100</div>
+                <div>Months: n = Years × 12</div>
+                <div>Required Corpus (PV): PV = Withdrawal × [(1 - (1+r)^-n) / r]</div>
+                <div>Total Withdrawn: Withdrawal × n</div>
+                <div>Interest Component: Total Withdrawn - PV</div>
+              </div>
+            )}
+            <div className="text-xs text-neutral-500">
+              <strong>Assumptions:</strong> Returns are constant (no market volatility),
+              withdrawals happen at month-end, no taxes/fees considered.
+              Real-world results will vary based on market conditions.
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-[#64748B] font-sans leading-relaxed">
-            <div className="space-y-2">
-              <h4 className="font-bold text-primary font-clash">
-                The 4% Safety Rule
-              </h4>
-              <p>
-                For sustainable lifetime payouts, experts suggest a starting
-                monthly withdrawal of 0.33% to 0.4% of your total initial
-                corpus. This helps ensure that expected market growth
-                continuously replenishes your capital base, making your fund
-                sustain indefinitely.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-bold text-primary font-clash">
-                Growth Over Payout
-              </h4>
-              <p>
-                When expected returns (p.a.) exceed the withdrawal rate
-                percentage, the corpus grows over time. This creates a legacy
-                asset that you can pass down to subsequent generations while
-                enjoying consistent monthly income.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-bold text-primary font-clash">
-                Tax and Exit Load Efficiency
-              </h4>
-              <p>
-                Structuring withdrawals at least 12 months after your initial
-                investment ensures all payouts are classified as Long-Term
-                Capital Gains (LTCG), which are taxed at lower preferential
-                rates and escape mutual fund exit loads completely.
-              </p>
-            </div>
-          </div>
-        </div>
+        </details>
       </div>
-
-      {isLoaded && (
-        <GradualBlur
-          preset="page-footer"
-          height="2rem"
-          style={{ zIndex: 30 }}
-        />
-      )}
 
       <Footer />
     </main>

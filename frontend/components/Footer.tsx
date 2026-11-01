@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface FooterProps {
   footerRef?: React.RefObject<HTMLDivElement | null>;
@@ -8,7 +9,6 @@ interface FooterProps {
 }
 
 export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
-  const [currentTime, setCurrentTime] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -30,26 +30,9 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
     };
   }, []);
 
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const options: Intl.DateTimeFormatOptions = {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-        timeZone: 'Asia/Kolkata',
-      };
-      setCurrentTime(now.toLocaleTimeString('en-US', options));
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <footer
-      ref={footerRef as any}
+      ref={footerRef}
       className="w-full bg-transparent relative z-10 pt-24 pb-16 overflow-hidden text-foreground"
     >
       {/* Top Columns Grid */}
@@ -61,7 +44,7 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
 
         {/* Paragraph description */}
         <p className="font-clash text-sm md:text-lg text-muted-foreground max-w-xl leading-relaxed text-center mx-auto whitespace-pre-line">
-          Contact us about your portfolio health report or wealth targets. Let's
+          Contact us about your portfolio health report or wealth targets. Let&apos;s
           collaborate, call us today!
         </p>
 
@@ -86,12 +69,12 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
                 Book a call
               </button>
             ) : (
-              <a
+              <Link
                 href="/?book=true"
                 className="text-muted-foreground hover:text-primary transition duration-200 underline decoration-primary/30 underline-offset-4 font-normal"
               >
                 Book a call
-              </a>
+              </Link>
             )}
           </div>
 
@@ -170,26 +153,26 @@ export default function Footer({ footerRef, onBookCallClick }: FooterProps) {
 
       {/* Middle Divider Row */}
       <div className="flex flex-col md:flex-row justify-between items-center w-full border-t border-border max-w-5xl mx-auto px-6 py-6 text-xs text-slate-500 font-sans gap-4">
-        <span>©2026 FinAnalysis</span>
+        <span>&copy;2026 FinAnalysis</span>
         <div className="flex gap-6">
-          <a
+          <Link
             href="/privacy"
             className="hover:text-primary transition duration-200"
           >
             Privacy
-          </a>
-          <a
+          </Link>
+          <Link
             href="/terms"
             className="hover:text-primary transition duration-200"
           >
             Terms
-          </a>
-          <a
+          </Link>
+          <Link
             href="/cookies"
             className="hover:text-primary transition duration-200"
           >
             Cookies
-          </a>
+          </Link>
         </div>
       </div>
 

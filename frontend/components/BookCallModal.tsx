@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { csrfFetch } from '@/lib/csrf';
 import {
   X,
@@ -19,6 +19,14 @@ interface BookCallModalProps {
   onClose: () => void;
 }
 
+// Module-level constant for min datetime (1 hour from module load)
+const MIN_DATETIME = (() => {
+  const date = new Date(Date.now() + 3600000); // 1 hour from now
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+})();
+
 export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
   // Form fields
   const [name, setName] = useState('');
@@ -33,18 +41,17 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Set min datetime dynamically to 1 hour from now
-  const [minDateTime, setMinDateTime] = useState('');
+  // Min datetime for datetime-local inputs (1 hour from now)
+  const minDateTime = MIN_DATETIME;
 
+  // Track if we've initialized from localStorage to avoid repeated reads
+  const initializedRef = useRef(false);
+
+  // Initialize form from localStorage on first open
   useEffect(() => {
-    // Generate ISO string format for datetime-local input: YYYY-MM-DDTHH:MM
-    const date = new Date(Date.now() + 3600000); // 1 hour from now
-    const localISO = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
-    setMinDateTime(localISO);
+    if (!isOpen || initializedRef.current) return;
+    initializedRef.current = true;
 
-    // Try prefilling form if user is logged in
     const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
@@ -116,10 +123,9 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
       setSlot1('');
       setSlot2('');
       setSlot3('');
-    } catch (err: any) {
-      setError(
-        err.message || 'An unexpected error occurred while booking your call.',
-      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred while booking your call.';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -160,10 +166,7 @@ export default function BookCallModal({ isOpen, onClose }: BookCallModalProps) {
                 Booking Submitted!
               </h2>
               <p className="text-neutral-600 text-xs font-sans leading-relaxed max-w-sm">
-                Thank you, <strong>{name}</strong>! Your 3 preferred dates &
-                time slots have been registered. Arijit will confirm the final
-                slot shortly. You will receive an email confirmation with the
-                Google Meet link at <strong>{email}</strong> once confirmed.
+                Thank you, <strong>{name}</strong>! Your 3 preferred dates & time slots have been registered. Arijit will confirm the final slot shortly. You will receive an email confirmation with the Google Meet link at <strong>{email}</strong> once confirmed.
               </p>
             </div>
             <button

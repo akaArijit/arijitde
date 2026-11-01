@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 
 interface NavbarProps {
   isLoaded?: boolean;
@@ -15,6 +16,7 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
   const [userRole, setUserRole] = useState<string | null>(null);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
+  const initializedRef = useRef(false);
 
   // Smooth hide on scroll down, reveal on scroll up with rAF throttling
   useEffect(() => {
@@ -46,10 +48,15 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Initialize auth state from localStorage on mount
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     if (token && userStr) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoggedIn(true);
       try {
         const user = JSON.parse(userStr);
@@ -63,7 +70,7 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
           setDashboardUrl('/dashboard/user');
         }
       } catch (err) {
-        console.error("Failed to parse user from localStorage", err);
+        console.error('Failed to parse user from localStorage', err);
         setDashboardUrl('/dashboard/user');
       }
     } else {
@@ -75,17 +82,17 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
     if (token) {
       fetch(`/api/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
-        .then(res => res.json())
-        .then(data => {
+        .then((res) => res.json())
+        .then((data) => {
           if (data.success && data.data) {
             localStorage.setItem('user', JSON.stringify(data.data));
           }
         })
-        .catch(err => {
-          console.error("Failed to sync user from DB", err);
+        .catch((err) => {
+          console.error('Failed to sync user from DB', err);
         });
     }
   }, []);
@@ -97,10 +104,10 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
       id="main-navbar"
       className="fixed top-0 left-0 right-0 z-40 w-full flex flex-col items-center will-change-transform"
       style={{
-        transform: showNav ? "translate3d(0, 0, 0) scale(1)" : "translate3d(0, -125%, 0) scale(0.97)",
+        transform: showNav ? 'translate3d(0, 0, 0) scale(1)' : 'translate3d(0, -125%, 0) scale(0.97)',
         opacity: showNav ? 1 : 0,
-        pointerEvents: showNav ? "auto" : "none",
-        transition: "transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.32s ease",
+        pointerEvents: showNav ? 'auto' : 'none',
+        transition: 'transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.32s ease',
       }}
     >
       {/* Centered Floating Navbar */}
@@ -110,27 +117,36 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
           <div className="w-full px-4 sm:px-6 py-3 flex items-center justify-between">
             {/* Left: Brand Name & Logo */}
             <div className="flex items-center gap-3">
-              <a href="/" className="flex items-center gap-2.5 text-lg sm:text-xl font-bold tracking-wider text-primary font-chillax select-none hover:opacity-90">
+              <Link
+                href="/"
+                className="flex items-center gap-2.5 text-lg sm:text-xl font-bold tracking-wider text-primary font-chillax select-none hover:opacity-90"
+              >
                 <img
                   src="/image.png"
                   alt="FinAnalysis Logo"
                   className="w-6 h-6 rounded-full object-cover shrink-0 border border-primary/15 shadow-sm"
                 />
                 <span>FinAnalysis</span>
-              </a>
+              </Link>
             </div>
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2 sm:gap-3">
               {isLoggedIn ? (
-                <a href={dashboardUrl} className="px-4 sm:px-5 py-2 sm:py-2.5 bg-primary text-primary-foreground font-bold text-xs rounded-xl hover:bg-primary/90 transition duration-200 shadow-sm text-center whitespace-nowrap">
+                <Link
+                  href={dashboardUrl}
+                  className="px-4 sm:px-5 py-2 sm:py-2.5 bg-primary text-primary-foreground font-bold text-xs rounded-xl hover:bg-primary/90 transition duration-200 shadow-sm text-center whitespace-nowrap"
+                >
                   Dashboard
-                </a>
+                </Link>
               ) : (
                 <>
-                  <a href="/onboarding" className="px-3.5 sm:px-5 py-2 sm:py-2.5 border border-primary/20 hover:border-primary/40 text-primary font-bold text-xs rounded-xl hover:bg-primary/5 transition duration-200 text-center whitespace-nowrap">
+                  <Link
+                    href="/onboarding"
+                    className="px-3.5 sm:px-5 py-2 sm:py-2.5 border border-primary/20 hover:border-primary/40 text-primary font-bold text-xs rounded-xl hover:bg-primary/5 transition duration-200 text-center whitespace-nowrap"
+                  >
                     Login
-                  </a>
+                  </Link>
                   {onBookCallClick ? (
                     <button
                       onClick={onBookCallClick}
@@ -139,12 +155,12 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
                       Book a Call
                     </button>
                   ) : (
-                    <a
+                    <Link
                       href="/?book=true"
                       className="px-3.5 sm:px-5 py-2 sm:py-2.5 bg-primary text-primary-foreground font-bold text-xs rounded-xl hover:bg-primary/90 transition duration-200 shadow-sm text-center whitespace-nowrap"
                     >
                       Book a Call
-                    </a>
+                    </Link>
                   )}
                 </>
               )}
