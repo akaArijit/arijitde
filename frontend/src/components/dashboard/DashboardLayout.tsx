@@ -179,12 +179,19 @@ export function DashboardLayout() {
 
     try {
       const userObj = JSON.parse(savedUser);
-      if (userObj.role === 'CLIENT') {
+      // Only redirect if user is on the wrong dashboard for their role
+      const currentPath = router.pathname;
+      if (userObj.role === 'CLIENT' && currentPath !== '/dashboard/client') {
         router.push('/dashboard/client');
         return;
       }
-      if (userObj.role === 'ADMIN') {
+      if (userObj.role === 'ADMIN' && currentPath !== '/dashboard/admin') {
         router.push('/dashboard/admin');
+        return;
+      }
+      // If GUEST or unknown role on a protected dashboard, redirect to onboarding
+      if ((userObj.role === 'GUEST' || !userObj.role) && (currentPath.startsWith('/dashboard/'))) {
+        router.push('/onboarding');
         return;
       }
 
