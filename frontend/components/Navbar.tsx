@@ -67,13 +67,13 @@ export default function Navbar({ isLoaded = true, activePath = '/', onBookCallCl
         } else if (role === 'CLIENT') {
           setDashboardUrl('/dashboard/client');
         } else {
-          setDashboardUrl('/dashboard/user');
+          setDashboardUrl('/onboarding');
         }
       } catch (err) {
         console.error('Failed to parse user from localStorage', err);
-        setDashboardUrl('/dashboard/user');
+        setDashboardUrl('/onboarding');
       }
-    } else {
+} else {
       setIsLoggedIn(false);
       setUserRole(null);
       setDashboardUrl('/onboarding');

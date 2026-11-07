@@ -11,11 +11,20 @@ async function ensureCsrfCookie(): Promise<void> {
   // Bootstrap: hit the safe GET endpoint to set the cookie
   const res = await fetch('/api/csrf', {
     method: 'GET',
-    credentials: 'same-origin',
+    credentials: 'include',
   });
   if (!res.ok) {
     throw new Error('Failed to initialize CSRF token');
   }
+}
+
+const API_VERSION = '/v1';
+
+function normalizeApiUrl(url: string): string {
+  if (url.startsWith('/api/') && !url.startsWith('/api/v')) {
+    return `/api${API_VERSION}${url.slice(4)}`;
+  }
+  return url;
 }
 
 export async function csrfFetch(
@@ -29,5 +38,6 @@ export async function csrfFetch(
   if (csrfToken && !headers.has('x-csrf-token')) {
     headers.set('x-csrf-token', csrfToken);
   }
-  return fetch(url, { ...init, headers, credentials: 'include' });
+  const normalizedUrl = normalizeApiUrl(url);
+  return fetch(normalizedUrl, { ...init, headers, credentials: 'include' });
 }

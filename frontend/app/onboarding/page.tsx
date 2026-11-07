@@ -207,7 +207,7 @@ export default function Onboarding() {
         } else if (data.data.user?.role === 'CLIENT') {
           window.location.href = '/dashboard/client';
         } else {
-          window.location.href = '/dashboard/user';
+          window.location.href = '/onboarding';
         }
       } else {
         setError(data.error || 'Google Authentication failed');
@@ -348,7 +348,7 @@ export default function Onboarding() {
         if (data.data.user?.role === 'ADMIN') {
           window.location.href = '/dashboard/admin';
         } else {
-          window.location.href = '/dashboard/user';
+          window.location.href = '/onboarding';
         }
       } else {
         setError(data.error || 'Incorrect or expired OTP verification code');

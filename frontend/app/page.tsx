@@ -377,10 +377,10 @@ export default function Home() {
         } else if (user.role === "CLIENT") {
           setDashboardUrl("/dashboard/client");
         } else {
-          setDashboardUrl("/dashboard/user");
+          setDashboardUrl("/onboarding");
         }
       } catch (e) {
-        setDashboardUrl("/dashboard/user");
+        setDashboardUrl("/onboarding");
       }
     }
 
@@ -614,7 +614,7 @@ export default function Home() {
     setIsLoaded(false);
 
     const startTime = Date.now();
-    const duration = 5000; // 5 seconds preloader duration
+    const duration = 500; // 500ms preloader duration (reduced from 5000ms)
 
     const animate = () => {
       const elapsed = Date.now() - startTime;

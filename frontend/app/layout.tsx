@@ -6,6 +6,7 @@ import SessionSync from '@/components/SessionSync';
 import CursorFollower from '@/components/CursorFollower';
 import SmoothScroll from '@/components/SmoothScroll';
 import { Analytics } from '@vercel/analytics/next';
+import { Providers } from '@/components/Providers';
 
 const chillax = localFont({
   src: '../public/fonts/Chillax-Regular.otf',
@@ -107,7 +108,9 @@ export default function RootLayout({
         <Analytics />
         <CursorFollower />
         <SmoothScroll />
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

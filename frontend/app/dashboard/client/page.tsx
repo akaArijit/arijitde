@@ -411,7 +411,7 @@ export default function ClientDashboard() {
     try {
       const parsedUser = JSON.parse(savedUser);
       if (parsedUser.role !== "CLIENT" && parsedUser.role !== "ADMIN") {
-        window.location.href = "/dashboard/user";
+        window.location.href = "/onboarding";
         return;
       }
       setToken(savedToken);
