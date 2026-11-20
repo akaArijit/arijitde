@@ -41,6 +41,7 @@
     "google-auth-library": "^10.9.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
+    "lru-cache": "^11.5.3",
     "multer": "^2.4.0",
     "nodemailer": "^10.3.1",
     "nunjucks": "^3.2.4",

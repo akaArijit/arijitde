@@ -7,6 +7,17 @@
 import { logger } from '../lib/logger';
 import { cachedQuery, cacheKeys, cacheTTL } from '../lib/cache';
 
+const REQUEST_ID_HEADER = 'x-request-id';
+
+function buildFetchOptions(requestId?: string): RequestInit {
+  if (!requestId) return {};
+  return {
+    headers: {
+      [REQUEST_ID_HEADER]: requestId,
+    },
+  };
+}
+
 // ── AMFI API Types ──
 interface MFSearchResult {
   schemeCode: number;
@@ -112,7 +123,8 @@ export function detectFundCategory(fundName: string): string {
     name.includes('elss') ||
     name.includes('tax') ||
     name.includes('tax saver') ||
-    name.includes('tax saving')
+    name.includes('tax saving') ||
+    name.includes('long term equity')
   )
     return 'elss';
   if (
@@ -121,7 +133,9 @@ export function detectFundCategory(fundName: string): string {
     name.includes('aggressive') ||
     name.includes('conservative') ||
     name.includes('dynamic asset') ||
-    name.includes('equity saving')
+    name.includes('equity saving') ||
+    name.includes('equity & debt') ||
+    name.includes('equity and debt')
   )
     return 'balanced';
   if (
@@ -233,6 +247,7 @@ export function isDebtCategory(category: string): boolean {
  */
 export async function searchScheme(
   schemeName: string,
+  requestId?: string,
 ): Promise<MFSearchResult[]> {
   const cacheKey = cacheKeys.amfiSearch(schemeName.toLowerCase().trim());
   return cachedQuery(
@@ -249,6 +264,7 @@ export async function searchScheme(
 
       const res = await fetch(
         `https://api.mfapi.in/mf/search?q=${encodeURIComponent(searchQuery)}`,
+        buildFetchOptions(requestId),
       );
       if (!res.ok) return [];
 
@@ -264,13 +280,17 @@ export async function searchScheme(
  */
 export async function getSchemeNAV(
   schemeCode: number,
+  requestId?: string,
 ): Promise<MFSchemeData | null> {
   const cacheKey = cacheKeys.amfiNav(schemeCode);
   return cachedQuery(
     cacheKey,
     async () => {
       try {
-        const res = await fetch(`https://api.mfapi.in/mf/${schemeCode}`);
+        const res = await fetch(
+          `https://api.mfapi.in/mf/${schemeCode}`,
+          buildFetchOptions(requestId),
+        );
         if (!res.ok) return null;
 
         const data = (await res.json()) as MFSchemeData;
@@ -278,7 +298,7 @@ export async function getSchemeNAV(
 
         return data;
       } catch (err) {
-        logger.error({ err, schemeCode }, 'AMFI NAV fetch failed');
+        logger.error({ err, schemeCode, requestId }, 'AMFI NAV fetch failed');
         return null;
       }
     },
@@ -291,12 +311,13 @@ export async function getSchemeNAV(
  */
 export async function calculate1YReturn(
   schemeCode: number,
+  requestId?: string,
 ): Promise<number | null> {
   const cacheKey = cacheKeys.amfiReturn1y(schemeCode);
   return cachedQuery(
     cacheKey,
     async () => {
-      const data = await getSchemeNAV(schemeCode);
+      const data = await getSchemeNAV(schemeCode, requestId);
       if (!data || data.data.length < 2) return null;
 
       // NAV data is sorted newest first
@@ -329,10 +350,11 @@ export async function calculate1YReturn(
  */
 export async function getCategoryBenchmarkReturn(
   category: string,
+  requestId?: string,
 ): Promise<number | null> {
   const benchmarkCode =
     CATEGORY_BENCHMARKS[category] || CATEGORY_BENCHMARKS['default']!;
-  return calculate1YReturn(benchmarkCode);
+  return calculate1YReturn(benchmarkCode, requestId);
 }
 
 /**
@@ -340,17 +362,18 @@ export async function getCategoryBenchmarkReturn(
  */
 export async function getFundReturn(
   fundName: string,
+  requestId?: string,
 ): Promise<{ returnPct: number | null; schemeCode: number | null }> {
   try {
-    const results = await searchScheme(fundName);
+    const results = await searchScheme(fundName, requestId);
     if (results.length === 0) return { returnPct: null, schemeCode: null };
 
     // Use the first (best) match
     const bestMatch = results[0]!;
-    const returnPct = await calculate1YReturn(bestMatch.schemeCode);
+    const returnPct = await calculate1YReturn(bestMatch.schemeCode, requestId);
     return { returnPct, schemeCode: bestMatch.schemeCode };
   } catch (err) {
-    logger.error({ err, fundName }, 'getFundReturn failed');
+    logger.error({ err, fundName, requestId }, 'getFundReturn failed');
     return { returnPct: null, schemeCode: null };
   }
 }

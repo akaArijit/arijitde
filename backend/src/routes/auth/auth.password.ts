@@ -8,7 +8,7 @@ import { ApiError } from '../../lib/api-error';
 import rateLimit from 'express-rate-limit';
 import { SECURITY_CONFIG } from '../../config/security';
 
-import { createTokenPair } from './auth.tokens';
+import { createTokenPair } from '../../utils/auth';
 
 const router = Router();
 

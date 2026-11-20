@@ -18,6 +18,7 @@ export interface AssessmentContext {
   riskBehavior?: string | null;
   monthlyInvestment?: string | null;
   emergencyFund?: string | null;
+  requestId?: string;
 }
 
 export interface DimensionResult {

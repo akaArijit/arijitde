@@ -554,49 +554,30 @@ router.get(
   async (req: AuthenticatedRequest, res: Response, next) => {
     try {
       const user = req.user!;
-      let clientMatch = null;
 
-      // 1. Match by PAN first (most reliable since PAN is unique per client account)
+      // Build OR conditions for matching - prioritize PAN > email > name
+      const orConditions: any[] = [];
       if (user.pan) {
-        clientMatch = await prisma.existingClient.findFirst({
-          where: {
-            pan: { equals: user.pan.trim(), mode: 'insensitive' },
-          },
-          include: {
-            folios: {
-              orderBy: { createdAt: 'desc' },
-            },
-          },
-        });
+        orConditions.push({ pan: { equals: user.pan.trim(), mode: 'insensitive' } });
+      }
+      if (user.email) {
+        orConditions.push({ email: { equals: user.email.trim(), mode: 'insensitive' } });
+      }
+      if (user.name) {
+        orConditions.push({ name: { equals: user.name.trim(), mode: 'insensitive' } });
       }
 
-      // 2. Fallback: match by email
-      if (!clientMatch && user.email) {
-        clientMatch = await prisma.existingClient.findFirst({
-          where: {
-            email: { equals: user.email.trim(), mode: 'insensitive' },
-          },
-          include: {
-            folios: {
-              orderBy: { createdAt: 'desc' },
+      // Single query with OR conditions - find first match (PAN has priority due to order)
+      const clientMatch = orConditions.length > 0
+        ? await prisma.existingClient.findFirst({
+            where: { OR: orConditions },
+            include: {
+              folios: {
+                orderBy: { createdAt: 'desc' },
+              },
             },
-          },
-        });
-      }
-
-      // 3. Fallback: match by name
-      if (!clientMatch && user.name) {
-        clientMatch = await prisma.existingClient.findFirst({
-          where: {
-            name: { equals: user.name.trim(), mode: 'insensitive' },
-          },
-          include: {
-            folios: {
-              orderBy: { createdAt: 'desc' },
-            },
-          },
-        });
-      }
+          })
+        : null;
 
       let responseData = null;
       if (clientMatch) {

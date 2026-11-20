@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, ChevronRight, Loader2, ShieldCheck } from 'lucide-react';
 
+const MIN_DATE_TIME = new Date(Date.now() + 3600000).toISOString().slice(0, 16);
+
 interface BookingCalendarProps {
   onBook: (slots: { slot1: string; slot2: string; slot3: string }) => void;
   isLoading?: boolean;
@@ -25,12 +27,6 @@ export function BookingCalendar({
   const [slot3, setSlot3] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (freeSlots.length === 0 && onFetchSlots) {
-      onFetchSlots();
-    }
-  }, [onFetchSlots]);
-
   const handleBookMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!slot1 || !slot2 || !slot3) {
@@ -41,10 +37,6 @@ export function BookingCalendar({
     setError(null);
     onBook({ slot1, slot2, slot3 });
   };
-
-  const minDateTime = new Date(Date.now() + 3600000)
-    .toISOString()
-    .slice(0, 16);
 
   return (
     <div className="w-full max-w-xl border border-primary/20 bg-[radial-gradient(circle_at_top_right,rgba(138,92,255,0.06)_0%,transparent_60%)] bg-white/30 backdrop-blur-xl rounded-3xl p-8 md:p-10 flex flex-col gap-6 shadow-2xl relative overflow-hidden animate-in fade-in duration-500 text-left">
@@ -70,7 +62,7 @@ export function BookingCalendar({
               required
               value={slot1}
               onChange={(e) => setSlot1(e.target.value)}
-              min={minDateTime}
+              min={MIN_DATE_TIME}
               className="w-full bg-white/50 border border-neutral-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary text-neutral-950 font-mono"
             />
           </div>
@@ -84,7 +76,7 @@ export function BookingCalendar({
               required
               value={slot2}
               onChange={(e) => setSlot2(e.target.value)}
-              min={minDateTime}
+              min={MIN_DATE_TIME}
               className="w-full bg-white/50 border border-neutral-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary text-neutral-950 font-mono"
             />
           </div>
@@ -98,7 +90,7 @@ export function BookingCalendar({
               required
               value={slot3}
               onChange={(e) => setSlot3(e.target.value)}
-              min={minDateTime}
+              min={MIN_DATE_TIME}
               className="w-full bg-white/50 border border-neutral-200 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary text-neutral-950 font-mono"
             />
           </div>

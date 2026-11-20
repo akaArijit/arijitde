@@ -15,51 +15,18 @@ import {
 import { prisma } from '../../lib/prisma';
 import {
   signToken,
-  signAccessToken,
-  signRefreshToken,
   verifyRefreshToken,
 } from '../../lib/jwt';
 import { authMiddleware, optionalAuthMiddleware } from '../../middleware/auth';
 import type { AuthenticatedRequest } from '../../middleware/auth';
 import { OAuth2Client } from 'google-auth-library';
 import { ApiError } from '../../lib/api-error';
-import { generateUniqueReferralCode } from '../../utils';
+import { generateUniqueReferralCode, createTokenPair } from '../../utils/auth';
 
 const router = Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const REFRESH_ENABLED = process.env.ENABLE_REFRESH_TOKENS === 'true';
-
-export async function createTokenPair(
-  user: { id: string; email: string | null; role: any },
-  res: Response,
-) {
-  if (REFRESH_ENABLED) {
-    const accessToken = signAccessToken({
-      userId: user.id,
-      email: user.email ?? '',
-      role: user.role,
-    });
-    const refreshToken = signRefreshToken(user.id);
-    const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-    await prisma.refreshToken.create({
-      data: { token: tokenHash, userId: user.id, expiresAt },
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-
-    return { token: accessToken, refreshToken };
-  }
-  return { token: signToken({ userId: user.id, email: user.email ?? '', role: user.role }) };
-}
 
 // POST /api/auth/refresh
 router.post('/refresh', async (req: Request, res: Response, next) => {

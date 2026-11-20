@@ -1,34 +1,73 @@
 import { getCsrfToken } from './csrf';
+import type {
+  User,
+  Assessment,
+  Lead,
+  Portfolio,
+  ScoreTag,
+  ScoreInsight,
+  Score,
+  SupportQuery,
+  PaginatedResponse,
+  PaginatedData,
+  Folio,
+  ClientData,
+  UploadPortfolioResponse,
+  AUMData,
+  LiveSession,
+  AdminQuery,
+  AdminUser,
+  ExistingClientData,
+  ExistingClientFolio,
+  AdminSupportQuery,
+  AdminUploadResponse,
+  AdminUserFilters,
+  AdminClientFilters,
+  AdminSessionFilters,
+  AdminQueryFilters,
+  PaginationParams,
+  SearchParams,
+  AdminSessionConfirm,
+  AdminSessionNotes,
+  AdminTab,
+  UserRole,
+  SessionStatus,
+  QueryStatus,
+  AvailabilitySlot,
+  AdminContactMessage,
+  ContactMessage,
+  AdvisorySession,
+  AuthResponse,
+} from '@finanalysis/shared';
 
 export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
     public readonly response: Response,
-    public readonly data?: any
+    public readonly data?: unknown
   ) {
     super(message);
     this.name = 'ApiError';
   }
 
   static async fromResponse(response: Response): Promise<ApiError> {
-    let data: any;
+    let data: unknown;
     try {
       data = await response.json();
     } catch {
       data = await response.text();
     }
     
+    const errorData = data as Record<string, unknown> | undefined;
     return new ApiError(
-      data?.detail || data?.error || response.statusText,
+      (errorData?.detail as string) || (errorData?.error as string) || response.statusText,
       response.status,
       response,
       data
     );
   }
 }
-
-const API_BASE = '/api/v1';
 
 async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const csrfToken = getCsrfToken();
@@ -63,193 +102,42 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
   return response.text() as T;
 }
 
-// Local type definitions to avoid import issues
-type User = {
-  id: string;
-  email?: string;
-  name?: string;
-  phone?: string;
-  role: 'GUEST' | 'CLIENT' | 'ADMIN';
-  pan?: string;
-  dob?: string;
-  anniversary?: string;
-  referralCode?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type Assessment = {
-  id: string;
-  userId: string;
-  age: number;
-  goal: string;
-  ageRange?: string;
-  lifeStage?: string;
-  investmentTenure?: string;
-  isCompletePortfolio?: boolean;
-  investmentStyle?: string;
-  expectedReturn?: string;
-  riskBehavior?: string;
-  monthlyInvestment?: string;
-  emergencyFund?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type Lead = {
-  id: string;
-  userId: string;
-  name: string;
-  phone: string;
-  scoreId?: string;
-  slot?: string;
-  status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'CLOSED';
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type AdvisorySession = {
-  id: string;
-  userId: string;
-  preferredSlot1: string;
-  preferredSlot2: string;
-  preferredSlot3: string;
-  confirmedSlot?: string;
-  googleMeetLink?: string;
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  user?: User;
-};
-
-type Portfolio = {
-  id: string;
-  userId: string;
-  assessmentId?: string;
-  name: string;
-  description?: string;
-  totalValue?: number;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type Score = {
-  id: string;
-  portfolioId: string;
-  total: number;
-  goalAlignment: number;
-  assetAlloc: number;
-  diversification: number;
-  discipline: number;
-  efficiency: number;
-  tag: string;
-  insights?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type PaginatedResponse = {
-  success: boolean;
-  data: {
-    items: any[];
-    total: number;
-    page: number;
-    nextCursor?: string;
-    nextCursorId?: string;
-  };
-};
-
-type ExistingClient = {
-  id: string;
-  name?: string;
-  pan?: string;
-  email?: string;
-  mobile?: string;
-  city?: string;
-  aum?: number;
-  purchaseValue?: number;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type ContactMessage = {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  subject?: string;
-  message: string;
-  createdAt: string;
-};
-
-type SupportQuery = {
-  id: string;
-  userId: string;
-  subject: string;
-  message: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  status?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type PaginatedData = {
-  items: any[];
-  total: number;
-  page: number;
-  nextCursor?: string;
-  nextCursorId?: string;
-};
-
-type Folio = {
-  id: string;
-  name?: string;
-  pan?: string;
-  email?: string;
-  mobile?: string;
-  city?: string;
-  aum?: number;
-  purchaseValue?: number;
-  createdAt: string;
-  updatedAt: string;
-};
+const API_BASE = '/api/v1';
 
 export const api = {
   // Auth
   auth: {
     me: () => fetchApi<User>('/auth/me'),
     login: (data: { email: string; password: string }) => 
-      fetchApi<{ success: boolean; data: { user: User; accessToken: string } }>('/auth/login', {
+      fetchApi<{ success: boolean; data: AuthResponse; message?: string }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
     register: (data: { email: string; password: string; name: string; phone?: string }) =>
-      fetchApi<{ success: boolean; data: { user: User } }>('/auth/register', {
+      fetchApi<{ success: boolean; data: AuthResponse; message?: string }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
     google: (credential: string) =>
-      fetchApi<{ success: boolean; data: { user: User; accessToken: string } }>('/auth/google', {
+      fetchApi<{ success: boolean; data: AuthResponse; message?: string }>('/auth/google', {
         method: 'POST',
         body: JSON.stringify({ credential }),
       }),
-    logout: () => fetchApi('/auth/logout', { method: 'POST' }),
+    logout: () => fetchApi<{ success: boolean; message?: string }>('/auth/logout', { method: 'POST' }),
     forgotPassword: (email: string) =>
-      fetchApi('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+      fetchApi<{ success: boolean; message?: string }>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
     resetPassword: (data: { email: string; otp: string; newPassword: string }) =>
-      fetchApi('/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
+      fetchApi<{ success: boolean; data: AuthResponse; message?: string }>('/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
     verifyOtp: (data: { email: string; otp: string }) =>
-      fetchApi('/auth/verify-otp', { method: 'POST', body: JSON.stringify(data) }),
+      fetchApi<{ success: boolean; data: AuthResponse; message?: string }>('/auth/verify-otp', { method: 'POST', body: JSON.stringify(data) }),
   },
 
   // Assessments
   assess: {
     list: () => fetchApi<Assessment[]>('/assess'),
     get: (id: string) => fetchApi<Assessment>(`/assess/${id}`),
-    getUser: (userId: string) => fetchApi<Assessment | null>(`/assess/user/${userId}`),
-    create: (data: Omit<Assessment, 'id' | 'createdAt' | 'updatedAt'>) =>
+    getUser: (userId: string) => fetchApi<Assessment>(`/assess/user/${userId}`),
+    create: (data: Partial<Assessment>) =>
       fetchApi<Assessment>('/assess', { method: 'POST', body: JSON.stringify(data) }),
   },
 
@@ -257,15 +145,15 @@ export const api = {
   leads: {
     list: (params?: { status?: string; page?: number; limit?: number }) => {
       const search = new URLSearchParams(params as Record<string, string>).toString();
-      return fetchApi<{ success: boolean; data: { items: Lead[]; total: number; page: number; nextCursor?: string; nextCursorId?: string } }>(`/leads${search ? `?${search}` : ''}`);
+      return fetchApi<PaginatedResponse<Lead>>(`/leads${search ? `?${search}` : ''}`);
     },
     myBookings: () => fetchApi<Lead[]>('/leads/my-bookings'),
     availability: () => fetchApi<string[]>('/leads/availability'),
     mySessions: () => fetchApi<AdvisorySession[]>('/leads/my-sessions'),
     adminSessions: () => fetchApi<AdvisorySession[]>('/leads/admin/sessions'),
     create: (data: { name: string; phone: string; scoreId?: string; slot?: string }) =>
-      fetchApi<{ leadId: string }>('/leads', { method: 'POST', body: JSON.stringify(data) }),
-    updateStatus: (id: string, data: { status: Lead['status']; notes?: string }) =>
+      fetchApi<Lead>('/leads', { method: 'POST', body: JSON.stringify(data) }),
+    updateStatus: (id: string, data: { status: string; notes?: string }) =>
       fetchApi<Lead>(`/leads/${id}/status`, { method: 'PUT', body: JSON.stringify(data) }),
     bookSession: (data: { slot1: string; slot2: string; slot3: string }) =>
       fetchApi<AdvisorySession>('/leads/book-session', { method: 'POST', body: JSON.stringify(data) }),
@@ -275,15 +163,15 @@ export const api = {
       fetchApi<AdvisorySession>(`/leads/admin/sessions/${id}/confirm`, { method: 'POST', body: JSON.stringify(data) }),
     adminNotes: (id: string, notes?: string) =>
       fetchApi<AdvisorySession>(`/leads/admin/sessions/${id}/notes`, { method: 'POST', body: JSON.stringify({ notes }) }),
-    adminRefund: (id: string) => fetchApi(`/leads/admin/sessions/${id}/refund`, { method: 'POST' }),
-    adminDelete: (id: string) => fetchApi<AdvisorySession>(`/leads/admin/sessions/${id}`, { method: 'DELETE' }),
+    adminRefund: (id: string) => fetchApi<AdvisorySession>(`/leads/admin/sessions/${id}/refund`, { method: 'POST' }),
+    adminDelete: (id: string) => fetchApi<void>(`/leads/admin/sessions/${id}`, { method: 'DELETE' }),
   },
 
   // Portfolios
   portfolio: {
     list: () => fetchApi<Portfolio[]>('/portfolio'),
     get: (id: string) => fetchApi<Portfolio>(`/portfolio/${id}`),
-    clientData: () => fetchApi<any>('/portfolio/client-data'),
+    clientData: () => fetchApi<ClientData>('/portfolio/client-data'),
     create: (data: { name: string; assessmentId: string; description?: string }) =>
       fetchApi<Portfolio>('/portfolio', { method: 'POST', body: JSON.stringify(data) }),
   },
@@ -297,32 +185,57 @@ export const api = {
 
   // Admin
   admin: {
-    users: (page = 1, limit = 20) => fetchApi<{ success: boolean; data: { items: any[]; total: number; page: number; limit: number; pages: number } }>(`/admin/users?page=${page}&limit=${limit}`),
-    leads: (page = 1, limit = 20) => fetchApi<{ success: boolean; data: { items: any[]; total: number; page: number; limit: number; pages: number } }>(`/admin/leads?page=${page}&limit=${limit}`),
+    users: (page = 1, limit = 20) => fetchApi<PaginatedResponse<AdminUser>>(`/admin/users?page=${page}&limit=${limit}`),
+    leads: (page = 1, limit = 20) => fetchApi<PaginatedResponse<Lead>>(`/admin/leads?page=${page}&limit=${limit}`),
     existingClients: (params?: { page?: number; limit?: number; search?: string }) => {
       const search = new URLSearchParams(params as Record<string, string>).toString();
-      return fetchApi<{ success: boolean; data: { items: any[]; total: number; page: number; limit: number; pages: number } }>(`/admin/existing-clients${search ? `?${search}` : ''}`);
+      return fetchApi<PaginatedResponse<ExistingClientData>>(`/admin/existing-clients${search ? `?${search}` : ''}`);
     },
-    uploadPortfolio: (formData: FormData) => fetchApi('/admin/portfolio-upload', { method: 'POST', body: formData, headers: {} }),
-    syncFolios: () => fetchApi('/admin/sync-folios', { method: 'POST' }),
-    uploadExistingClients: (formData: FormData) => fetchApi('/admin/existing-clients/upload', { method: 'POST', body: formData, headers: {} }),
-    clearExistingClients: () => fetchApi('/admin/existing-clients/clear', { method: 'DELETE' }),
-    deleteExistingClient: (id: string) => fetchApi<any>(`/admin/existing-clients/${id}`, { method: 'DELETE' }),
+    uploadPortfolio: (formData: FormData) => fetchApi<UploadPortfolioResponse>('/admin/portfolio-upload', { method: 'POST', body: formData, headers: {} }),
+    syncFolios: () => fetchApi<{ success: boolean; message?: string }>('/admin/sync-folios', { method: 'POST' }),
+    uploadExistingClients: (formData: FormData) => fetchApi<AdminUploadResponse>('/admin/existing-clients/upload', { method: 'POST', body: formData, headers: {} }),
+    clearExistingClients: () => fetchApi<{ success: boolean; message?: string }>('/admin/existing-clients/clear', { method: 'DELETE' }),
+    deleteExistingClient: (id: string) => fetchApi<{ success: boolean; message?: string }>(`/admin/existing-clients/${id}`, { method: 'DELETE' }),
+    getAUM: (params?: { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: string }) => {
+      const search = new URLSearchParams(params as Record<string, string>).toString();
+      return fetchApi<PaginatedResponse<AUMData>>(`/admin/aum${search ? `?${search}` : ''}`);
+    },
+    recalculateAUM: (clientId: string) => fetchApi<AUMData>(`/admin/aum/recalculate/${clientId}`, { method: 'POST' }),
+    getLiveSessions: (params?: { page?: number; limit?: number; search?: string; status?: string }) => {
+      const search = new URLSearchParams(params as Record<string, string>).toString();
+      return fetchApi<PaginatedResponse<LiveSession>>(`/admin/live-sessions${search ? `?${search}` : ''}`);
+    },
+    endSession: (sessionId: string) => fetchApi<LiveSession>(`/admin/live-sessions/${sessionId}/end`, { method: 'POST' }),
+    getQueries: (params?: { page?: number; limit?: number; search?: string; status?: string; priority?: string }) => {
+      const search = new URLSearchParams(params as Record<string, string>).toString();
+      return fetchApi<PaginatedResponse<AdminSupportQuery>>(`/admin/queries${search ? `?${search}` : ''}`);
+    },
+    updateQueryStatus: (queryId: string, status: string) => fetchApi<AdminSupportQuery>(`/admin/queries/${queryId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    replyQuery: (queryId: string, message: string) => fetchApi<AdminSupportQuery>(`/admin/queries/${queryId}/reply`, { method: 'POST', body: JSON.stringify({ message }) }),
+    getFolios: (params?: { page?: number; limit?: number; search?: string }) => {
+      const search = new URLSearchParams(params as Record<string, string>).toString();
+      return fetchApi<PaginatedResponse<Folio>>(`/admin/folios${search ? `?${search}` : ''}`);
+    },
+    uploadFolios: (formData: FormData) => fetchApi<AdminUploadResponse>('/admin/folios/upload', { method: 'POST', body: formData, headers: {} }),
+    clearFolios: () => fetchApi<{ success: boolean; message?: string }>('/admin/folios/clear', { method: 'DELETE' }),
+    deleteFolio: (id: string) => fetchApi<{ success: boolean; message?: string }>(`/admin/folios/${id}`, { method: 'DELETE' }),
+    updateUserRole: (userId: string, role: 'GUEST' | 'CLIENT' | 'ADMIN') => fetchApi<AdminUser>(`/admin/users/${userId}/role`, { method: 'POST', body: JSON.stringify({ role }) }),
+    updateUserProfile: (userId: string, data: { advisorNotes?: string; activePlan?: string; pan?: string | null }) => fetchApi<AdminUser>(`/admin/users/${userId}/client-profile`, { method: 'POST', body: JSON.stringify(data) }),
   },
 
   // Chat
   chat: (data: { message: string; context?: string }) =>
-    fetchApi<any>('/chat', { method: 'POST', body: JSON.stringify(data) }),
+    fetchApi<{ response: string }>('/chat', { method: 'POST', body: JSON.stringify(data) }),
 
   // Contact
   contact: (data: { name: string; email: string; phone?: string; subject?: string; message: string }) =>
-    fetchApi<any>('/contact', { method: 'POST', body: JSON.stringify(data) }),
+    fetchApi<{ success: boolean; message?: string }>('/contact', { method: 'POST', body: JSON.stringify(data) }),
 
   // Support
   support: {
-    list: () => fetchApi<any[]>('/support'),
+    list: () => fetchApi<SupportQuery[]>('/support'),
     submit: (data: { subject: string; message: string; priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' }) =>
-      fetchApi<any>('/support', { method: 'POST', body: JSON.stringify(data) }),
+      fetchApi<SupportQuery>('/support', { method: 'POST', body: JSON.stringify(data) }),
   },
 
   // Health
@@ -331,18 +244,43 @@ export const api = {
 
 export { fetchApi };
 
-// Re-export local types
+// Re-export types from shared (deduplicated)
 export type {
   User,
   Assessment,
   Lead,
   Portfolio,
+  ScoreTag,
+  ScoreInsight,
   Score,
-  AdvisorySession,
-  ExistingClient,
-  ContactMessage,
   SupportQuery,
   PaginatedResponse,
   PaginatedData,
   Folio,
+  ClientData,
+  UploadPortfolioResponse,
+  AUMData,
+  LiveSession,
+  AdminQuery,
+  AdminUser,
+  ExistingClientData,
+  ExistingClientFolio,
+  AdminSupportQuery,
+  AdminUploadResponse,
+  AdminUserFilters,
+  AdminClientFilters,
+  AdminSessionFilters,
+  AdminQueryFilters,
+  PaginationParams,
+  SearchParams,
+  AdminSessionConfirm,
+  AdminSessionNotes,
+  AdminTab,
+  UserRole,
+  SessionStatus,
+  QueryStatus,
+  AvailabilitySlot,
+  AdminContactMessage,
+  ContactMessage,
+  AdvisorySession,
 };

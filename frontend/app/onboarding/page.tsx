@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { csrfFetch } from '@/lib/csrf';
 import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
 import GradualBlur from '@/components/GradualBlur';
+import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
 import {
   ArrowLeft,
   UserPlus,
@@ -693,6 +694,12 @@ export default function Onboarding() {
                       Must be at least 8 characters with 1 uppercase letter and
                       1 number.
                     </p>
+                  )}
+                  {/* Password Strength Meter */}
+                  {!isAdminLogin && password && (
+                    <div className="mt-3">
+                      <PasswordStrengthMeter password={password} />
+                    </div>
                   )}
                 </div>
               )}

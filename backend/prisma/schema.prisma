@@ -469,3 +469,12 @@ model SupportQuery {
   @@index([userId])
 }
 
+model AvailabilitySlot {
+  id        String   @id @default(uuid())
+  slot      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slot])
+}
+

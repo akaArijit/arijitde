@@ -91,10 +91,10 @@ export async function scoreDimension(
 
       const [fundResult, benchmarkReturn, bestReturn, bestFundData] =
         await Promise.allSettled([
-          withTimeout(getFundReturn(row.fundName), 8000),
-          withTimeout(getCategoryBenchmarkReturn(category), 5000),
-          withTimeout(calculate1YReturn(topPerformer.code), 8000),
-          withTimeout(getSchemeNAV(topPerformer.code), 5000),
+          withTimeout(getFundReturn(row.fundName, assessment.requestId), 8000),
+          withTimeout(getCategoryBenchmarkReturn(category, assessment.requestId), 5000),
+          withTimeout(calculate1YReturn(topPerformer.code, assessment.requestId), 8000),
+          withTimeout(getSchemeNAV(topPerformer.code, assessment.requestId), 5000),
         ]);
 
       return {

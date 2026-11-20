@@ -2,6 +2,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import swaggerUi from 'swagger-ui-express';
+import { LRUCache } from 'lru-cache';
 
 dotenv.config();
 if (!process.env.JWT_SECRET) {
@@ -66,39 +67,53 @@ if (!process.env.GMAIL_USER) {
 // AMFI scheme code validation with 24hr cache
 let amfiValidationCache: { timestamp: number; valid: boolean } | null = null;
 const AMFI_VALIDATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+let amfiValidationLock: Promise<void> | null = null;
 
 async function validateAMFISchemeCodes(): Promise<void> {
-  // Check cache first
+  // Check cache first (fast path)
   if (amfiValidationCache && Date.now() - amfiValidationCache.timestamp < AMFI_VALIDATION_TTL_MS) {
     return;
   }
 
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { CATEGORY_BENCHMARKS, CATEGORY_TOP_PERFORMERS } = require('./services/amfiService');
-    const codesToCheck = new Set<number>([
-      ...Object.values(CATEGORY_BENCHMARKS as Record<string, number>),
-      ...Object.values(CATEGORY_TOP_PERFORMERS as Record<string, { code: number }>).map((performer) => performer.code),
-    ]);
+  // If validation already in progress, wait for it
+  if (amfiValidationLock) {
+    await amfiValidationLock;
+    return;
+  }
 
-    let allValid = true;
-    for (const code of codesToCheck) {
-      try {
-        const res = await fetch(`https://api.mfapi.in/mf/${code}`, { method: 'HEAD' });
-        if (!res.ok) {
-          logger.warn({ schemeCode: code, status: res.status }, 'AMFI scheme code may be invalid');
+  // Acquire lock and run validation
+  amfiValidationLock = (async () => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { CATEGORY_BENCHMARKS, CATEGORY_TOP_PERFORMERS } = require('./services/amfiService');
+      const codesToCheck = new Set<number>([
+        ...Object.values(CATEGORY_BENCHMARKS as Record<string, number>),
+        ...Object.values(CATEGORY_TOP_PERFORMERS as Record<string, { code: number }>).map((performer) => performer.code),
+      ]);
+
+      let allValid = true;
+      for (const code of codesToCheck) {
+        try {
+          const res = await fetch(`https://api.mfapi.in/mf/${code}`, { method: 'HEAD' });
+          if (!res.ok) {
+            logger.warn({ schemeCode: code, status: res.status }, 'AMFI scheme code may be invalid');
+            allValid = false;
+          }
+        } catch {
+          logger.warn({ schemeCode: code }, 'Failed to validate AMFI scheme code');
           allValid = false;
         }
-      } catch {
-        logger.warn({ schemeCode: code }, 'Failed to validate AMFI scheme code');
-        allValid = false;
       }
+      logger.info('AMFI scheme code validation completed');
+      amfiValidationCache = { timestamp: Date.now(), valid: allValid };
+    } catch (err) {
+      logger.warn({ err }, 'AMFI scheme code validation skipped');
+    } finally {
+      amfiValidationLock = null;
     }
-    logger.info('AMFI scheme code validation completed');
-    amfiValidationCache = { timestamp: Date.now(), valid: allValid };
-  } catch (err) {
-    logger.warn({ err }, 'AMFI scheme code validation skipped');
-  }
+  })();
+
+  await amfiValidationLock;
 }
 
 // Run validation once on startup (non-blocking)
@@ -196,8 +211,11 @@ app.use(optionalAuthMiddleware);
 // F5: Global rate limiter — 200 requests per 15 min per IP + User-Agent fingerprint
 // Authenticated users (req.user set) skip rate limiting
 
-// Cache for rate limiter key hashes (avoids SHA256 per request)
-const rateLimiterKeyCache = new Map<string, string>();
+// LRU cache for rate limiter key hashes (avoids SHA256 per request, bounded memory)
+const rateLimiterKeyCache = new LRUCache<string, string>({
+  max: 10000,
+  // No TTL needed - entries expire when evicted
+});
 
 // FNV-1a 32-bit hash - faster than SHA256 for rate limiting
 function fnv1a32(str: string): string {
@@ -224,13 +242,6 @@ const globalLimiter = rateLimit({
     if (!hash) {
       hash = fnv1a32(key);
       rateLimiterKeyCache.set(key, hash);
-      // Prevent unbounded growth
-      if (rateLimiterKeyCache.size > 10000) {
-        const firstKey = rateLimiterKeyCache.keys().next().value;
-        if (firstKey !== undefined) {
-          rateLimiterKeyCache.delete(firstKey);
-        }
-      }
     }
     return hash;
   },

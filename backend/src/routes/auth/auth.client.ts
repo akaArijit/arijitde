@@ -9,8 +9,7 @@ import { ApiError } from '../../lib/api-error';
 import { generateOTP, sendOTP, saveOTP, verifyOTP, deleteOTP } from '../../services/otp';
 import rateLimit from 'express-rate-limit';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../lib/jwt';
-import { generateUniqueReferralCode } from '../../utils/auth';
-import { createTokenPair } from './auth.tokens';
+import { generateUniqueReferralCode, createTokenPair } from '../../utils/auth';
 
 const PAN_VERIFICATION_SECRET = process.env.PAN_VERIFICATION_SECRET!;
 if (!PAN_VERIFICATION_SECRET) {

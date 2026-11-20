@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { LogOut, Layout, Loader2, LayoutDashboard } from 'lucide-react';
 import { AssessmentQuiz } from './AssessmentQuiz';
 import { BookingCalendar } from './BookingCalendar';
@@ -13,6 +14,12 @@ import SoftBoxBlurBg from '@/components/SoftBoxBlurBg';
 import GradualBlur from '@/components/GradualBlur';
 import ChatbotWidget from '@/components/ChatbotWidget';
 import Footer from '@/components/Footer';
+import type {
+  AdvisorySession,
+  Payment,
+  Lead,
+  ExistingClientData,
+} from '@finanalysis/shared';
 
 type DashboardStage =
   | 'LOADING'
@@ -55,7 +62,7 @@ interface ScoreReport {
   discipline: number;
   efficiency: number;
   tag: 'ALIGNED' | 'MODERATE' | 'NEEDS_REVIEW' | 'NEEDS_STRUCTURING';
-  insights: string[] | { textInsights: string[]; comparison?: any };
+  insights: string[] | { textInsights: string[]; comparison?: unknown };
 }
 
 interface Session {
@@ -84,7 +91,7 @@ export function DashboardLayout() {
   const [statusMsg, setStatusMsg] = useState('');
 
   // Wallet and Session booking states
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<AdvisorySession[]>([]);
   const [slot1, setSlot1] = useState('');
   const [slot2, setSlot2] = useState('');
   const [slot3, setSlot3] = useState('');
@@ -129,12 +136,12 @@ export function DashboardLayout() {
     discipline: number;
     efficiency: number;
     tag: 'ALIGNED' | 'MODERATE' | 'NEEDS_REVIEW' | 'NEEDS_STRUCTURING';
-    insights: string[] | { textInsights: string[]; comparison?: any };
+    insights: string[] | { textInsights: string[]; comparison?: unknown };
   } | null>(null);
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
 
   // Booking & availability state variables
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<Lead[]>([]);
   const [freeSlots, setFreeSlots] = useState<string[]>([]);
   const [fetchingSlots, setFetchingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -158,13 +165,10 @@ export function DashboardLayout() {
 
   // Existing Client Detection
   const [isExistingClient, setIsExistingClient] = useState(false);
-  const [existingClientData, setExistingClientData] = useState<any>(null);
+  const [existingClientData, setExistingClientData] = useState<ExistingClientData | null>(null);
 
   // Groww Guide state
   const [showGrowwGuide, setShowGrowwGuide] = useState(false);
-
-  // Uploaded file state
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   // Auth Guard & Initial Fetch
   useEffect(() => {
@@ -276,7 +280,7 @@ export function DashboardLayout() {
       }
 
       // 2. Fetch payments (Mocked - payment router disabled)
-      const userPayments: any[] = [];
+      const userPayments: Payment[] = [];
       setPayments(userPayments);
 
       // 3. Parallel fetch of independent data
@@ -640,7 +644,7 @@ export function DashboardLayout() {
 
       if (data.success) {
         if (data.data.requiresDates) {
-          const initialFunds = data.data.funds.map((f: any) => ({
+          const initialFunds = data.data.funds.map((f: { fundName: string; invested: number; currentValue: number }) => ({
             fundName: f.fundName,
             invested: f.invested,
             currentValue: f.currentValue,
@@ -725,7 +729,7 @@ export function DashboardLayout() {
     } catch (err) {
       setError('Network error while submitting portfolio.');
     } finally {
-      setApiLoading(false);
+      setModalSubmitting(false);
     }
   };
 
@@ -735,70 +739,7 @@ export function DashboardLayout() {
     router.push('/onboarding');
   };
 
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (phoneInput.trim().length < 10) {
-      setModalError('Phone number must be at least 10 digits.');
-      return;
-    }
-    if (!dobInput) {
-      setModalError('Date of birth is mandatory.');
-      return;
-    }
-    const selectedDob = new Date(dobInput);
-    if (selectedDob > new Date()) {
-      setModalError('Date of birth cannot be in the future.');
-      return;
-    }
-    if (anniversaryInput) {
-      const selectedAnniversary = new Date(anniversaryInput);
-      if (selectedAnniversary > new Date()) {
-        setModalError('Anniversary date cannot be in the future.');
-        return;
-      }
-    }
-
-    setModalError(null);
-    setModalSubmitting(true);
-
-    try {
-      const res = await fetch(`/api/auth/phone`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          phone: phoneInput.trim(),
-          dob: dobInput,
-          anniversary: anniversaryInput || null,
-        }),
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        // Update local user details
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
-          const uObj = JSON.parse(savedUser);
-          uObj.phone = data.data.phone;
-          uObj.dob = data.data.dob;
-          uObj.anniversary = data.data.anniversary;
-          localStorage.setItem('user', JSON.stringify(uObj));
-          setUserData(uObj);
-        }
-        setShowPhoneModal(false);
-        // Refresh state
-        await fetchDashboardState();
-      } else {
-        setModalError(data.error || 'Failed to update details.');
-      }
-    } catch (err) {
-      setModalError('Network error. Please try again.');
-    } finally {
-      setModalSubmitting(false);
-    }
-  };
+  if (!isLoaded) {
     return (
       <main className="relative min-h-screen w-full bg-transparent text-neutral-900 flex flex-col font-clash">
         <div className="page-backdrop fixed inset-0 z-0 select-none pointer-events-none">
@@ -822,13 +763,13 @@ export function DashboardLayout() {
 
       <header className="relative z-20 w-full border-b border-border bg-white/35 backdrop-blur-md px-6 py-4 flex items-center justify-between text-neutral-900">
         <div className="flex items-center gap-4">
-          <a
+          <Link
             href="/"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border hover:border-neutral-400 bg-white/40 text-neutral-600 hover:text-neutral-900 text-xs font-semibold transition duration-200 cursor-pointer"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             <span>Back to Home</span>
-          </a>
+          </Link>
           <div className="hidden md:flex items-center gap-2">
             <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
             <span className="font-chillax font-bold tracking-wider text-sm uppercase">

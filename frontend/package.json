@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate:api": "openapi-typescript-codegen -i http://localhost:5000/api/openapi.json -o src/lib/api-generated -c axios --useOptions --exportCore false --exportServices true --exportSchemas true --exportTypes true --request axios --client axios",
+    "generate:api:local": "openapi-typescript-codegen -i ../backend/src/lib/openapi.json -o src/lib/api-generated -c axios --useOptions --exportCore false --exportServices true --exportSchemas true --exportTypes true --request axios --client axios"
   },
   "dependencies": {
     "@finanalysis/shared": "file:../shared",

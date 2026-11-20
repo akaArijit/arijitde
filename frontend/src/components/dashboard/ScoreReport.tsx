@@ -1,6 +1,7 @@
 'use client';
 
 import { Sparkles, ShieldCheck, FileText, ChevronRight } from 'lucide-react';
+import type { AdvisorySession } from '@/lib/api-client';
 
 interface ScoreReportProps {
   scoreReport: {
@@ -11,10 +12,10 @@ interface ScoreReportProps {
     discipline: number;
     efficiency: number;
     tag: 'ALIGNED' | 'MODERATE' | 'NEEDS_REVIEW' | 'NEEDS_STRUCTURING';
-    insights: string[] | { textInsights: string[]; comparison?: any };
+    insights: string[] | { textInsights: string[]; comparison?: unknown };
   };
   onBookCall?: () => void;
-  sessions?: any[];
+  sessions?: AdvisorySession[];
   showBookCall?: boolean;
 }
 
@@ -68,7 +69,7 @@ export function ScoreReport({
 }: ScoreReportProps) {
   const insightsList = Array.isArray(scoreReport.insights)
     ? scoreReport.insights
-    : (scoreReport.insights as any)?.textInsights || [];
+    : (scoreReport.insights as { textInsights: string[]; comparison?: unknown })?.textInsights || [];
 
   return (
     <div className="w-full max-w-4xl space-y-10 animate-in fade-in duration-500 select-text">
@@ -78,7 +79,7 @@ export function ScoreReport({
         </h1>
         <p className="text-neutral-500 text-xs font-sans">
           Below is the core assessment breakdown computed from your
-          portfolio's raw telemetry.
+          portfolio&apos;s raw telemetry.
         </p>
       </div>
 

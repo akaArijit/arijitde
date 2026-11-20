@@ -11,33 +11,27 @@ import type {
   Assessment,
   Lead,
   Portfolio,
-  Score,
   AdvisorySession,
   PaginatedResponse,
-  ExistingClient,
+  ExistingClientData,
   SupportQuery,
+  ClientData,
+  UploadPortfolioResponse,
+  Score,
   ContactMessage,
+  AdminContactMessage,
+  AdminUser,
 } from './api-client';
 
-type PaginatedData = {
-  items: any[];
-  total: number;
-  page: number;
-  nextCursor?: string;
-  nextCursorId?: string;
-};
-
-type Folio = {
-  id: string;
-  name?: string;
-  pan?: string;
-  email?: string;
-  mobile?: string;
-  city?: string;
-  aum?: number;
-  purchaseValue?: number;
-  createdAt: string;
-  updatedAt: string;
+type PaginatedResponseWithPagination<T = unknown> = PaginatedResponse<T> & {
+  data: PaginatedResponse<T>['data'] & {
+    pagination?: {
+      page: number;
+      pageSize: number;
+      total: number;
+      onPageChange: (page: number) => void;
+    };
+  };
 };
 
 // Query keys factory
@@ -72,6 +66,14 @@ export const queryKeys = {
   adminLeads: (page?: number, limit?: number) => ['admin', 'leads', page, limit] as const,
   adminExistingClients: (params?: { page?: number; limit?: number; search?: string }) =>
     ['admin', 'existing-clients', params] as const,
+  adminAUM: (params?: { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: string }) =>
+    ['admin', 'aum', params] as const,
+  adminLiveSessions: (params?: { page?: number; limit?: number; search?: string; status?: string }) =>
+    ['admin', 'live-sessions', params] as const,
+  adminQueries: (params?: { page?: number; limit?: number; search?: string; status?: string; priority?: string }) =>
+    ['admin', 'queries', params] as const,
+  adminFolios: (params?: { page?: number; limit?: number; search?: string }) =>
+    ['admin', 'folios', params] as const,
 
   // Support
   supportQueries: ['support'] as const,
@@ -178,7 +180,7 @@ export function useCreateAssessment(options?: UseMutationOptions<Assessment, Err
 }
 
 // Lead hooks
-export function useLeads(params?: { status?: string; page?: number; limit?: number }, options?: UseQueryOptions<PaginatedResponse, Error>) {
+export function useLeads(params?: { status?: string; page?: number; limit?: number }, options?: UseQueryOptions<PaginatedResponse<Lead>, Error>) {
   return useQuery({
     queryKey: queryKeys.leads(params),
     queryFn: () => api.leads.list(params),
@@ -218,7 +220,7 @@ export function useAdminSessions(options?: UseQueryOptions<AdvisorySession[], Er
   });
 }
 
-export function useCreateLead(options?: UseMutationOptions<{ leadId: string }, Error, { name: string; phone: string; scoreId?: string; slot?: string }>) {
+export function useCreateLead(options?: UseMutationOptions<Lead, Error, { name: string; phone: string; scoreId?: string; slot?: string }>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data) => api.leads.create(data),
@@ -277,10 +279,10 @@ export function useAdminUpdateSessionNotes(options?: UseMutationOptions<Advisory
   });
 }
 
-export function useAdminRefundSession(options?: UseMutationOptions<void, Error, string>) {
+export function useAdminRefundSession(options?: UseMutationOptions<AdvisorySession, Error, string>) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id) => api.leads.adminRefund(id) as Promise<void>,
+    mutationFn: (id) => api.leads.adminRefund(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.adminSessions });
     },
@@ -288,7 +290,7 @@ export function useAdminRefundSession(options?: UseMutationOptions<void, Error, 
   });
 }
 
-export function useAdminDeleteSession(options?: UseMutationOptions<AdvisorySession, Error, string>) {
+export function useAdminDeleteSession(options?: UseMutationOptions<void, Error, string>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id) => api.leads.adminDelete(id),
@@ -318,7 +320,7 @@ export function usePortfolio(id: string, options?: UseQueryOptions<Portfolio, Er
   });
 }
 
-export function useClientData(options?: UseQueryOptions<any, Error>) {
+export function useClientData(options?: UseQueryOptions<ClientData, Error>) {
   return useQuery({
     queryKey: queryKeys.clientData,
     queryFn: () => api.portfolio.clientData(),
@@ -368,15 +370,27 @@ export function useCalculateScore(options?: UseMutationOptions<Score, Error, str
 }
 
 // Admin hooks
-export function useAdminUsers(page = 1, limit = 20, options?: UseQueryOptions<PaginatedResponse, Error>) {
+export function useAdminUsers(page = 1, limit = 20, options?: UseQueryOptions<PaginatedResponseWithPagination<AdminUser>, Error>) {
   return useQuery({
     queryKey: queryKeys.adminUsers(page, limit),
     queryFn: () => api.admin.users(page, limit),
+    select: (data) => ({
+      ...data,
+      data: {
+        ...data.data,
+        pagination: data.data ? {
+          page: data.data.page,
+          pageSize: limit,
+          total: data.data.total,
+          onPageChange: () => {},
+        } : undefined,
+      },
+    }),
     ...options,
   });
 }
 
-export function useAdminLeads(page = 1, limit = 20, options?: UseQueryOptions<PaginatedResponse, Error>) {
+export function useAdminLeads(page = 1, limit = 20, options?: UseQueryOptions<PaginatedResponse<Lead>, Error>) {
   return useQuery({
     queryKey: queryKeys.adminLeads(page, limit),
     queryFn: () => api.admin.leads(page, limit),
@@ -384,36 +398,48 @@ export function useAdminLeads(page = 1, limit = 20, options?: UseQueryOptions<Pa
   });
 }
 
-export function useAdminExistingClients(params?: { page?: number; limit?: number; search?: string }, options?: UseQueryOptions<PaginatedResponse, Error>) {
+export function useAdminExistingClients(params?: { page?: number; limit?: number; search?: string }, options?: UseQueryOptions<PaginatedResponseWithPagination<ExistingClientData>, Error>) {
   return useQuery({
     queryKey: queryKeys.adminExistingClients(params),
     queryFn: () => api.admin.existingClients(params),
+    select: (data) => ({
+      ...data,
+      data: {
+        ...data.data,
+        pagination: data.data ? {
+          page: data.data.page,
+          pageSize: params?.limit || 50,
+          total: data.data.total,
+          onPageChange: () => {},
+        } : undefined,
+      },
+    }),
     ...options,
   });
 }
 
-export function useAdminUploadPortfolio(options?: UseMutationOptions<any, Error, FormData>) {
+export function useAdminUploadPortfolio(options?: UseMutationOptions<UploadPortfolioResponse, Error, FormData>) {
   return useMutation({
     mutationFn: (data) => api.admin.uploadPortfolio(data),
     ...options,
   });
 }
 
-export function useAdminSyncFolios(options?: UseMutationOptions<any, Error>) {
+export function useAdminSyncFolios(options?: UseMutationOptions<unknown, Error>) {
   return useMutation({
     mutationFn: () => api.admin.syncFolios(),
     ...options,
   });
 }
 
-export function useAdminUploadExistingClients(options?: UseMutationOptions<any, Error, FormData>) {
+export function useAdminUploadExistingClients(options?: UseMutationOptions<unknown, Error, FormData>) {
   return useMutation({
     mutationFn: (data) => api.admin.uploadExistingClients(data),
     ...options,
   });
 }
 
-export function useAdminClearExistingClients(options?: UseMutationOptions<any, Error>) {
+export function useAdminClearExistingClients(options?: UseMutationOptions<unknown, Error>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => api.admin.clearExistingClients(),
@@ -424,7 +450,7 @@ export function useAdminClearExistingClients(options?: UseMutationOptions<any, E
   });
 }
 
-export function useAdminDeleteExistingClient(options?: UseMutationOptions<ExistingClient, Error, string>) {
+export function useAdminDeleteExistingClient(options?: UseMutationOptions<{ success: boolean; message?: string }, Error, string>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id) => api.admin.deleteExistingClient(id),
@@ -436,7 +462,7 @@ export function useAdminDeleteExistingClient(options?: UseMutationOptions<Existi
 }
 
 // Chat hooks
-export function useChat(options?: UseMutationOptions<any, Error, { message: string; context?: string }>) {
+export function useChat(options?: UseMutationOptions<{ response: string }, Error, { message: string; context?: string }>) {
   return useMutation({
     mutationFn: (data) => api.chat(data),
     ...options,
@@ -444,7 +470,7 @@ export function useChat(options?: UseMutationOptions<any, Error, { message: stri
 }
 
 // Contact hooks
-export function useContact(options?: UseMutationOptions<ContactMessage, Error, { name: string; email: string; phone?: string; subject?: string; message: string }>) {
+export function useContact(options?: UseMutationOptions<{ success: boolean; message?: string }, Error, { name: string; email: string; phone?: string; subject?: string; message: string }>) {
   return useMutation({
     mutationFn: (data) => api.contact(data),
     ...options,
@@ -465,6 +491,28 @@ export function useSubmitSupport(options?: UseMutationOptions<SupportQuery, Erro
     mutationFn: (data) => api.support.submit(data),
     onSuccess: () => {
       // Invalidate support queries if using useSupportQueries
+    },
+    ...options,
+  });
+}
+
+export function useAdminUpdateUser(options?: UseMutationOptions<AdminUser, Error, { userId: string; role: 'GUEST' | 'CLIENT' | 'ADMIN' }>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, role }) => api.admin.updateUserRole(userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+    ...options,
+  });
+}
+
+export function useAdminUpdateUserProfile(options?: UseMutationOptions<AdminUser, Error, { userId: string; advisorNotes?: string; activePlan?: string; pan?: string | null }>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, ...data }) => api.admin.updateUserProfile(userId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
     ...options,
   });

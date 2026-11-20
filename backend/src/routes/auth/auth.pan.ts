@@ -9,8 +9,7 @@ import type { AuthenticatedRequest } from '../../middleware/auth';
 import { ApiError } from '../../lib/api-error';
 import rateLimit from 'express-rate-limit';
 import { signAccessToken, signRefreshToken, verifyRefreshToken, signToken } from '../../lib/jwt';
-import { generateUniqueReferralCode } from '../../utils/auth';
-import { createTokenPair } from './auth.tokens';
+import { generateUniqueReferralCode, createTokenPair } from '../../utils/auth';
 import { generateOTP, sendOTP, saveOTP, verifyOTP, deleteOTP } from '../../services/otp';
 import { SECURITY_CONFIG } from '../../config/security';
 

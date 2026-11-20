@@ -1,0 +1,38 @@
+# Ignore generated API code
+src/lib/api-generated/
+
+# Ignore build output
+.next/
+out/
+build/
+dist/
+
+# Ignore node_modules
+node_modules/
+
+# Ignore scripts (legacy code generation scripts)
+scripts/
+
+# Ignore test output
+coverage/
+.nyc_output/
+
+# Ignore IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore temporary files
+*.tmp
+*.temp
