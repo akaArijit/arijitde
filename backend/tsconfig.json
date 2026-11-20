@@ -13,7 +13,7 @@
     "sourceMap": true,
     "declaration": true,
     "lib": ["ES2022"],
-    "types": ["node"],
+    "types": ["node", "jest"],
     "isolatedModules": true,
     "moduleDetection": "force"
   },
