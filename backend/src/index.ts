@@ -18,7 +18,7 @@ import assessRouter from './routes/assess';
 import portfolioRouter from './routes/portfolio';
 import scoreRouter from './routes/score';
 import leadsRouter from './routes/leads';
-import adminRouter from './routes/admin';
+import adminRouter from './routes/adminRoutes';
 import chatRouter from './routes/chat';
 import contactRouter from './routes/contact';
 import supportRouter from './routes/support';
