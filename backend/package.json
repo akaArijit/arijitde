@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node --transpile-only src/index.ts",
-    "build": "cd ../shared && npm install && cd ../backend && npx prisma generate && tsc && mkdir -p uploads && cp src/lib/openapi.json dist/lib/openapi.json && cp -r src/templates dist/templates",
+    "build": "cd ../shared && npm install && cd ../backend && npm install && npx prisma generate && tsc && mkdir -p uploads && cp src/lib/openapi.json dist/lib/openapi.json && cp -r src/templates dist/templates",
     "start": "NODE_ENV=production node dist/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
