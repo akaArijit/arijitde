@@ -35,6 +35,9 @@ model User {
   client            Client?
   advisorySessions  AdvisorySession[]
   supportQueries    SupportQuery[]
+  queryReplies      QueryReply[]
+  liveSessionsAsClient    LiveSession[]  @relation("LiveSessionClient")
+  liveSessionsAsConsultant LiveSession[] @relation("LiveSessionConsultant")
   refreshTokens     RefreshToken[]
   auditLogs               AuditLog[]
 }
@@ -397,14 +400,22 @@ model ExistingClient {
   purchaseValue              Float?
   currentValue               Float?
   oneDayChange               Float?
-  dividend                   Float?
+dividend                   Float?
   averageHoldingDays         Float?
   gain                       Float?
   absoluteReturn             Float?
-cagr                       Float?
+  cagr                       Float?
   xirr                       Float?
-   
-createdAt                  DateTime @default(now())
+  
+  // AUM fields (denormalized for performance)
+  totalAUM           Float?
+  totalInvested      Float?
+  totalCurrentValue  Float?
+  totalGain          Float?
+  folioCount         Int?
+  lastCalculatedAt   DateTime?
+
+  createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
   
   @@index([createdAt])
@@ -456,15 +467,24 @@ model AdvisorySession {
   @@index([userId])
 }
 
+enum QueryPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model SupportQuery {
-  id        String   @id @default(uuid())
+  id        String       @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   subject   String
   message   String
-  status    String   @default("PENDING") // PENDING, RESOLVED
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    String       @default("PENDING") // PENDING, RESOLVED
+  priority  QueryPriority @default(MEDIUM)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  replies   QueryReply[]
 
   @@index([userId])
 }
@@ -476,5 +496,43 @@ model AvailabilitySlot {
   updatedAt DateTime @updatedAt
 
   @@index([slot])
+}
+
+enum LiveSessionStatus {
+  ACTIVE
+  WAITING
+  ENDED
+}
+
+model LiveSession {
+  id             String             @id @default(uuid())
+  clientId       String
+  client         User               @relation("LiveSessionClient", fields: [clientId], references: [id])
+  consultantId   String
+  consultant     User               @relation("LiveSessionConsultant", fields: [consultantId], references: [id])
+  status         LiveSessionStatus  @default(ACTIVE)
+  startTime      DateTime           @default(now())
+  endTime        DateTime?
+  duration       Int?               // seconds
+  googleMeetLink String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([clientId])
+  @@index([consultantId])
+  @@index([status])
+}
+
+model QueryReply {
+  id        String       @id @default(uuid())
+  queryId   String
+  query     SupportQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  adminId   String
+  admin     User         @relation(fields: [adminId], references: [id])
+  message   String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([queryId])
 }
 
